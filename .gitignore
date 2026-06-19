@@ -39,6 +39,9 @@ release/
 # ToolCase generated state
 .backups/
 .self_improve_reports/
+.rsi_reports/
+.rsi_backups/
+.rsi_memory.json
 
 # Node (for test_runner)
 node_modules/
