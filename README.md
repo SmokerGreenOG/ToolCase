@@ -4,9 +4,12 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)]()
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)]()
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
+[![Tests](https://img.shields.io/badge/tests-53%2F53-success?style=flat-square)]()
+[![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
 > **35 tools · 8 categories · 10 safety rules · 3 languages (EN/NL/DE)**  
-> Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
+> Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)  \
+> [![GitHub](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
 ---
 
