@@ -56,6 +56,7 @@ MAX_LINE_LENGTH = 500
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _run(cmd: list[str], cwd: Path, timeout: int = 120) -> subprocess.CompletedProcess:
     """Run a subprocess and return the result."""
     try:
@@ -106,6 +107,7 @@ def _glob_scoped(root: Path, pattern: str) -> list[Path]:
 # ---------------------------------------------------------------------------
 # Check: Node / npm
 # ---------------------------------------------------------------------------
+
 
 def check_npm_build(root: Path) -> list[dict]:
     """Run `npm run build` and capture errors."""
@@ -295,6 +297,7 @@ def check_missing_npm_deps(root: Path, pkg_data: dict) -> list[dict]:
 # Check: vite build
 # ---------------------------------------------------------------------------
 
+
 def check_vite_build(root: Path) -> list[dict]:
     """Run vite build and check for errors."""
     issues = []
@@ -409,6 +412,7 @@ def check_vite_alias_paths(root: Path, cfg_file: Path) -> list[dict]:
 # Check: next build
 # ---------------------------------------------------------------------------
 
+
 def check_next_build(root: Path) -> list[dict]:
     """Check Next.js build for errors."""
     issues = []
@@ -510,6 +514,7 @@ def check_next_build(root: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Check: tsc --noEmit
 # ---------------------------------------------------------------------------
+
 
 def check_tsc(root: Path) -> list[dict]:
     """Run `tsc --noEmit` and report type errors."""
@@ -657,6 +662,7 @@ def check_tsconfig_paths(root: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Check: Python import errors
 # ---------------------------------------------------------------------------
+
 
 def check_python_imports(root: Path) -> list[dict]:
     """Scan Python files for import errors without full execution."""
@@ -807,6 +813,7 @@ def check_missing_python_imports(root: Path, py_files: list[Path]) -> list[dict]
 # Check: package.json scripts
 # ---------------------------------------------------------------------------
 
+
 def check_package_scripts(root: Path) -> list[dict]:
     """Check that package.json scripts reference valid commands."""
     issues = []
@@ -907,6 +914,7 @@ def check_package_scripts(root: Path) -> list[dict]:
 # Check: missing dependencies (comprehensive)
 # ---------------------------------------------------------------------------
 
+
 def check_missing_deps(root: Path) -> list[dict]:
     """Comprehensive dependency check across all project types."""
     issues = []
@@ -986,6 +994,7 @@ def check_missing_deps(root: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Cause inference helpers
 # ---------------------------------------------------------------------------
+
 
 def _infer_npm_cause(errors: list[str]) -> str:
     """Infer the most likely cause of npm build errors."""
@@ -1143,6 +1152,7 @@ def _suggest_tsc_fix(cause: str, errors: list[str]) -> str:
 # Master check dispatcher
 # ---------------------------------------------------------------------------
 
+
 def run_all_checks(root: Path) -> list[dict]:
     """Run all applicable build checks."""
     all_issues = []
@@ -1179,6 +1189,7 @@ def run_all_checks(root: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Reporting
 # ---------------------------------------------------------------------------
+
 
 def print_report(all_issues: list[dict]) -> None:
     """Print a formatted build diagnostics report."""
@@ -1287,6 +1298,7 @@ def build_json_output(all_issues: list[dict]) -> dict:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

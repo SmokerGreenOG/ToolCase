@@ -183,6 +183,7 @@ BACKUP_RETENTION_SECONDS: int = 30 * 24 * 3600
 # Core utilities
 # ---------------------------------------------------------------------------
 
+
 def _is_protected(path: Union[str, Path]) -> bool:
     """Check if a path is a protected file based on name and patterns."""
     p = Path(path)
@@ -386,6 +387,7 @@ def _parse_timestamp(ts: str) -> float:
 # ---------------------------------------------------------------------------
 # Guard actions
 # ---------------------------------------------------------------------------
+
 
 def action_check(path: str, json_mode: bool = False) -> int:
     """Check if the given path is protected."""
@@ -982,6 +984,7 @@ def action_status(path: Optional[str] = None, json_mode: bool = False) -> int:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="file_guard",
@@ -1110,6 +1113,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 # ---------------------------------------------------------------------------
 # Public API (for import)
 # ---------------------------------------------------------------------------
+
 
 def is_protected(path: Union[str, Path]) -> bool:
     """Check if a path is protected (public API)."""

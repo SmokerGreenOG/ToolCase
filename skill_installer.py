@@ -87,6 +87,7 @@ TOOLCASE_TOOLS = frozenset({
 # Utility helpers
 # ---------------------------------------------------------------------------
 
+
 def _find_registry() -> Optional[Path]:
     """Find the first existing Hermes skill registry directory."""
     for candidate in SKILL_REGISTRY_CANDIDATES:
@@ -248,6 +249,7 @@ def _print_json(data: Any) -> None:
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
+
 
 def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
     """
@@ -523,6 +525,7 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
 # Install
 # ---------------------------------------------------------------------------
 
+
 def install_skill(source: str, force: bool = False) -> dict[str, Any]:
     """
     Install a skill from a source path or name.
@@ -653,6 +656,7 @@ def install_skill(source: str, force: bool = False) -> dict[str, Any]:
 # Test
 # ---------------------------------------------------------------------------
 
+
 def test_skill(name: str) -> dict[str, Any]:
     """
     Run tests for an installed skill.
@@ -738,6 +742,7 @@ def test_skill(name: str) -> dict[str, Any]:
 # List
 # ---------------------------------------------------------------------------
 
+
 def list_skills(json_output: bool = False) -> dict[str, Any]:
     """
     List all installed skills with their metadata.
@@ -776,6 +781,7 @@ def list_skills(json_output: bool = False) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Display
 # ---------------------------------------------------------------------------
+
 
 def print_validation_report(issues: list[dict]) -> None:
     """Print a formatted validation report."""
@@ -916,6 +922,7 @@ def print_test_result(result: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 # Main CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     """Skill installer main entry point."""

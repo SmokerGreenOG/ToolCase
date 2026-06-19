@@ -64,6 +64,7 @@ EXT_MAP = {
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _read_file(path: Path) -> str:
     """Read a file as text, returning empty string on error."""
     try:
@@ -101,6 +102,7 @@ def _is_external_import(module: str, project_files: set) -> bool:
 # ---------------------------------------------------------------------------
 # Language-specific parsers
 # ---------------------------------------------------------------------------
+
 
 def parse_python(content: str, filepath: Path, project_files: set):
     """Parse Python imports from content."""
@@ -232,6 +234,7 @@ def parse_file(filepath: Path, root: Path, project_files: set):
 # Build the full dependency graph
 # ---------------------------------------------------------------------------
 
+
 def build_graph(root: Path, show_external: bool = False):
     """
     Walk *root*, parse every recognised source file, and return:
@@ -287,6 +290,7 @@ def build_graph(root: Path, show_external: bool = False):
 # ---------------------------------------------------------------------------
 # Tree rendering
 # ---------------------------------------------------------------------------
+
 
 def render_tree(
     graph: dict,
@@ -383,6 +387,7 @@ def _resolve_import(current_file: str, module: str, graph: dict | None = None) -
 # Cycle detection (DFS-based)
 # ---------------------------------------------------------------------------
 
+
 def find_cycles(graph: dict, show_external: bool = False) -> list:
     """
     Detect circular dependencies using DFS cycle detection.
@@ -430,6 +435,7 @@ def find_cycles(graph: dict, show_external: bool = False) -> list:
 # Stats
 # ---------------------------------------------------------------------------
 
+
 def compute_stats(graph: dict, show_external: bool = False) -> dict:
     """Compute aggregate statistics over the dependency graph."""
     total_imports = 0
@@ -455,6 +461,7 @@ def compute_stats(graph: dict, show_external: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
+
 
 def main():
     parser = argparse.ArgumentParser(

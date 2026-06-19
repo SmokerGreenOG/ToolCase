@@ -74,6 +74,8 @@ FORBIDDEN_FILE_READS = [
 # ── Data classes ────────────────────────────────────────────
 
 @dataclass
+
+
 class Finding:
     category: str  # code-quality | security | project-health | docs | tests | build
     severity: str  # critical | high | medium | low | info
@@ -84,6 +86,8 @@ class Finding:
 
 
 @dataclass
+
+
 class Change:
     description: str
     category: str  # safe | needs_approval | forbidden
@@ -95,6 +99,8 @@ class Change:
 
 
 @dataclass
+
+
 class CycleReport:
     cycle: int
     mode: str  # dry-run | safe-only | apply
@@ -127,6 +133,7 @@ class CycleReport:
 
 
 # ── Safety Manager ──────────────────────────────────────────
+
 
 class SafetyManager:
     """Enforces all 10 safety rules plus forbidden operations lists."""
@@ -196,6 +203,7 @@ class SafetyManager:
 
 
 # ── Scanners ─────────────────────────────────────────────────
+
 
 class CodeScanner:
     """Runs ToolCase tools and collects findings."""
@@ -450,6 +458,7 @@ class CodeScanner:
 
 # ── Improvement Planner ──────────────────────────────────────
 
+
 class ImprovementPlanner:
     """Categorises findings into safe / needs_approval / forbidden changes."""
 
@@ -567,6 +576,7 @@ class ImprovementPlanner:
 
 
 # ── Executor ─────────────────────────────────────────────────
+
 
 class Executor:
     """Applies safe changes with backup, preview, and validation."""
@@ -738,6 +748,7 @@ class Executor:
 
 # ── Test Runner ──────────────────────────────────────────────
 
+
 class TestRunner:
     """Runs compile checks and optionally tool tests."""
 
@@ -797,6 +808,7 @@ class TestRunner:
 
 
 # ── Report Generator ─────────────────────────────────────────
+
 
 class ReportGenerator:
     """Generates human-readable and JSON reports."""
@@ -1020,6 +1032,7 @@ class ReportGenerator:
 
 
 # ── Orchestrator ─────────────────────────────────────────────
+
 
 def run_one_cycle(
     cycle: int, total_cycles: int,

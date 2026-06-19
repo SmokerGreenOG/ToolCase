@@ -57,6 +57,7 @@ DEFAULT_KEEP = 5
 # Paths
 # ---------------------------------------------------------------------------
 
+
 def backup_root(base: Path) -> Path:
     """Return the .backups directory path anchored to *base*."""
     return base / BACKUP_DIR_NAME
@@ -71,6 +72,7 @@ def snapshot_dir(base: Path, snapshot_id: str) -> Path:
 # Snapshot naming
 # ---------------------------------------------------------------------------
 
+
 def generate_snapshot_id() -> str:
     """Generate a snapshot ID like 2026-06-10-181229."""
     return datetime.now().strftime("%Y-%m-%d-%H%M%S")
@@ -79,6 +81,7 @@ def generate_snapshot_id() -> str:
 # ---------------------------------------------------------------------------
 # Snapshot — create
 # ---------------------------------------------------------------------------
+
 
 def do_snapshot(base: Path, target: str, *, json_out: bool) -> int:
     """Create a snapshot of *target* under .backups/<snapshot_id>/."""
@@ -144,6 +147,7 @@ def do_snapshot(base: Path, target: str, *, json_out: bool) -> int:
 # ---------------------------------------------------------------------------
 # List
 # ---------------------------------------------------------------------------
+
 
 def do_list(base: Path, target: str | None, *, json_out: bool) -> int:
     """List all snapshots, or snapshots for a specific path."""
@@ -237,6 +241,7 @@ def do_list(base: Path, target: str | None, *, json_out: bool) -> int:
 # ---------------------------------------------------------------------------
 # Diff
 # ---------------------------------------------------------------------------
+
 
 def do_diff(base: Path, snapshot_id: str, file_path: str | None, *, json_out: bool) -> int:
     """Compare a snapshot against the current version."""
@@ -369,6 +374,7 @@ def _compute_diff(current: Path, snapshot: Path) -> str | None:
 # Restore — full snapshot
 # ---------------------------------------------------------------------------
 
+
 def do_restore(base: Path, snapshot_id: str, *, json_out: bool) -> int:
     """Restore an entire snapshot, overwriting current files."""
     sd = snapshot_dir(base, snapshot_id)
@@ -433,6 +439,7 @@ def do_restore(base: Path, snapshot_id: str, *, json_out: bool) -> int:
 # Restore — single file
 # ---------------------------------------------------------------------------
 
+
 def do_restore_file(base: Path, snapshot_id: str, file_path: str, *, json_out: bool) -> int:
     """Restore a single file from a snapshot."""
     sd = snapshot_dir(base, snapshot_id)
@@ -496,6 +503,7 @@ def do_restore_file(base: Path, snapshot_id: str, file_path: str, *, json_out: b
 # Prune
 # ---------------------------------------------------------------------------
 
+
 def do_prune(base: Path, keep: int, *, json_out: bool) -> int:
     """Remove old snapshots, keeping the N most recent."""
     bdir = backup_root(base)
@@ -551,6 +559,7 @@ def do_prune(base: Path, keep: int, *, json_out: bool) -> int:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(

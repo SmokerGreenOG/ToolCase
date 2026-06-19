@@ -92,6 +92,7 @@ COMMAND_DEF_PATTERN = re.compile(
 # Collectors
 # ---------------------------------------------------------------------------
 
+
 def collect_python_files(root: Path) -> list[Path]:
     """Recursively collect all .py files under root, excluding known dirs."""
     files: list[Path] = []
@@ -115,6 +116,7 @@ def read_text_file(path: Path) -> str:
 # ---------------------------------------------------------------------------
 # Source Code Analysis
 # ---------------------------------------------------------------------------
+
 
 def extract_features_from_source(files: list[Path]) -> dict[str, Any]:
     """Extract features, commands, and identifiers from Python source files.
@@ -204,6 +206,7 @@ def extract_features_from_source(files: list[Path]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Documentation Analysis
 # ---------------------------------------------------------------------------
+
 
 def extract_features_from_readme(content: str) -> dict[str, Any]:
     """Extract feature claims, commands, and tool names from README.md.
@@ -346,6 +349,7 @@ def extract_features_from_docs(docs_path: Path) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Comparison / Sync Check
 # ---------------------------------------------------------------------------
+
 
 def check_docs_sync(
     root: Path,
@@ -574,6 +578,7 @@ def _extract_tool_table_names(readme_content: str) -> set[str]:
 # Report / Output
 # ---------------------------------------------------------------------------
 
+
 def _build_report(
     source_features: dict[str, Any],
     readme_feats: dict[str, Any],
@@ -663,6 +668,7 @@ def _print_human(report: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(

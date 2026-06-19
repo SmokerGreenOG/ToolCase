@@ -70,6 +70,7 @@ SHORT_PROMPT_THRESHOLD = 30    # chars
 
 # ── Data classes ──────────────────────────────────────
 
+
 class PromptFinding:
     """A single prompt finding."""
 
@@ -103,6 +104,7 @@ class PromptFinding:
 
 
 # ── Core analysis functions ──────────────────────────
+
 
 def estimate_tokens(text: str) -> int:
     """Rough token estimate (4 chars per token average)."""
@@ -283,6 +285,7 @@ def find_prompt_files(path: Path) -> list[Path]:
 
 # ── Analyzer class ──────────────────────────────────
 
+
 class PromptOptimizer:
     """Main analyzer class."""
 
@@ -326,6 +329,7 @@ class PromptOptimizer:
 
 
 # ── Display ──────────────────────────────────────────
+
 
 def print_report(findings: list[PromptFinding], stats: dict) -> None:
     """Print a formatted report."""
@@ -391,6 +395,7 @@ def analyze_direct_prompt(prompt: str) -> dict:
 
 
 # ── Main CLI ──────────────────────────────────────────
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

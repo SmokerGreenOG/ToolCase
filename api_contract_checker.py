@@ -224,6 +224,7 @@ BACKEND_TS_INTERFACE_FIELDS_RE = re.compile(
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def style(text: str, *codes: str) -> str:
     """Apply ANSI style codes if output is a TTY."""
     if not sys.stdout.isatty():
@@ -297,6 +298,7 @@ def extract_fields_from_rust_struct(body: str) -> set[str]:
 # ---------------------------------------------------------------------------
 # File collection
 # ---------------------------------------------------------------------------
+
 
 def collect_source_files(root: Path) -> list[Path]:
     """Collect relevant source files, respecting exclude dirs."""
@@ -611,6 +613,7 @@ def _scan_ts_backend(routes: list, content: str, rel_path: str) -> None:
 # Analysis / comparison
 # ---------------------------------------------------------------------------
 
+
 def analyze_contracts(
     frontend_calls: list[FrontendCall],
     backend_routes: list[BackendRoute],
@@ -820,6 +823,7 @@ def analyze_contracts(
 # Reporting
 # ---------------------------------------------------------------------------
 
+
 def print_report(result: dict) -> None:
     """Print a human-readable report with purple/neon styling."""
     stats = result["stats"]
@@ -888,6 +892,7 @@ def print_report(result: dict) -> None:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

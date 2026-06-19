@@ -134,6 +134,7 @@ def check_missing_expected_states(content: str, fp: Path) -> list[dict]:
 # React analysis
 # ---------------------------------------------------------------------------
 
+
 def analyze_react(content: str, fp: Path) -> list[dict]:
     """Analyze React/TSX/JSX files for state anti-patterns."""
     issues = []
@@ -301,6 +302,7 @@ def analyze_react(content: str, fp: Path) -> list[dict]:
 # Vue analysis
 # ---------------------------------------------------------------------------
 
+
 def analyze_vue(content: str, fp: Path) -> list[dict]:
     """Analyze Vue SFC files for state anti-patterns."""
     issues = []
@@ -429,6 +431,7 @@ def analyze_vue(content: str, fp: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Svelte analysis
 # ---------------------------------------------------------------------------
+
 
 def analyze_svelte(content: str, fp: Path) -> list[dict]:
     """Analyze Svelte files for state anti-patterns."""
@@ -589,6 +592,7 @@ def analyze_svelte(content: str, fp: Path) -> list[dict]:
 # Context provider/consumer analysis (cross-file via filename heuristics)
 # ---------------------------------------------------------------------------
 
+
 def analyze_context_providers(files: list[Path]) -> list[dict]:
     """Scan for context providers without consumers in the project."""
     issues = []
@@ -649,6 +653,7 @@ def analyze_context_providers(files: list[Path]) -> list[dict]:
 # Generic missing loading / error state scan (all file types)
 # ---------------------------------------------------------------------------
 
+
 def analyze_missing_async_patterns(files: list[Path]) -> list[dict]:
     """Scan all files for components with async ops missing loading/error states."""
     issues = []
@@ -704,6 +709,7 @@ def analyze_missing_async_patterns(files: list[Path]) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Scanning dispatcher
 # ---------------------------------------------------------------------------
+
 
 def analyze_file(fp: Path, content: str) -> list[dict]:
     """Dispatch to the appropriate analyzer based on file extension."""
@@ -803,6 +809,7 @@ def print_report(all_issues: list[dict]) -> None:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

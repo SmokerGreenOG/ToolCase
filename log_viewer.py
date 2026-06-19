@@ -78,6 +78,7 @@ CRASH_FILE_PATTERNS = [
 # Error pattern definitions
 # ---------------------------------------------------------------------------
 
+
 class ErrorPattern:
     """Describes a type of error to detect in log files."""
 
@@ -326,6 +327,7 @@ TIMESTAMP_PATTERNS = [
 # Log file discovery
 # ---------------------------------------------------------------------------
 
+
 def discover_log_files(root: Path) -> list[Path]:
     """Discover all relevant log files in the project."""
     found: list[Path] = []
@@ -385,6 +387,7 @@ def discover_log_files(root: Path) -> list[Path]:
 # ---------------------------------------------------------------------------
 # Error scanning
 # ---------------------------------------------------------------------------
+
 
 def scan_file_for_errors(file_path: Path) -> list[dict]:
     """Scan a single file for all known error patterns."""
@@ -526,6 +529,7 @@ def categorize_and_summarize(errors: list[dict]) -> dict:
 # Output formatting
 # ---------------------------------------------------------------------------
 
+
 def print_report(stats: dict, root: Path) -> None:
     """Print a formatted error summary report."""
     total = stats["total_errors"]
@@ -604,6 +608,7 @@ def print_report(stats: dict, root: Path) -> None:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

@@ -60,6 +60,7 @@ SECTIONS = ["Added", "Fixed", "Changed", "Security", "Removed"]
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _clean_title(line: str) -> str:
     """Strip common prefixes like 'feat:', 'fix:', trailing punctuation."""
     line = re.sub(r'^[\w-]+(\s*\([\w.-]+\))?\s*:\s*', '', line, flags=re.IGNORECASE)
@@ -155,6 +156,7 @@ def _categorise_line(line: str) -> str:
 # Changelog data structure
 # ---------------------------------------------------------------------------
 
+
 class Changelog:
     """Holds items per section and renders to text or JSON."""
 
@@ -210,6 +212,7 @@ class Changelog:
 # ---------------------------------------------------------------------------
 # Source parsers
 # ---------------------------------------------------------------------------
+
 
 def parse_git_log(revision_range: str = "HEAD", cwd: Optional[Path] = None) -> Changelog:
     """Parse ``git log`` output using conventional-commit format."""
@@ -427,6 +430,7 @@ def parse_stdin() -> Changelog:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     """Build and parse argument parser."""

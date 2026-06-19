@@ -91,6 +91,8 @@ def _c(text: str, code: str = "") -> str:
 # === DATA CLASSES ===
 
 @dataclass
+
+
 class MetricSnapshot:
     file: str = ""
     syntax_ok: bool = True
@@ -123,6 +125,8 @@ class MetricSnapshot:
 
 
 @dataclass
+
+
 class ImprovementAttempt:
     cycle: int = 0
     category: str = ""
@@ -141,6 +145,8 @@ class ImprovementAttempt:
 
 
 @dataclass
+
+
 class LearnedPattern:
     pattern_id: str = ""
     category: str = ""
@@ -160,6 +166,8 @@ class LearnedPattern:
 
 
 @dataclass
+
+
 class CycleReport:
     cycle: int = 0
     focus: str = "all"
@@ -197,6 +205,7 @@ class CycleReport:
 
 
 # === IMPROVEMENT MEMORY ===
+
 
 class ImprovementMemory:
     """Leert van elke cyclus en wordt slimmer."""
@@ -302,6 +311,7 @@ class ImprovementMemory:
 
 # === SELF ANALYZER ===
 
+
 class SelfAnalyzer:
     """Meet eigen codekwaliteit."""
 
@@ -397,6 +407,7 @@ class SelfAnalyzer:
 
 # === IMPROVEMENT PLANNER ===
 
+
 class ImprovementPlanner:
     def __init__(self, memory: ImprovementMemory, focus: str = "all"):
         self.memory = memory
@@ -462,6 +473,7 @@ class ImprovementPlanner:
 
 # === IMPROVEMENT EXECUTOR ===
 
+
 class ImprovementExecutor:
     def __init__(self, workspace: Path):
         self.workspace = workspace
@@ -488,28 +500,67 @@ class ImprovementExecutor:
         return False
 
     def apply_e501_fix(self, filepath: Path) -> tuple[bool, str]:
+        """Fix long lines safely using AST to avoid breaking strings."""
         try:
             content = filepath.read_text(encoding="utf-8", errors="replace")
             original = content
             lines = content.splitlines()
+
+            # Use AST to find string literal line ranges
+            string_lines: set[int] = set()
+            try:
+                tree = ast.parse(content)
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                        if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                            for ln in range(node.lineno, node.end_lineno + 1):
+                                string_lines.add(ln)
+                    elif isinstance(node, ast.JoinedStr):  # f-strings
+                        if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                            for ln in range(node.lineno, node.end_lineno + 1):
+                                string_lines.add(ln)
+            except SyntaxError:
+                pass  # Can't parse, skip AST-based filtering
+
             new_lines = []
             fixed = 0
-            for line in lines:
-                if len(line) > 100:
+            for i, line in enumerate(lines):
+                line_no = i + 1
+                stripped = line.rstrip()
+                if len(stripped) <= 100 or line_no in string_lines:
+                    new_lines.append(line)
+                    continue
+
+                # Try to find a safe break point (after comma or operator)
+                best_break = -1
+                for bp in [90, 80, 70]:
+                    idx = stripped.rfind(", ", 0, bp)
+                    if idx > 20:
+                        best_break = idx + 1  # After the comma
+                        break
+                if best_break < 0:
+                    idx = stripped.rfind(" ", 70, 90)
+                    if idx > 20:
+                        best_break = idx
+
+                if best_break > 20:
                     indent = len(line) - len(line.lstrip())
-                    prefix = " " * indent
-                    # Try wrapping at the last space before 90 chars
-                    bp = line.rfind(" ", 80, 95)
-                    if bp > indent:
-                        new_lines.append(line[:bp])
-                        new_lines.append(prefix + line[bp:].strip())
-                        fixed += 1
-                    else:
-                        new_lines.append(line)
+                    prefix_sp = " " * indent
+                    new_lines.append(stripped[:best_break].rstrip())
+                    new_lines.append(prefix_sp + stripped[best_break:].strip())
+                    fixed += 1
                 else:
                     new_lines.append(line)
+
             new_content = "\n".join(new_lines)
+            if not new_content.endswith("\n"):
+                new_content += "\n"
             if new_content != original and fixed > 0:
+                # Verify it still compiles
+                try:
+                    ast.parse(new_content)
+                except SyntaxError:
+                    return False, "Syntax error na fix — teruggedraaid"
                 filepath.write_text(new_content, encoding="utf-8")
                 return True, f"E501: {fixed} lange regels gewrapped"
             return False, "Geen E501 fixes nodig"
@@ -548,6 +599,7 @@ class ImprovementExecutor:
 
 # === EVALUATOR ===
 
+
 class Evaluator:
     def __init__(self, workspace: Path):
         self.workspace = workspace
@@ -555,7 +607,7 @@ class Evaluator:
     def compile_check(self) -> tuple[bool, list[str]]:
         errors = []
         for pyfile in sorted(self.workspace.rglob("*.py")):
-            if any(p.startswith(".") or p.name == "__pycache__"
+            if any(p.startswith(".") or p == "__pycache__"
                    for p in pyfile.parts):
                 continue
             try:
@@ -595,6 +647,7 @@ class Evaluator:
 
 
 # === RECURSIVE LOOP ===
+
 
 class RecursiveSelfImprove:
     """Main RSI loop -- elke cyclus wordt slimmer."""
@@ -805,6 +858,7 @@ class RecursiveSelfImprove:
 
 
 # === MAIN CLI ===
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

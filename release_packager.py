@@ -84,7 +84,9 @@ RELEASE_DIR_NAME = "release"
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _run(cmd: list[str], cwd: Path, timeout: int = 300, check: bool = False) -> subprocess.CompletedProcess:
+
+def _run(cmd: list[str], cwd: Path, timeout: int = 300,
+check: bool = False) -> subprocess.CompletedProcess:
     """Run a subprocess and return the result."""
     try:
         return subprocess.run(
@@ -159,6 +161,7 @@ def _print_step(step: str, status: str = "") -> None:
 # 1. Preflight checks
 # ---------------------------------------------------------------------------
 
+
 def run_preflight_checks(root: Path) -> list[dict]:
     """Run preflight health checks before building release."""
     issues = []
@@ -197,6 +200,7 @@ def run_preflight_checks(root: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # 2. Security check — block if .env or API keys found
 # ---------------------------------------------------------------------------
+
 
 def check_env_and_secrets(root: Path) -> list[dict]:
     """Check for .env files and hardcoded secrets. Blocking if found."""
@@ -276,6 +280,7 @@ def check_env_and_secrets(root: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # 3. Package metadata check
 # ---------------------------------------------------------------------------
+
 
 def check_metadata(root: Path) -> tuple[dict, list[dict]]:
     """Extract package metadata (name, version) from common config files. Blocking if missing."""
@@ -370,6 +375,7 @@ def check_metadata(root: Path) -> tuple[dict, list[dict]]:
 # 4. Run tests
 # ---------------------------------------------------------------------------
 
+
 def run_tests(root: Path) -> list[dict]:
     """Auto-detect and run tests. Blocking if tests fail."""
     issues = []
@@ -448,6 +454,7 @@ def run_tests(root: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # 5. Run build
 # ---------------------------------------------------------------------------
+
 
 def run_build(root: Path, version_override: str | None = None) -> list[dict]:
     """Auto-detect and run build. Blocking if build fails."""
@@ -528,6 +535,7 @@ def run_build(root: Path, version_override: str | None = None) -> list[dict]:
 # 6. Clean temporary files
 # ---------------------------------------------------------------------------
 
+
 def clean_temp_files(root: Path) -> int:
     """Remove temporary/build artifacts. Returns count of cleaned items."""
     cleaned = 0
@@ -583,7 +591,9 @@ def clean_temp_files(root: Path) -> int:
 # 7. Create release folder
 # ---------------------------------------------------------------------------
 
-def create_release_folder(root: Path, metadata: dict, version_override: str | None = None) -> Path | None:
+
+def create_release_folder(root: Path, metadata: dict,
+version_override: str | None = None) -> Path | None:
     """Create a timestamped release folder. Returns the path or None on failure."""
     name = metadata.get("name", "project")
     version = version_override or metadata.get("version", "0.0.0")
@@ -607,7 +617,9 @@ def create_release_folder(root: Path, metadata: dict, version_override: str | No
 # 8. Generate changelog
 # ---------------------------------------------------------------------------
 
-def create_changelog(root: Path, release_path: Path, metadata: dict, version_override: str | None = None) -> Path | None:
+
+def create_changelog(root: Path, release_path: Path, metadata: dict,
+version_override: str | None = None) -> Path | None:
     """Generate a CHANGELOG.md from git history. Returns path or None."""
     version = version_override or metadata.get("version", "0.0.0")
     name = metadata.get("name", "Project")
@@ -670,7 +682,9 @@ def create_changelog(root: Path, release_path: Path, metadata: dict, version_ove
 # 9. Generate install instructions
 # ---------------------------------------------------------------------------
 
-def create_install_instructions(release_path: Path, metadata: dict, version_override: str | None = None) -> Path | None:
+
+def create_install_instructions(release_path: Path, metadata: dict,
+version_override: str | None = None) -> Path | None:
     """Generate INSTALL.md with setup instructions. Returns path or None."""
     version = version_override or metadata.get("version", "0.0.0")
     name = metadata.get("name", "Project")
@@ -774,7 +788,9 @@ def create_install_instructions(release_path: Path, metadata: dict, version_over
 # 10. Create release zip
 # ---------------------------------------------------------------------------
 
-def create_release_zip(root: Path, release_path: Path, metadata: dict, version_override: str | None = None) -> Path | None:
+
+def create_release_zip(root: Path, release_path: Path, metadata: dict,
+version_override: str | None = None) -> Path | None:
     """Copy project files into release folder and create a zip archive."""
     version = version_override or metadata.get("version", "0.0.0")
     name = metadata.get("name", "project")
@@ -845,6 +861,7 @@ def _human_size(size_bytes: int) -> str:
 # ---------------------------------------------------------------------------
 # Report & output
 # ---------------------------------------------------------------------------
+
 
 def format_report(
     preflight: list[dict],
@@ -964,6 +981,7 @@ def print_report(report: dict) -> None:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def build_arg_parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
