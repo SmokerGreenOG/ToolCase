@@ -1,25 +1,26 @@
 ---
 name: toolcase-self-improve
-description: "ToolCase v3.0 — 35 tools, self_improve_loop.py, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
-version: 3.0.0
+description: "ToolCase v5.0 — 46 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
+version: 5.0.0
 author: SmokerGreenOG
 metadata:
   hermes:
-    tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit]
+    tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit, rsi, recursive]
 ---
 
-# ToolCase v3.0 — Self-Improvement Skill
+# ToolCase v5.0 — Self-Improvement Skill
 
 ## Overview
 
-ToolCase is a **35-tool code analysis and improvement toolkit** in `D:\ToolCase\`.  
+ToolCase is a **46-tool code analysis and improvement toolkit**.  
 Use this skill when the user wants to **audit, improve, or self-heal** their codebase.
 
 **Key files:**
 | File | Purpose |
 |------|---------|
-| `improve.py` | Main orchestrator — dispatches all 35 tools |
-| `self_improve_loop.py` | **NEW** — 13-step autonomous improvement loop |
+| `recursive_self_improve.py` | **RSI** — recursive self-improvement with learning memory |
+| `self_improve_loop.py` | 13-step autonomous improvement loop |
+| `improve.py` | Main orchestrator — dispatches all 46 tools |
 | `i18n.py` | Translations (EN/NL/DE) |
 | `tools_config.json` | Central config — 35 tools, 8 categories, 10 rules |
 | `dashboard.html` | Web dashboard |
