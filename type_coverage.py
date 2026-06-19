@@ -54,8 +54,10 @@ def analyze_file(filepath: Path) -> dict:
                 return_types += 1
 
             if typed_params < func_params or not node.returns:
-                typed_functions = typed_functions + 1 if (typed_params == func_params and node.returns) else typed_functions
-                untyped.append(node.name)
+                if typed_params == func_params and node.returns:
+                    typed_functions += 1
+                else:
+                    untyped.append(node.name)
             else:
                 typed_functions += 1
 

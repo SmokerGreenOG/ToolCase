@@ -143,7 +143,7 @@ HARDCODED_DATA_EXPORT = re.compile(
     re.IGNORECASE,
 )
 
-# backend call placeholders / TODO stubs
+# Check for placeholders / stubs in backend calls
 TODO_BACKEND_CALL = re.compile(
     r'(?:'
     r'(?://|#|<!--|/\*)\s*TODO\s*:?\s*(?:connect|implement|add|replace)\s*(?:to|with|the)?\s*(?:backend|api|real|actual)\s*'

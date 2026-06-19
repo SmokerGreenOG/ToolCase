@@ -56,12 +56,14 @@ MAX_INPUT_LENGTH = 10_000
 # Each pattern is a (compiled_regex, label, explain_fn) tuple.
 # explain_fn(text, match) -> dict with keys: problem, cause, fix (list), related (list)
 
+
 def _make_fix(*steps: str) -> list[str]:
     """Numbered fix steps."""
     return [f"{i}. {s}" for i, s in enumerate(steps, 1)]
 
 
 # ── Python module/import errors ──────────────────────────────────────────
+
 
 def _explain_modulenotfound(text: str, m: re.Match) -> dict[str, Any]:
     mod = m.group(1)
@@ -95,6 +97,7 @@ def _explain_importerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 # ── Python syntax / runtime errors ───────────────────────────────────────
+
 
 def _explain_syntaxerror(text: str, m: re.Match) -> dict[str, Any]:
     # Two patterns: one with line number, one without
@@ -283,6 +286,7 @@ _ERRNO_KNOWN = {
 
 # ── npm / Node.js errors ─────────────────────────────────────────────────
 
+
 def _explain_npm_install(text: str, m: re.Match) -> dict[str, Any]:
     return {
         "problem": "npm install failed — could not resolve or fetch dependencies.",
@@ -317,6 +321,7 @@ def _explain_npm_errcode(text: str, m: re.Match) -> dict[str, Any]:
 
 
 # ── Git errors ───────────────────────────────────────────────────────────
+
 
 def _explain_git_notrepo(text: str, m: re.Match) -> dict[str, Any]:
     return {
@@ -474,6 +479,7 @@ def _explain_ts_error(text: str, m: re.Match) -> dict[str, Any]:
 
 # ── Rust errors ──────────────────────────────────────────────────────────
 
+
 def _explain_rust_panic(text: str, m: re.Match) -> dict[str, Any]:
     msg = m.group(1) or "(no message)"
     return {
@@ -511,6 +517,7 @@ def _explain_rust_compile(text: str, m: re.Match) -> dict[str, Any]:
 
 
 # ── JSON / YAML parse errors ─────────────────────────────────────────────
+
 
 def _explain_json_parse(text: str, m: re.Match) -> dict[str, Any]:
     detail = m.group(1) or "invalid JSON"
@@ -610,6 +617,7 @@ _NETWORK_KNOWN: dict[str, dict[str, Any]] = {
 
 # ── Docker errors ────────────────────────────────────────────────────────
 
+
 def _explain_docker_daemon(text: str, m: re.Match) -> dict[str, Any]:
     return {
         "problem": "Cannot connect to the Docker daemon.",
@@ -642,6 +650,7 @@ def _explain_docker_conflict(text: str, m: re.Match) -> dict[str, Any]:
 
 
 # ── Generic fallback ─────────────────────────────────────────────────────
+
 
 def _explain_generic(text: str) -> dict[str, Any]:
     """Fallback when no pattern matches."""
@@ -841,6 +850,7 @@ PATTERNS: list[tuple[re.Pattern, str, Any]] = [
 # Core logic
 # ---------------------------------------------------------------------------
 
+
 def explain_error(text: str) -> dict[str, Any]:
     """Analyse an error message and return an explanation dict.
 
@@ -878,6 +888,7 @@ def explain_error(text: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(

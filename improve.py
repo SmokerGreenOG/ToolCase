@@ -224,7 +224,7 @@ def lint_check(filepath: str) -> list[str]:
             if stripped != stripped.rstrip():
                 issues.append(f"  {i:4d} | W291: Trailing whitespace")
 
-            # Zoek naar TODO/FIXME/HACK — alleen in comments, niet in code-strings
+            # Check for comment markers — only in comments, not in code-strings
             is_lint_self = (
                 "re." in stripped
                 or "TODO|FIXME|HACK" in stripped

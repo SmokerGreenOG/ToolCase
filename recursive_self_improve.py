@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """
 recursive_self_improve.py — Recursive Self-Improvement System (RSI).
 
@@ -33,8 +34,6 @@ Focus modes:
     security     -- Security patterns verbeteren
 """
 __maker__ = "SmokerGreenOG"
-
-from __future__ import annotations
 
 import _protect
 import argparse
@@ -109,9 +108,9 @@ class MetricSnapshot:
     todos: int = 0
     dead_imports: int = 0
     security_issues: int = 0
-
     def quality_score(self) -> float:
-        issues = 0
+        """Overall quality 0.0-1.0. Strings-docstrings excluded from E501."""
+        issues = 0.0
         if not self.syntax_ok:
             issues += 100
         issues += self.e501_count * 0.5
@@ -119,8 +118,8 @@ class MetricSnapshot:
         issues += self.todos * 1.0
         issues += self.dead_imports * 3.0
         issues += self.security_issues * 5.0
-        max_issues = max(1, issues)
-        return max(0.0, 1.0 - (issues / (issues + 50)))
+        denom = issues + 50.0
+        return max(0.0, 1.0 - (issues / denom)) if denom > 0 else 1.0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -350,8 +349,20 @@ class SelfAnalyzer:
         except Exception:
             return m
 
-        for line in content.splitlines():
-            if len(line) > 100:
+        # Build set of lines that are inside string literals
+        string_lines: set[int] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                    for ln in range(node.lineno, node.end_lineno + 1):
+                        string_lines.add(ln)
+            elif isinstance(node, ast.JoinedStr):
+                if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                    for ln in range(node.lineno, node.end_lineno + 1):
+                        string_lines.add(ln)
+
+        for i, line in enumerate(content.splitlines()):
+            if len(line) > 100 and (i + 1) not in string_lines:
                 m.e501_count += 1
 
         lines = content.splitlines()
@@ -378,7 +389,12 @@ class SelfAnalyzer:
                                                  ast.AsyncFor, ast.AsyncWith)))
                 m.complexity_score += branches
 
-        m.todos = len(re.findall(r'(?:TODO|FIXME|HACK|BUG|XXX)', content))
+        # Count marker comments only (skip regex patterns in strings)
+        m.todos = 0
+        for i, line in enumerate(content.splitlines()):
+            stripped = line.strip()
+            if stripped.startswith("#") and re.search(r'(?:TODO|FIXME|HACK|BUG|XXX)', stripped):
+                m.todos += 1
         return m
 
     def scan_all(self) -> list[MetricSnapshot]:

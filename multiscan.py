@@ -131,7 +131,7 @@ def check_ts(filepath: Path, max_line: int) -> tuple:
         if stripped != stripped.rstrip():
             issues.append(f"  {i:4d} | Trailing whitespace")
 
-        # TODO / FIXME in comments
+        # Check for markers in comments
         comment_match = re.search(r"(//|/\*|#).*?(TODO|FIXME|HACK|XXX)", stripped)
         if comment_match:
             issues.append(f"  {i:4d} | NOTE: Contains '{comment_match.group(2)}'")
@@ -175,7 +175,7 @@ def check_rust(filepath: Path, max_line: int) -> tuple:
         if stripped != stripped.rstrip():
             issues.append(f"  {i:4d} | Trailing whitespace")
 
-        # TODO / FIXME / HACK / XXX in comments
+        # Check for markers in comments
         comment_match = re.search(r"(//|/\*|#).*?(TODO|FIXME|HACK|XXX)", stripped)
         if comment_match:
             issues.append(f"  {i:4d} | NOTE: Contains '{comment_match.group(2)}'")
