@@ -256,7 +256,7 @@ ToolCase v5.0/
 
 | Metric | Value |
 |--------|-------|
-| Tools | 52 |
+| Tools | 43 |
 | Categories | 10 |
 | Unit tests | 66/66 ✅ |
 | RSI quality | 100% |
