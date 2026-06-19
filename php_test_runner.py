@@ -18,7 +18,6 @@ __maker__ = "SmokerGreenOG"
 import _protect
 import argparse
 import json
-import re
 import shutil
 import subprocess
 import sys

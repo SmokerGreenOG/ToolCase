@@ -23,7 +23,6 @@ import re
 import shutil
 import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 
 COMPOSER = shutil.which("composer") or shutil.which("composer.phar")

@@ -20,7 +20,6 @@ import argparse
 import json
 import re
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", ".venv", "venv", "dist", "build", ".cache"}
