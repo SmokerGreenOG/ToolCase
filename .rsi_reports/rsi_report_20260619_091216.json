@@ -1,0 +1,18 @@
+[
+  {
+    "cycle": 1,
+    "focus": "all",
+    "duration_s": 0.5,
+    "files_analyzed": 49,
+    "quality_before": 0.932,
+    "quality_after": 0.932,
+    "improvement": 0.0,
+    "attempted": 20,
+    "succeeded": 0,
+    "failed": 0,
+    "patterns_used": 0,
+    "patterns_learned": 0,
+    "status": "completed",
+    "errors": []
+  }
+]
