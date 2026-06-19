@@ -1,0 +1,88 @@
+{
+  "name": "toolcase-self-improve",
+  "version": "3.0.0",
+  "author": "SmokerGreenOG",
+  "description": "ToolCase v3.0 — 35 tools, self-improvement loop, 10 safety rules, EN/NL/DE i18n",
+  "hermes": {
+    "skill_type": "workflow",
+    "tags": ["toolcase", "self-improvement", "code-quality", "automation", "safety-first"],
+    "trigger_conditions": [
+      "User asks to check/improve code quality",
+      "User mentions ToolCase, improve.py, or self-improve",
+      "User wants an automated code audit",
+      "User wants a security scan of their project",
+      "User asks for a full project health check"
+    ],
+    "entry_points": {
+      "self_improve_loop": {
+        "script": "self_improve_loop.py",
+        "command": "python self_improve_loop.py [--cycles N] [--target PATH] [--dry-run] [--json]",
+        "description": "Full 13-step self-improvement loop"
+      },
+      "improve": {
+        "script": "improve.py",
+        "command": "python improve.py <file> [--list-tools] [--lang en|nl|de]",
+        "description": "Main orchestrator — all 35 tools"
+      }
+    },
+    "safety_rules": [
+      "Never modify files without backup",
+      "Never read or print .env, API keys or secrets",
+      "Never run destructive commands",
+      "Never write outside workspace",
+      "Never delete files without explicit approval",
+      "Never modify config files without file_guard.py",
+      "Never run terminal commands without command_guard.py",
+      "Never apply a patch without patch_preview.py",
+      "Never continue if tests/build get worse",
+      "If an improvement fails: rollback immediately"
+    ]
+  },
+  "tools": [
+    {"id": 1, "name": "improve", "script": "improve.py", "type": "Scan", "risk": "Low", "desc": "Python syntax + lint (lange regels, trailing whitespace, TODO/FIXME)"},
+    {"id": 2, "name": "multiscan", "script": "multiscan.py", "type": "Scan", "risk": "Low", "desc": "Multi-language scan (.py/.ts/.tsx/.rs)"},
+    {"id": 3, "name": "complexity", "script": "complexity.py", "type": "Analyze", "risk": "Low", "desc": "Cyclomatic complexity & cognitive load"},
+    {"id": 4, "name": "depgraph", "script": "depgraph.py", "type": "Analyze", "risk": "Low", "desc": "Import/export dependency graph + circular deps"},
+    {"id": 5, "name": "patch_preview", "script": "patch_preview.py", "type": "Patch", "risk": "Low", "desc": "Diff preview before applying patches"},
+    {"id": 6, "name": "dead_code", "script": "dead_code_finder.py", "type": "Analyze", "risk": "Low", "desc": "Unused imports, dead functions, commented-out code"},
+    {"id": 7, "name": "security_scan", "script": "security_scan.py", "type": "Scan", "risk": "Low", "desc": "Hardcoded secrets, API keys, eval/exec, SQL injection"},
+    {"id": 8, "name": "env_check", "script": "env_check.py", "type": "Scan", "risk": "Low", "desc": ".env check, missing variables, .env.example"},
+    {"id": 9, "name": "dependency_audit", "script": "dependency_audit.py", "type": "Analyze", "risk": "Low", "desc": "Python/Node/Rust dependency audit"},
+    {"id": 10, "name": "project_doctor", "script": "project_doctor.py", "type": "Analyze", "risk": "Low", "desc": "Project structure, init.py, git, naming conventions"},
+    {"id": 11, "name": "workspace_index", "script": "workspace_indexer.py", "type": "Index", "risk": "Low", "desc": "Index by language, detect duplicates, glob patterns"},
+    {"id": 12, "name": "test_runner", "script": "test_runner.py", "type": "Execute", "risk": "Medium", "desc": "Discover + run tests (pytest, vitest, jest, cargo)"},
+    {"id": 13, "name": "agent_memory", "script": "agent_memory.py", "type": "Memory", "risk": "Low", "desc": "Hermes config, skills, plugins, cron"},
+    {"id": 14, "name": "route_scanner", "script": "route_scanner.py", "type": "Scan", "risk": "Low", "desc": "Frontend routes, orphaned pages"},
+    {"id": 15, "name": "fe_be_linker", "script": "frontend_backend_linker.py", "type": "Analyze", "risk": "Low", "desc": "Cross-reference API endpoints"},
+    {"id": 16, "name": "ui_consistency", "script": "ui_consistency.py", "type": "Analyze", "risk": "Low", "desc": "CSS vars vs hardcoded hex, naming conventions"},
+    {"id": 17, "name": "feature_gap", "script": "feature_gap_analyzer.py", "type": "Analyze", "risk": "Low", "desc": "Missing error/loading/validation states"},
+    {"id": 18, "name": "todo_tracker", "script": "todo_tracker.py", "type": "Scan", "risk": "Low", "desc": "TODO/FIXME/HACK/XXX/BUG marker scan (comment-only)"},
+    {"id": 19, "name": "rollback", "script": "rollback.py", "type": "Restore", "risk": "High", "desc": ".bak backup restoration"},
+    {"id": 20, "name": "command_guard", "script": "command_guard.py", "type": "Guard", "risk": "Medium", "desc": "Terminal command safety checker"},
+    {"id": 21, "name": "file_guard", "script": "file_guard.py", "type": "Guard", "risk": "High", "desc": "Protect .env, package.json, config files"},
+    {"id": 22, "name": "permission_audit", "script": "permission_audit.py", "type": "Guard", "risk": "Low", "desc": "Agent permissions check"},
+    {"id": 23, "name": "api_contract", "script": "api_contract_checker.py", "type": "Analyze", "risk": "Low", "desc": "Frontend-backend API contract mismatch detection"},
+    {"id": 24, "name": "fake_ui", "script": "fake_ui_detector.py", "type": "Analyze", "risk": "Low", "desc": "Demo/fake UI detection (mock data, placeholder routes)"},
+    {"id": 25, "name": "button_scan", "script": "button_action_scanner.py", "type": "Scan", "risk": "Low", "desc": "Buttons/forms/menus without real actions"},
+    {"id": 26, "name": "state_inspect", "script": "state_inspector.py", "type": "Analyze", "risk": "Low", "desc": "React/Vue/Svelte state usage analysis"},
+    {"id": 27, "name": "build_doctor", "script": "build_doctor.py", "type": "Execute", "risk": "Medium", "desc": "Build diagnostics (npm, vite, tsc, Python)"},
+    {"id": 28, "name": "log_viewer", "script": "log_viewer.py", "type": "Analyze", "risk": "Low", "desc": "Log file scanner + error summary"},
+    {"id": 29, "name": "error_explainer", "script": "error_explainer.py", "type": "Analyze", "risk": "Low", "desc": "Error message → explanation + fix (30+ patterns)"},
+    {"id": 30, "name": "release_packager", "script": "release_packager.py", "type": "Release", "risk": "Medium", "desc": "Preflight + build + zip + changelog"},
+    {"id": 31, "name": "changelog", "script": "changelog_generator.py", "type": "Analyze", "risk": "Low", "desc": "Generate CHANGELOG.md from git log or patches"},
+    {"id": 32, "name": "backup_manager", "script": "backup_manager.py", "type": "Backup", "risk": "High", "desc": "Timestamped snapshots, restore, diff viewer"},
+    {"id": 33, "name": "docs_sync", "script": "docs_sync.py", "type": "Analyze", "risk": "Low", "desc": "Check README/docs match actual code"},
+    {"id": 34, "name": "skill_installer", "script": "skill_installer.py", "type": "Skill", "risk": "Medium", "desc": "Install + validate Hermes/Sabine skills"},
+    {"id": 35, "name": "self_improve_loop", "script": "self_improve_loop.py", "type": "Workflow", "risk": "Medium", "desc": "13-step autonomous self-improvement loop with 10 safety rules"}
+  ],
+  "categories": [
+    {"name": "Analyse & Code Quality", "icon": "🔍", "tools": [1,2,3,4,5,6,35]},
+    {"name": "Security & Environment", "icon": "🔒", "tools": [7,8,9]},
+    {"name": "Project Health", "icon": "🏗️", "tools": [10,11,12,13]},
+    {"name": "Frontend & Backend", "icon": "🌐", "tools": [14,15,16,17,18]},
+    {"name": "Agent Safety", "icon": "🛡️", "tools": [20,21,22]},
+    {"name": "Frontend QA", "icon": "🎭", "tools": [23,24,25,26]},
+    {"name": "Build & Release", "icon": "🚀", "tools": [27,28,29,30,31]},
+    {"name": "Lifecycle", "icon": "♻️", "tools": [19,32,33,34]}
+  ]
+}

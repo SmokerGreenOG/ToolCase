@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.bak
+*.orig
+*.rej
+
+# Virtual environments
+.venv/
+venv/
+env/
+.venv*/
+venv*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build
+build/
+dist/
+*.egg-info/
+release/
+
+# ToolCase generated state
+.backups/
+.self_improve_reports/
+
+# Node (for test_runner)
+node_modules/
+
+# Temp leftovers from fixers
+_fix_*.py

@@ -1,0 +1,470 @@
+{
+  "__meta": {
+    "version": "3.0.0",
+    "maker": "SmokerGreenOG",
+    "description": "ToolCase — Code Improvement Toolkit configuratie",
+    "last_updated": "2026-06-10"
+  },
+  "categories": [
+    {
+      "id": "analyse-code-quality",
+      "name": "Analyse & Code Quality",
+      "icon": "🔍",
+      "description": "Statische analyse, linting, complexiteit en dependency visualisatie",
+      "tools": ["improve.py", "multiscan.py", "complexity.py", "depgraph.py", "patch_preview.py", "dead_code_finder.py", "self_improve_loop.py"]
+    },
+    {
+      "id": "security-environment",
+      "name": "Security & Environment",
+      "icon": "🛡️",
+      "description": "Security scanning, environment checks en dependency auditing",
+      "tools": ["security_scan.py", "env_check.py", "dependency_audit.py", "permission_audit.py"]
+    },
+    {
+      "id": "project-health",
+      "name": "Project Health & Diagnostics",
+      "icon": "🩺",
+      "description": "Projectstructuur, workspace index, test runner en error diagnostics",
+      "tools": ["project_doctor.py", "workspace_indexer.py", "test_runner.py", "agent_memory.py", "log_viewer.py", "error_explainer.py"]
+    },
+    {
+      "id": "frontend-backend-ui",
+      "name": "Frontend/Backend & UI",
+      "icon": "🎨",
+      "description": "Frontend/backend contract checking, UI consistentie en state analysis",
+      "tools": ["route_scanner.py", "frontend_backend_linker.py", "api_contract_checker.py", "ui_consistency.py", "feature_gap_analyzer.py", "button_action_scanner.py", "state_inspector.py", "fake_ui_detector.py"]
+    },
+    {
+      "id": "agent-safety",
+      "name": "Agent Safety",
+      "icon": "🔒",
+      "description": "Command guards, file protection, permission audits en backup management",
+      "tools": ["command_guard.py", "file_guard.py", "permission_audit.py", "patch_preview.py", "backup_manager.py"]
+    },
+    {
+      "id": "lifecycle-recovery",
+      "name": "Lifecycle & Recovery",
+      "icon": "🔄",
+      "description": "Rollbacks, TODO tracking, backups en documentation sync",
+      "tools": ["rollback.py", "todo_tracker.py", "backup_manager.py", "docs_sync.py"]
+    },
+    {
+      "id": "build-test-release",
+      "name": "Build, Test & Release",
+      "icon": "📦",
+      "description": "Build diagnostics, test execution, release packaging en changelogs",
+      "tools": ["build_doctor.py", "test_runner.py", "release_packager.py", "changelog_generator.py", "dependency_audit.py"]
+    },
+    {
+      "id": "skills-memory",
+      "name": "Skills & Memory",
+      "icon": "🧠",
+      "description": "Agent state, skill management en workspace indexing",
+      "tools": ["agent_memory.py", "skill_installer.py", "workspace_indexer.py"]
+    }
+  ],
+  "tools": [
+    {
+      "id": 1,
+      "name": "improve.py",
+      "type": "Scan",
+      "risk": "Low",
+      "tags": ["Core", "Python"],
+      "description": "Syntax check + lint (lange regels, trailing whitespace, TODO/FIXME markers)",
+      "command": "python improve.py <file>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 2,
+      "name": "multiscan.py",
+      "type": "Scan",
+      "risk": "Low",
+      "tags": ["Core", "Python", "Node"],
+      "description": "Multi-language scanner voor Python, TypeScript, TSX en Rust bestanden",
+      "command": "python improve.py --multiscan <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 3,
+      "name": "complexity.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Core", "Python"],
+      "description": "Meet cyclomatic complexity, cognitive load en te grote functies",
+      "command": "python improve.py --complexity <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 4,
+      "name": "depgraph.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Python"],
+      "description": "Visualiseer imports/exports, dependency graph en circular dependencies",
+      "command": "python improve.py --depgraph <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 5,
+      "name": "patch_preview.py",
+      "type": "Patch",
+      "risk": "Low",
+      "tags": ["Core", "Safe", "Read-only"],
+      "description": "Toon diff preview voordat een patch wordt toegepast",
+      "command": "python improve.py --patch-preview <file>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 6,
+      "name": "dead_code_finder.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Core", "Python"],
+      "description": "Vind ongebruikte imports, ongebruikte functies en commented-out codeblokken",
+      "command": "python improve.py --dead-code <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 7,
+      "name": "security_scan.py",
+      "type": "Scan",
+      "risk": "Low",
+      "tags": ["Core", "Safe", "Security", "Read-only"],
+      "description": "Detecteer hardcoded API keys, tokens, passwords, private keys, eval/exec, SQL injection en shell injection risico's",
+      "command": "python improve.py --security-scan <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 8,
+      "name": "env_check.py",
+      "type": "Scan",
+      "risk": "Low",
+      "tags": ["Core", "Security", "Read-only"],
+      "description": "Controleer .env, ontbrekende variabelen, gegenereerde .env.example en cross-reference met code",
+      "command": "python improve.py --env-check <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 9,
+      "name": "dependency_audit.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Core", "Security", "Read-only"],
+      "description": "Audit Python/Node/Rust dependencies op kwetsbaarheden, unpinned versions en verdachte packages",
+      "command": "python improve.py --dep-audit <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 10,
+      "name": "project_doctor.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Core", "Python"],
+      "description": "Diagnoseer projectstructuur, ontbrekende __init__.py, lege directories, naming conventions, git status en grote bestanden",
+      "command": "python improve.py --project-doctor <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 11,
+      "name": "workspace_indexer.py",
+      "type": "Index",
+      "risk": "Low",
+      "tags": ["Core", "Python"],
+      "description": "Indexeer workspace per taal/grootte, vind duplicaten, glob search en ASCII tree",
+      "command": "python improve.py --workspace-index <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 12,
+      "name": "test_runner.py",
+      "type": "Execute",
+      "risk": "Medium",
+      "tags": ["Core", "Build", "Terminal", "Needs Approval"],
+      "description": "Discover en run tests zoals pytest, unittest, vitest, jest en cargo test",
+      "command": "python improve.py --test-runner <path>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 13,
+      "name": "agent_memory.py",
+      "type": "Memory",
+      "risk": "Low",
+      "tags": ["Experimental", "Memory"],
+      "description": "Toon en beheer Hermes agent state: config, providers, profiles, skills, plugins, memory en cron",
+      "command": "python improve.py --agent-memory <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 14,
+      "name": "route_scanner.py",
+      "type": "Scan",
+      "risk": "Low",
+      "tags": ["Core", "Frontend", "Read-only"],
+      "description": "Scan frontend routes in React/TS/Next.js projecten en vind ongebruikte routes of orphaned pages",
+      "command": "python improve.py --route-scanner <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 15,
+      "name": "frontend_backend_linker.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Core", "Frontend", "Backend", "Read-only"],
+      "description": "Cross-reference frontend API calls met backend endpoint definitions en vind orphans, method mismatches en param mismatches",
+      "command": "python improve.py --fe-be-link <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 16,
+      "name": "ui_consistency.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Frontend", "Read-only"],
+      "description": "Check UI consistentie: CSS vars vs hardcoded hex, naming conventions en inline class styling ratio",
+      "command": "python improve.py --ui-consistency <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 17,
+      "name": "feature_gap_analyzer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Frontend", "Backend", "Read-only"],
+      "description": "Vind feature gaps tussen frontend en backend: missing error handling, loading states en validation",
+      "command": "python improve.py --feature-gap <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 18,
+      "name": "rollback.py",
+      "type": "Restore",
+      "risk": "High",
+      "tags": ["Core", "Recovery", "Filesystem", "Writes Files", "Needs Approval"],
+      "description": "Herstel .bak backups: list, restore enkel/alle en toon inhoud met safety checks",
+      "command": "python improve.py --rollback <action> <target>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 19,
+      "name": "todo_tracker.py",
+      "type": "Scan",
+      "risk": "Low",
+      "tags": ["Core", "Python", "Read-only"],
+      "description": "Scan TODO/FIXME/HACK/XXX/BUG met assignees, prioriteiten en per-file report",
+      "command": "python improve.py --todo-tracker <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 20,
+      "name": "command_guard.py",
+      "type": "Guard",
+      "risk": "Medium",
+      "tags": ["Core", "Security", "Terminal", "Needs Approval"],
+      "description": "Controleert terminal commands voordat de agent ze mag uitvoeren. Detecteert/blokkeert rm -rf, del /s, format, curl|sh, wget|sh, powershell download execute en gevaarlijke chmod/chown",
+      "command": "python tools/command_guard.py <command>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 21,
+      "name": "file_guard.py",
+      "type": "Guard",
+      "risk": "High",
+      "tags": ["Core", "Security", "Filesystem", "Writes Files", "Needs Approval"],
+      "description": "Beschermt belangrijke bestanden (.env, package.json, config) tegen overschrijven. Laat diff zien, vraagt approval en blokkeert mass-edit/delete operaties",
+      "command": "python tools/file_guard.py <file>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 22,
+      "name": "permission_audit.py",
+      "type": "Guard",
+      "risk": "Low",
+      "tags": ["Security", "Read-only", "Core"],
+      "description": "Controleert welke rechten de agent heeft: lezen, schrijven, terminal, dependencies, .env lezen, internet, buiten workspace schrijven",
+      "command": "python tools/permission_audit.py",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 23,
+      "name": "api_contract_checker.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Core", "Frontend", "Backend", "Read-only"],
+      "description": "Controleert of frontend API calls overeenkomen met backend endpoints: endpoint path, HTTP method, request body, response field mismatches en ontbrekende error/loading handling",
+      "command": "python tools/api_contract_checker.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 24,
+      "name": "fake_ui_detector.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Core", "Frontend", "Backend", "Read-only"],
+      "description": "Detecteert of een app alleen demo/fake UI toont: hardcoded files, mock project tree, demo responses, placeholder routes, buttons zonder echte actie, fake terminal output",
+      "command": "python tools/fake_ui_detector.py --frontend <path> --backend <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 25,
+      "name": "button_action_scanner.py",
+      "type": "Scan",
+      "risk": "Low",
+      "tags": ["Frontend", "UI", "Read-only"],
+      "description": "Zoekt knoppen, forms en menu-items die geen echte actie hebben: buttons zonder onClick, lege onClick, forms zonder submit, disabled buttons zonder reden, href='#'",
+      "command": "python tools/button_action_scanner.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 26,
+      "name": "state_inspector.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Frontend", "Read-only"],
+      "description": "Analyseert React/Vue/Svelte state usage: useState die nooit verandert, useEffect zonder dependency sanity, unused state/props, ontbrekende loading/error state",
+      "command": "python tools/state_inspector.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 27,
+      "name": "build_doctor.py",
+      "type": "Execute",
+      "risk": "Medium",
+      "tags": ["Core", "Build", "Terminal", "Needs Approval"],
+      "description": "Diagnostiek voor buildproblemen: npm run build, vite build, tsc --noEmit, Python import errors, missing imports, verkeerde tsconfig/alias paden, broken package scripts",
+      "command": "python tools/build_doctor.py --npm <path>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 28,
+      "name": "log_viewer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Read-only", "Debug"],
+      "description": "Vindt logs en vat errors samen: scant logs/, *.log, npm-debug.log, tracebacks, backend errors, crash reports",
+      "command": "python tools/log_viewer.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 29,
+      "name": "error_explainer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Debug", "Read-only"],
+      "description": "Pakt een error/traceback en vertaalt die naar normale uitleg plus fix suggestions",
+      "command": "python tools/error_explainer.py <error_message>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 30,
+      "name": "release_packager.py",
+      "type": "Release",
+      "risk": "Medium",
+      "tags": ["Build", "Release", "Filesystem", "Needs Approval"],
+      "description": "Maakt een release package: preflight checks, tests/build run, .env guard, release folder, zip, changelog, install instructies. Blokkeert als .env/API keys gevonden zijn of build/tests falen",
+      "command": "python tools/release_packager.py <path>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 31,
+      "name": "changelog_generator.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Release", "Read-only"],
+      "description": "Maakt automatisch een changelog uit git diff, patches of tool reports (Added/Fixed/Changed/Security/Removed format)",
+      "command": "python tools/changelog_generator.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 32,
+      "name": "backup_manager.py",
+      "type": "Backup",
+      "risk": "High",
+      "tags": ["Core", "Recovery", "Filesystem", "Writes Files", "Needs Approval"],
+      "description": "Beheert snapshots en backups: maak snapshot voor patches, bewaar vorige versies, backup history, diff, restore per bestand of volledige snapshot",
+      "command": "python tools/backup_manager.py <action> <target>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 33,
+      "name": "docs_sync.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Docs", "Read-only"],
+      "description": "Controleert of README/docs overeenkomen met echte code: terminal support claims, feature claims, install instructies en ontbrekende/oude documentatie",
+      "command": "python tools/docs_sync.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 34,
+      "name": "skill_installer.py",
+      "type": "Skill",
+      "risk": "Medium",
+      "tags": ["Skill", "Filesystem", "Needs Approval"],
+      "description": "Installeert en valideert Hermes/Sabine skills: folder structuur, metadata, commands/prompts, permissions, tool dependencies en registry updates",
+      "command": "python tools/skill_installer.py <skill_name>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 35,
+      "name": "self_improve_loop.py",
+      "type": "Workflow",
+      "risk": "Medium",
+      "tags": ["Core", "Automation", "Safety", "Needs Approval"],
+      "description": "13-step autonome self-improvement loop met dry-run, safe-only, apply, test en rollback checks",
+      "command": "python self_improve_loop.py <path> [--dry-run] [--cycles N] [--json]",
+      "read_only": false,
+      "needs_approval": true
+    }
+  ],
+  "ignored_dirs": [
+    "node_modules", ".git", "dist", "build", ".next", "out",
+    "coverage", ".venv", "venv", "__pycache__", ".pytest_cache",
+    ".cache", ".backups", ".self_improve_reports", "release"
+  ],
+  "safety_rules": [
+    "Geen destructieve actie zonder backup",
+    "Geen terminal command zonder command_guard.py",
+    "Geen wijziging aan .env, package.json of config files zonder file_guard.py",
+    "Geen patch toepassen zonder patch_preview.py",
+    "Geen release maken als security_scan.py API keys vindt",
+    "Geen release maken als build_doctor.py faalt",
+    "Geen restore zonder duidelijke bevestiging",
+    "Geen schrijven buiten de gekozen workspace",
+    "Geen verwijderen van bestanden zonder approval",
+    "Geen verborgen wijzigingen — altijd diff tonen"
+  ]
+}
