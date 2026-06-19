@@ -8,7 +8,7 @@
 [![Quality](https://img.shields.io/badge/quality-100%25-brightgreen?style=flat-square)]()
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **50 tools · 10 categories · 10 safety rules · 100% RSI quality score**  
+> **43 tools · 10 categories · 10 safety rules · 100% RSI quality score**  
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)  
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -18,7 +18,7 @@
 
 **ToolCase** is a portable, production-ready code improvement toolkit designed for **AI agents** (Hermes, Claude Code, Codex) and **developers**.
 
-It gives you **50 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, recursive self-improvement, and AI prompt optimization.
+It gives you **43 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, recursive self-improvement, and AI prompt optimization.
 
 **Zero external dependencies. Python 3.11+ only.** Runs on Windows, macOS, and Linux.
 
@@ -27,7 +27,7 @@ It gives you **50 tools** across 10 categories — from static analysis and secu
 ## 🖥️ Quick Start
 
 ```bash
-# 1. Browse all 50 tools
+# 1. Browse all 43 tools
 python improve.py --list-tools
 
 # 2. Full project audit (all tools)
@@ -104,7 +104,7 @@ hermes -s toolcase-self-improve
 ### 🔍 Code Quality (9)
 | Tool | Description |
 |------|-------------|
-| `improve.py` | Main dispatcher — syntax + lint for all 50 tools |
+| `improve.py` | Main dispatcher — syntax + lint for all 43 tools |
 | `multiscan.py` | Multi-language scan (.py/.ts/.tsx/.rs) |
 | `complexity.py` | Cyclomatic complexity & cognitive load |
 | `depgraph.py` | Import/export dependency graph + circular deps |
@@ -241,7 +241,7 @@ ToolCase v5.0/
 ├── _protect.py                # Maker signature protection
 ├── install_toolcase.bat       # Windows installer
 ├── LICENSE                    # MIT
-├── *.py                       # 46 tool scripts
+├── *.py                       # 43 tool scripts
 ├── tests/
 │   ├── test_*.py              # 66 unit tests (8 modules)
 │   └── __init__.py
@@ -256,14 +256,14 @@ ToolCase v5.0/
 
 | Metric | Value |
 |--------|-------|
-| Tools | 50 |
+| Tools | 52 |
 | Categories | 10 |
 | Unit tests | 66/66 ✅ |
 | RSI quality | 100% |
 | Syntax errors | 0 |
 | Security HIGH/MEDIUM | 0 |
 | E501 fixable | 0 |
-| License compliance | 54/54 |
+| License compliance | 43/43 |
 | Git commits | 13 |
 | Python files | 59 |
 | Lines of code | 26,000+ |

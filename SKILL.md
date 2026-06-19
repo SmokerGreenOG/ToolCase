@@ -20,7 +20,7 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 |------|---------|
 | `recursive_self_improve.py` | **RSI** — recursive self-improvement with learning memory |
 | `self_improve_loop.py` | 13-step autonomous improvement loop |
-| `improve.py` | Main orchestrator — dispatches all 50 tools |
+| `improve.py` | Main orchestrator — dispatches all 43 tools |
 | `i18n.py` | Translations (EN/NL/DE) |
 | `tools_config.json` | Central config — 43 tools, 8 categories, 10 rules |
 | `dashboard.html` | Web dashboard |
