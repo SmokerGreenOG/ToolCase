@@ -496,6 +496,21 @@ Voorbeelden:
     parser.add_argument("--php-check", metavar="PATH",
                         help="Scan: PHP code quality & security checker")
 
+    parser.add_argument("--php-complexity", metavar="PATH",
+                        help="Analyze: PHP cyclomatic complexity")
+    parser.add_argument("--php-depgraph", metavar="PATH",
+                        help="Analyze: PHP dependency graph")
+    parser.add_argument("--php-dead-code", metavar="PATH",
+                        help="Analyze: PHP dead code finder")
+    parser.add_argument("--php-config-audit", metavar="PATH",
+                        help="Security: PHP config audit (php.ini, .env, .htaccess)")
+    parser.add_argument("--php-version-audit", metavar="PATH",
+                        help="Compat: PHP version compatibility check")
+    parser.add_argument("--php-test-runner", metavar="PATH",
+                        help="Execute: PHP test runner (PHPUnit/Pest)")
+    parser.add_argument("--php-dep-audit", metavar="PATH",
+                        help="Security: Composer dependency auditor")
+
     # Nieuwe tool: self_improve_loop.py (35e tool)
     parser.add_argument("--self-improve", action="store_true",
                         help="♻️  Self-improve: 13-step autonome verbeteringsloop")
@@ -552,6 +567,9 @@ Voorbeelden:
         args.error_explain, args.release_package, args.changelog,
         args.backup_mgr, args.docs_sync, args.skill_install,
         args.php_check,
+        args.php_complexity, args.php_depgraph, args.php_dead_code,
+        args.php_config_audit, args.php_version_audit,
+        args.php_test_runner, args.php_dep_audit,
         args.self_improve,
     ]
 
@@ -659,6 +677,13 @@ Voorbeelden:
         ("docs_sync", "docs_sync.py", False),
         ("skill_install", "skill_installer.py", False),
         ("php_check", "php_checker.py", False),
+        ("php_complexity", "php_complexity.py", False),
+        ("php_depgraph", "php_depgraph.py", False),
+        ("php_dead_code", "php_dead_code.py", False),
+        ("php_config_audit", "php_config_audit.py", False),
+        ("php_version_audit", "php_version_audit.py", False),
+        ("php_test_runner", "php_test_runner.py", False),
+        ("php_dep_audit", "php_dep_audit.py", False),
     ]
     for arg_name, script_name, is_flag in new_tools:
         val = getattr(args, arg_name, None)
@@ -680,6 +705,13 @@ Voorbeelden:
                 "docs_sync": "📚 DOCS SYNC",
                 "skill_install": "🧩 SKILL INSTALLER",
                 "php_check": "🐘 PHP CHECKER",
+                "php_complexity": "📏 PHP COMPLEXITY",
+                "php_depgraph": "🔗 PHP DEPGRAPH",
+                "php_dead_code": "💀 PHP DEAD CODE",
+                "php_config_audit": "⚙ PHP CONFIG AUDIT",
+                "php_version_audit": "📅 PHP VERSION AUDIT",
+                "php_test_runner": "🧪 PHP TEST RUNNER",
+                "php_dep_audit": "📦 PHP DEP AUDIT",
             }
             title = icon_map.get(arg_name, script_name.replace('.py', '').upper())
             print(f"\n{'='*60}\n {title}\n{'='*60}")

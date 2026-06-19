@@ -1,6 +1,6 @@
 # ⚡ ToolCase v5.0 — AI Agent Code Toolkit
 
-[![Version](https://img.shields.io/badge/version-5.0.1-7C3AED?style=flat-square)]()
+[![Version](https://img.shields.io/badge/version-5.1.0-7C3AED?style=flat-square)]()
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)]()
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)]()
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
@@ -8,7 +8,7 @@
 [![Quality](https://img.shields.io/badge/quality-100%25-brightgreen?style=flat-square)]()
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **47 tools · 10 categories · 10 safety rules · 100% RSI quality score**  
+> **50 tools · 10 categories · 10 safety rules · 100% RSI quality score**  
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)  
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -18,7 +18,7 @@
 
 **ToolCase** is a portable, production-ready code improvement toolkit designed for **AI agents** (Hermes, Claude Code, Codex) and **developers**.
 
-It gives you **47 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, recursive self-improvement, and AI prompt optimization.
+It gives you **50 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, recursive self-improvement, and AI prompt optimization.
 
 **Zero external dependencies. Python 3.11+ only.** Runs on Windows, macOS, and Linux.
 
@@ -27,7 +27,7 @@ It gives you **47 tools** across 10 categories — from static analysis and secu
 ## 🖥️ Quick Start
 
 ```bash
-# 1. Browse all 47 tools
+# 1. Browse all 50 tools
 python improve.py --list-tools
 
 # 2. Full project audit (all tools)
@@ -104,7 +104,7 @@ hermes -s toolcase-self-improve
 ### 🔍 Code Quality (9)
 | Tool | Description |
 |------|-------------|
-| `improve.py` | Main dispatcher — syntax + lint for all 47 tools |
+| `improve.py` | Main dispatcher — syntax + lint for all 50 tools |
 | `multiscan.py` | Multi-language scan (.py/.ts/.tsx/.rs) |
 | `complexity.py` | Cyclomatic complexity & cognitive load |
 | `depgraph.py` | Import/export dependency graph + circular deps |
@@ -121,7 +121,20 @@ hermes -s toolcase-self-improve
 | `env_check.py` | .env validation, missing variables |
 | `dependency_audit.py` | Python/Node/Rust dependency audit |
 | `license_checker.py` | Verifies `__maker__` + `_protect` in all tools |
-| `php_checker.py` | PHP code quality & security: syntax, SQL injection, XSS, file inclusion, command injection, eval, secrets |
+| `php_checker.py` | PHP code quality & security
+
+### 🐘 PHP Tools (8)
+| Tool | Description |
+|------|-------------|
+| `php_checker.py` | Code quality & security: syntax, SQL injection, XSS, file inclusion, secrets |
+| `php_complexity.py` | Cyclomatic complexity & cognitive load per function |
+| `php_depgraph.py` | Dependency graph: includes, namespaces, circular deps |
+| `php_dead_code.py` | Dead code: unused functions, empty funcs, commented-out blocks |
+| `php_config_audit.py` | Config audit: php.ini, .env, .htaccess, session security |
+| `php_version_audit.py` | Version compatibility: deprecated/removed for PHP 5.x-8.x |
+| `php_test_runner.py` | Test runner: PHPUnit/Pest discovery + execution |
+| `php_dep_audit.py` | Composer audit: vulnerabilities, outdated, licenses |
+: syntax, SQL injection, XSS, file inclusion, command injection, eval, secrets |
 
 ### 🩺 Project Health (5)
 | Tool | Description |
@@ -243,14 +256,14 @@ ToolCase v5.0/
 
 | Metric | Value |
 |--------|-------|
-| Tools | 47 |
+| Tools | 50 |
 | Categories | 10 |
 | Unit tests | 66/66 ✅ |
 | RSI quality | 100% |
 | Syntax errors | 0 |
 | Security HIGH/MEDIUM | 0 |
 | E501 fixable | 0 |
-| License compliance | 47/47 |
+| License compliance | 54/54 |
 | Git commits | 13 |
 | Python files | 59 |
 | Lines of code | 26,000+ |

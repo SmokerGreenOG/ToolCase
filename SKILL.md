@@ -1,6 +1,6 @@
 ---
 name: toolcase-self-improve
-description: "ToolCase v5.0 — 46 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
+description: "ToolCase v5.1 — 50 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
 version: 5.0.0
 author: SmokerGreenOG
 metadata:
@@ -8,11 +8,11 @@ metadata:
     tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit, rsi, recursive]
 ---
 
-# ToolCase v5.0 — Self-Improvement Skill
+# ToolCase v5.1 — Self-Improvement Skill
 
 ## Overview
 
-ToolCase is a **46-tool code analysis and improvement toolkit**.  
+ToolCase is a **50-tool code analysis and improvement toolkit**.  
 Use this skill when the user wants to **audit, improve, or self-heal** their codebase.
 
 **Key files:**
@@ -20,7 +20,7 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 |------|---------|
 | `recursive_self_improve.py` | **RSI** — recursive self-improvement with learning memory |
 | `self_improve_loop.py` | 13-step autonomous improvement loop |
-| `improve.py` | Main orchestrator — dispatches all 46 tools |
+| `improve.py` | Main orchestrator — dispatches all 50 tools |
 | `i18n.py` | Translations (EN/NL/DE) |
 | `tools_config.json` | Central config — 35 tools, 8 categories, 10 rules |
 | `dashboard.html` | Web dashboard |
@@ -59,6 +59,13 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 | "Check .env" | `env_check.py` | `python env_check.py check <path>` |
 | "Audit dependencies" | `dependency_audit.py` | `python dependency_audit.py <path>` |
 | "Check PHP security" | `php_checker.py` | `python php_checker.py <path> -r` |
+| "Check PHP complexity" | `php_complexity.py` | `python php_complexity.py <path> -r` |
+| "Show PHP dependencies" | `php_depgraph.py` | `python php_depgraph.py <path> -r` |
+| "Find PHP dead code" | `php_dead_code.py` | `python php_dead_code.py <path> -r` |
+| "Audit PHP config" | `php_config_audit.py` | `python php_config_audit.py <path>` |
+| "Check PHP version compat" | `php_version_audit.py` | `python php_version_audit.py <path> --target 8.1` |
+| "Run PHP tests" | `php_test_runner.py` | `python php_test_runner.py <path>` |
+| "Audit Composer deps" | `php_dep_audit.py` | `python php_dep_audit.py <path>` |
 
 ### 4. Project Health
 

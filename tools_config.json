@@ -1,6 +1,6 @@
 {
   "__meta": {
-    "version": "5.0.1",
+    "version": "5.1.0",
     "maker": "SmokerGreenOG",
     "description": "ToolCase — Code Improvement Toolkit configuratie",
     "last_updated": "2026-06-19"
@@ -19,7 +19,11 @@
         "patch_preview.py",
         "dead_code_finder.py",
         "self_improve_loop.py",
-        "php_checker.py"
+        "php_checker.py",
+        "php_complexity.py",
+        "php_depgraph.py",
+        "php_dead_code.py",
+        "php_version_audit.py"
       ]
     },
     {
@@ -32,7 +36,9 @@
         "env_check.py",
         "dependency_audit.py",
         "permission_audit.py",
-        "php_checker.py"
+        "php_checker.py",
+        "php_config_audit.py",
+        "php_dep_audit.py"
       ]
     },
     {
@@ -100,7 +106,8 @@
         "test_runner.py",
         "release_packager.py",
         "changelog_generator.py",
-        "dependency_audit.py"
+        "dependency_audit.py",
+        "php_test_runner.py"
       ]
     },
     {
@@ -657,6 +664,111 @@
       "command": "python improve.py --php-check <path>",
       "read_only": true,
       "needs_approval": false
+    },
+    {
+      "id": 37,
+      "name": "php_complexity.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": [
+        "Core",
+        "PHP",
+        "Read-only"
+      ],
+      "description": "PHP cyclomatic complexity & cognitive load analyzer per function/method",
+      "command": "python improve.py --php-complexity <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 38,
+      "name": "php_depgraph.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": [
+        "Core",
+        "PHP",
+        "Read-only"
+      ],
+      "description": "PHP dependency graph: include/require chains, namespaces, class refs, circular deps",
+      "command": "python improve.py --php-depgraph <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 39,
+      "name": "php_dead_code.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": [
+        "Core",
+        "PHP",
+        "Read-only"
+      ],
+      "description": "PHP dead code: unused functions/classes, empty functions, commented-out code",
+      "command": "python improve.py --php-dead-code <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 40,
+      "name": "php_config_audit.py",
+      "type": "Scan",
+      "risk": "Low",
+      "tags": [
+        "PHP",
+        "Security",
+        "Read-only"
+      ],
+      "description": "PHP config audit: php.ini, .env, .htaccess, display_errors, session security",
+      "command": "python improve.py --php-config-audit <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 41,
+      "name": "php_version_audit.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": [
+        "PHP",
+        "Read-only"
+      ],
+      "description": "PHP version compatibility: deprecated/removed functions for PHP 5.x-8.x",
+      "command": "python improve.py --php-version-audit <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 42,
+      "name": "php_test_runner.py",
+      "type": "Execute",
+      "risk": "Medium",
+      "tags": [
+        "PHP",
+        "Build",
+        "Terminal",
+        "Needs Approval"
+      ],
+      "description": "PHP test runner: discover + run PHPUnit/Pest tests with coverage",
+      "command": "python improve.py --php-test-runner <path>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 43,
+      "name": "php_dep_audit.py",
+      "type": "Execute",
+      "risk": "Medium",
+      "tags": [
+        "PHP",
+        "Security",
+        "Terminal"
+      ],
+      "description": "Composer dependency audit: vulnerabilities, outdated packages, license check",
+      "command": "python improve.py --php-dep-audit <path>",
+      "read_only": false,
+      "needs_approval": true
     }
   ],
   "ignored_dirs": [

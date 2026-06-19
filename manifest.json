@@ -1,6 +1,6 @@
 {
   "name": "toolcase-self-improve",
-  "version": "5.0.1",
+  "version": "5.1.0",
   "author": "SmokerGreenOG",
   "description": "ToolCase v3.0 — 35 tools, self-improvement loop, 10 safety rules, EN/NL/DE i18n",
   "hermes": {
@@ -332,6 +332,62 @@
       "type": "Scan",
       "risk": "Low",
       "desc": "PHP code quality & security: syntax (php -l), SQL injection, XSS, file inclusion, command injection, eval, hardcoded secrets, deprecated mysql_*, display_errors, short open tags"
+    },
+    {
+      "id": 37,
+      "name": "php_complexity",
+      "script": "php_complexity.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "PHP cyclomatic complexity & cognitive load per function/method"
+    },
+    {
+      "id": 38,
+      "name": "php_depgraph",
+      "script": "php_depgraph.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "PHP dependency graph: includes, namespaces, circular deps"
+    },
+    {
+      "id": 39,
+      "name": "php_dead_code",
+      "script": "php_dead_code.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "Dead code: unused functions, empty funcs, commented-out code"
+    },
+    {
+      "id": 40,
+      "name": "php_config_audit",
+      "script": "php_config_audit.py",
+      "type": "Scan",
+      "risk": "Low",
+      "desc": "Config audit: php.ini, .env, .htaccess, display_errors, session security"
+    },
+    {
+      "id": 41,
+      "name": "php_version_audit",
+      "script": "php_version_audit.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "Version compatibility: deprecated/removed functions PHP 5.x-8.x"
+    },
+    {
+      "id": 42,
+      "name": "php_test_runner",
+      "script": "php_test_runner.py",
+      "type": "Execute",
+      "risk": "Medium",
+      "desc": "Test runner: discover + run PHPUnit/Pest tests"
+    },
+    {
+      "id": 43,
+      "name": "php_dep_audit",
+      "script": "php_dep_audit.py",
+      "type": "Execute",
+      "risk": "Medium",
+      "desc": "Composer audit: vulnerabilities, outdated packages, licenses"
     }
   ],
   "categories": [
@@ -346,7 +402,11 @@
         5,
         6,
         35,
-        36
+        36,
+        37,
+        38,
+        39,
+        41
       ]
     },
     {
@@ -356,7 +416,9 @@
         7,
         8,
         9,
-        36
+        36,
+        40,
+        43
       ]
     },
     {
@@ -407,7 +469,8 @@
         28,
         29,
         30,
-        31
+        31,
+        42
       ]
     },
     {
