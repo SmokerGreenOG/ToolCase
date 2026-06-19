@@ -1,11 +1,11 @@
 ---
 name: toolcase-self-improve
-description: "ToolCase v5.1 — 50 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
-version: 5.0.0
+description: "ToolCase v5.1 — 43 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
+version: 5.1.0
 author: SmokerGreenOG
 metadata:
   hermes:
-    tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit, rsi, recursive]
+    tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit, rsi, recursive, php]
 ---
 
 # ToolCase v5.1 — Self-Improvement Skill

@@ -1,4 +1,4 @@
-# ⚡ ToolCase v5.0 — AI Agent Code Toolkit
+# ⚡ ToolCase v5.1 — AI Agent Code Toolkit
 
 [![Version](https://img.shields.io/badge/version-5.1.0-7C3AED?style=flat-square)]()
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)]()
