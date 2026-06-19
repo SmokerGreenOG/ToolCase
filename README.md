@@ -7,7 +7,7 @@
 [![Tests](https://img.shields.io/badge/tests-53%2F53-success?style=flat-square)]()
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **35 tools · 8 categories · 10 safety rules · 3 languages (EN/NL/DE)**  
+> **43 tools · 8 categories · 10 safety rules · 3 languages (EN/NL/DE)**  
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)  \
 > [![GitHub](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -28,7 +28,7 @@ It gives you **35 standalone tools** across 8 categories — from static analysi
 ## 🖥️ Quick Start
 
 ```bash
-# 1. Browse all 35 tools
+# 1. Browse all 43 tools
 python improve.py --list-tools
 
 # 2. Scan a file for issues
@@ -54,7 +54,7 @@ python -m http.server 8080 --directory .
 ```
 
 The dashboard features:
-- 📊 All 35 tools with risk levels, tags, and descriptions
+- 📊 All 43 tools with risk levels, tags, and descriptions
 - 🔍 Search by tool name, tag, or description
 - 🏷️ Filter by category, risk level, or tag
 - 🌍 Language toggle: **🇬🇧 English · 🇳🇱 Nederlands · 🇩🇪 Deutsch**
