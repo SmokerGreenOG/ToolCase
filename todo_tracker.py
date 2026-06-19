@@ -148,7 +148,10 @@ def scan_file(filepath: Path, base_path: Path = None) -> list[dict]:
 
             category = CATEGORIES.get(marker, "todo")
             try:
-                file_rel = filepath.relative_to(base_path) if base_path else filepath.relative_to(Path.cwd())
+                file_rel = (
+                    filepath.relative_to(base_path) if base_path
+                    else filepath.relative_to(Path.cwd())
+                )
             except ValueError:
                 file_rel = filepath
 

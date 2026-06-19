@@ -447,7 +447,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         ),
     )
 
-    source = parser.add_mutually_exclusive_group()
+    source = parser.add_mutually_exclusive_group(required=False)
     source.add_argument(
         "--git-log",
         metavar="RANGE",
@@ -508,9 +508,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     """Entry point. Returns exit code."""
     try:
         args = parse_args(argv)
-    except SystemExit:
-        # argparse sys.exit(2) — usage error
-        return EXIT_USAGE
+    except SystemExit as e:
+        # argparse exits: 0=success (--help/--version), 2=usage error
+        return 0 if e.code == 0 else EXIT_USAGE
 
     try:
         # Dispatch to the appropriate parser

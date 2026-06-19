@@ -682,7 +682,8 @@ Examples:
         try:
             since_dt = datetime.strptime(args.since, "%Y-%m-%d")
             # For date filtering, we'd need to extract timestamps from each error's context
-            # This is best-effort: we'll filter errors in files whose names/mtime suggest recent activity
+            # This is best-effort: filter errors in files whose
+            # names/mtime suggest recent activity
             filtered = []
             for err in all_errors:
                 fp = Path(err["file"])
