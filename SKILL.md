@@ -22,7 +22,7 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 | `self_improve_loop.py` | 13-step autonomous improvement loop |
 | `improve.py` | Main orchestrator — dispatches all 50 tools |
 | `i18n.py` | Translations (EN/NL/DE) |
-| `tools_config.json` | Central config — 35 tools, 8 categories, 10 rules |
+| `tools_config.json` | Central config — 43 tools, 8 categories, 10 rules |
 | `dashboard.html` | Web dashboard |
 | `_protect.py` | Maker attribution verification (SHA256) |
 | `manifest.json` | Hermes skill manifest |
@@ -105,6 +105,19 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 | "Make a release" | `release_packager.py` | `python release_packager.py <path>` |
 | "Generate changelog" | `changelog_generator.py` | `python changelog_generator.py --git-log HEAD~10..HEAD` |
 
+
+### 9. PHP Tools (8 tools)
+
+| If user says... | Use this tool | Example |
+|----------------|---------------|---------|
+| "Check PHP security" | `php_checker.py` | `python php_checker.py <path> -r` |
+| "Check PHP complexity" | `php_complexity.py` | `python php_complexity.py <path> -r` |
+| "Show PHP dependencies" | `php_depgraph.py` | `python php_depgraph.py <path> -r` |
+| "Find PHP dead code" | `php_dead_code.py` | `python php_dead_code.py <path> -r` |
+| "Audit PHP config" | `php_config_audit.py` | `python php_config_audit.py <path>` |
+| "Check PHP version compat" | `php_version_audit.py` | `python php_version_audit.py <path> --target 8.1` |
+| "Run PHP tests" | `php_test_runner.py` | `python php_test_runner.py <path>` |
+| "Audit Composer deps" | `php_dep_audit.py` | `python php_dep_audit.py <path>` |
 ### 8. Lifecycle
 
 | If user says... | Use this tool | Example |
@@ -178,7 +191,7 @@ These rules are **enforced in code** — never bypass them:
 
 ---
 
-## Full Tool Reference (35 tools)
+## Full Tool Reference (43 tools)
 
 ### Analyse & Code Quality (7)
 
