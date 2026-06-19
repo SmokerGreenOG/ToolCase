@@ -326,11 +326,11 @@ def print_test_report(test_info: list[dict], results: dict = None,
         else:
             print(f"   ❌ TESTS FAILED")
 
-        print(f"   ✅ Passed:  {results['passed']}")
-        print(f"   ❌ Failed:  {results['failed']}")
-        print(f"   ⏭  Skipped: {results['skipped']}")
-        print(f"   ⚠  Errors:  {results['errors']}")
-        print(f"   ⏱  Duration: {results['duration']:.1f}s")
+        print(f"   ✅ Passed:  {results.get('passed', results.get('success', 0))}")
+        print(f"   ❌ Failed:  {results.get('failed', 0)}")
+        print(f"   ⏭  Skipped: {results.get('skipped', 0)}")
+        print(f"   ⚠  Errors:  {results.get('errors', 0)}")
+        print(f"   ⏱  Duration: {results.get('duration', 0):.1f}s")
 
         if results.get("stdout"):
             # Show last relevant lines

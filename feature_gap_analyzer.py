@@ -238,13 +238,10 @@ def print_report(features: dict, gaps: list[dict],
         icon = "✅" if data["confidence"] > 0.5 else "🟡" if data["confidence"] > 0.2 else "⚪"
         fe = "FE" if data.get("has_frontend") else "  "
         be = "BE" if data.get("has_backend") else "  "
+        feature_title = feature.title() if isinstance(feature, str) else str(feature).title()
         print(
-            "   {icon} {feature.title():<15} [{fe}] [{be}]  "
-            "({data['unique_files']} files, {confidence_pct}%)"
-            .format(
-                icon=icon, feature=feature, fe=fe, be=be,
-                data=data, confidence_pct=confidence_pct
-            )
+            f"   {icon} {feature_title:<15} [{fe}] [{be}]  "
+            f"({data['unique_files']} files, {confidence_pct}%)"
         )
     print()
 
