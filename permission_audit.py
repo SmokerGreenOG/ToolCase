@@ -19,6 +19,7 @@ import datetime
 import json
 import sys
 import os
+from typing import Optional
 
 
 # ── Permission definitions ────────────────────────────────────────────────────
@@ -108,14 +109,14 @@ _STATUS_COLORS = {
 _RESET = "\033[0m"
 
 
-def _colorize(status):
+def _colorize(status: str) -> str:
     color = _STATUS_COLORS.get(status, "")
     if color and sys.stdout.isatty():
         return f"{color}{status}{_RESET}"
     return status
 
 
-def _icon(status):
+def _icon(status: str) -> str:
     icons = {
         "Allowed": "✓",
         "Requires Approval": "⚠",
@@ -125,7 +126,7 @@ def _icon(status):
     return icons.get(status, "?")
 
 
-def build_report(permissions, include_reason=False):
+def build_report(permissions: list[dict], include_reason: bool = False) -> list[dict]:
     """Build a list of dicts (one per permission)."""
     report = []
     for p in permissions:
@@ -141,7 +142,7 @@ def build_report(permissions, include_reason=False):
     return report
 
 
-def print_table(report):
+def print_table(report: list[dict]) -> None:
     """Print a human-readable table."""
     # Column widths
     label_w = max(len(e["label"]) for e in report) + 2
@@ -182,7 +183,7 @@ def print_table(report):
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
-def parse_args(argv=None):
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Agent Permission Auditor — simulate-check what the agent can do.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -201,7 +202,7 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-def main():
+def main() -> None:
     args = parse_args()
     report = build_report(PERMISSIONS, include_reason=args.json)
 

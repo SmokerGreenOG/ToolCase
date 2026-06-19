@@ -34,6 +34,8 @@ Focus modes:
 """
 __maker__ = "SmokerGreenOG"
 
+from __future__ import annotations
+
 import _protect
 import argparse
 import ast

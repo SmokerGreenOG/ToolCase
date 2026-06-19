@@ -12,6 +12,8 @@ Language codes: "en" (default), "nl" (Nederlands), "de" (Deutsch)
 Can be set via LANG env var: LANG=nl python improve.py ...
 """
 
+from __future__ import annotations
+
 __maker__ = "SmokerGreenOG"
 
 import _protect

@@ -13,6 +13,8 @@ Parses Python, TypeScript, and Rust source files to build a dependency
 graph. Supports depth-limited tree rendering, JSON output, external
 dependency listing, and circular dependency (cycle) detection.
 """
+from __future__ import annotations
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -463,7 +465,7 @@ def compute_stats(graph: dict, show_external: bool = False) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Import/export dependency graph for JS/TS/Python/Rust."
     )

@@ -26,6 +26,8 @@ Metrics per prompt:
     - Readability (Flesch-style: lengte + complexiteit)
     - Clarity: heeft het voorbeelden? Output format? Constraints?
 """
+from __future__ import annotations
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
