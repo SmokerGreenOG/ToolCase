@@ -58,6 +58,7 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 | "Scan for secrets" | `security_scan.py` | `python security_scan.py <path>` |
 | "Check .env" | `env_check.py` | `python env_check.py check <path>` |
 | "Audit dependencies" | `dependency_audit.py` | `python dependency_audit.py <path>` |
+| "Check PHP security" | `php_checker.py` | `python php_checker.py <path> -r` |
 
 ### 4. Project Health
 

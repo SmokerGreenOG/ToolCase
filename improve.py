@@ -493,6 +493,8 @@ Voorbeelden:
                         help="Analyze: check of README/docs kloppen met code")
     parser.add_argument("--skill-install", metavar="SKILL",
                         help="Skill: installeer en valideer Hermes/Sabine skill")
+    parser.add_argument("--php-check", metavar="PATH",
+                        help="Scan: PHP code quality & security checker")
 
     # Nieuwe tool: self_improve_loop.py (35e tool)
     parser.add_argument("--self-improve", action="store_true",
@@ -549,6 +551,7 @@ Voorbeelden:
         args.state_inspect, args.build_doctor, args.log_viewer,
         args.error_explain, args.release_package, args.changelog,
         args.backup_mgr, args.docs_sync, args.skill_install,
+        args.php_check,
         args.self_improve,
     ]
 
@@ -655,8 +658,8 @@ Voorbeelden:
         ("backup_mgr", "backup_manager.py", False),
         ("docs_sync", "docs_sync.py", False),
         ("skill_install", "skill_installer.py", False),
+        ("php_check", "php_checker.py", False),
     ]
-
     for arg_name, script_name, is_flag in new_tools:
         val = getattr(args, arg_name, None)
         if val:
@@ -676,6 +679,7 @@ Voorbeelden:
                 "backup_mgr": "💾 BACKUP MANAGER",
                 "docs_sync": "📚 DOCS SYNC",
                 "skill_install": "🧩 SKILL INSTALLER",
+                "php_check": "🐘 PHP CHECKER",
             }
             title = icon_map.get(arg_name, script_name.replace('.py', '').upper())
             print(f"\n{'='*60}\n {title}\n{'='*60}")
