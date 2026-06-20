@@ -1,8 +1,8 @@
 {
   "name": "toolcase-self-improve",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "author": "SmokerGreenOG",
-  "description": "ToolCase v5.1 — 53 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n",
+  "description": "ToolCase v5.2 — 53 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n",
   "hermes": {
     "skill_type": "workflow",
     "tags": [
