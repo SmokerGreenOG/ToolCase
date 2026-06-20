@@ -927,7 +927,8 @@ def main() -> None:
         if last_q > first_q:
             sys.exit(0)
         elif last_q == first_q:
-            sys.exit(1)
+            # Exit 0 when quality is already perfect (>= 0.999) — nothing to improve
+            sys.exit(0 if first_q >= 0.999 else 1)
         else:
             sys.exit(2)
 
