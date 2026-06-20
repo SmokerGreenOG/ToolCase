@@ -185,15 +185,15 @@ def audit_file(filepath: Path, target_version: str) -> dict:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except:
         return {"file": str(filepath), "findings": []}
-    
+
     findings = []
-    
+
     # Collect all removed/deprecated for versions up to target
     for version in VERSION_ORDER:
         if version > target_version:
             break
         info = DEPRECATED.get(version, {"removed": [], "deprecated": []})
-        
+
         # Check removed
         for func_name, replacement in info["removed"]:
             # Match function calls: func_name(
@@ -208,7 +208,7 @@ def audit_file(filepath: Path, target_version: str) -> dict:
                     "message": f"Removed in PHP {version}: {func_name}()",
                     "fix": replacement,
                 })
-        
+
         # Check deprecated
         for func_name, replacement in info["deprecated"]:
             pattern = re.compile(r'\b' + re.escape(func_name) + r'\s*\(')
@@ -222,7 +222,7 @@ def audit_file(filepath: Path, target_version: str) -> dict:
                     "message": f"Deprecated in PHP {version}: {func_name}()",
                     "fix": replacement,
                 })
-    
+
     return {"file": str(filepath), "findings": findings}
 
 
@@ -230,10 +230,10 @@ def print_report(results: list[dict], target_version: str) -> None:
     all_findings = []
     for r in results:
         all_findings.extend(r["findings"])
-    
+
     errors = sum(1 for f in all_findings if f["severity"] == "ERROR")
     warnings = sum(1 for f in all_findings if f["severity"] == "WARNING")
-    
+
     # Group by file
     for r in results:
         if not r["findings"]:
@@ -247,19 +247,19 @@ def print_report(results: list[dict], target_version: str) -> None:
             print(f"     {f['line']:4d} | [{tag}] {f['message']}")
             if f["fix"]:
                 print(f"          |        Fix: {f['fix']}")
-    
+
     print(f"\n{'=' * 70}")
     print(f" VERSION AUDIT (target: PHP {target_version})")
     print(f"{'=' * 70}")
     print(f"   Files: {len(results)}  |  ERRORS: {errors}  |  WARNINGS: {warnings}")
-    
+
     if errors == 0 and warnings == 0:
         print(f"   ✅ Fully compatible with PHP {target_version}")
     elif errors > 0:
         print(f"   ❌ {errors} functions removed in PHP {target_version} — must fix before upgrade")
     else:
         print(f"   ⚠ {warnings} deprecated — safe now, should fix for future PHP versions")
-    
+
     print()
 
 
@@ -267,7 +267,7 @@ def print_json(results: list[dict], target_version: str) -> None:
     all_findings = []
     for r in results:
         all_findings.extend(r["findings"])
-    
+
     output = {
         "target_php": target_version,
         "summary": {
@@ -287,22 +287,22 @@ def main():
     parser.add_argument("--target", default="8.1", help="Target PHP version (default: 8.1)")
     parser.add_argument("--json", "-j", action="store_true")
     parser.add_argument("--version", action="version", version="php_version_audit.py v1.0.0")
-    
+
     args = parser.parse_args()
     target_path = Path(args.path)
     if not target_path.exists():
         print(f"Not found", file=sys.stderr); sys.exit(1)
-    
+
     print(f"\n📅 PHP Version Audit v1.0.0 — target: PHP {args.target}")
     print(f"{'=' * 70}")
-    
+
     files = [target_path] if target_path.is_file() else (discover_php_files(target_path) if args.recursive else sorted(target_path.glob("*.php")))
     if not files:
         print("No PHP files"); sys.exit(0)
-    
+
     print(f"   {len(files)} PHP file(s)")
     results = [audit_file(f, args.target) for f in files]
-    
+
     if args.json:
         print_json(results, args.target)
     else:

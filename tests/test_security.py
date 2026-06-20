@@ -38,6 +38,18 @@ class TestSecurityScan(unittest.TestCase):
         self.assertGreater(len(findings), 0)
         self.assertTrue(any(f["risk"] == "HIGH" for f in findings))
 
+    def test_scan_respects_inline_suppression(self):
+        """Intentional examples can be suppressed without excluding a file."""
+        from security_scan import scan_file
+        from pathlib import Path
+        example = os.path.join(self.tmpdir, "example.py")
+        with open(example, "w", encoding="utf-8") as f:
+            f.write(
+                '# toolcase: ignore-security\n'
+                'API_KEY = "sk-example-value"\n'
+            )
+        self.assertEqual(scan_file(Path(example)), [])
+
     def test_scan_detects_eval(self):
         """A file with eval() should be flagged."""
         from security_scan import scan_file

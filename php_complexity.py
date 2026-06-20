@@ -19,6 +19,7 @@ import argparse
 import json
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 # ═══════════════════════════════════════════════════════════════════
@@ -98,7 +99,7 @@ def extract_functions(source: str) -> list[dict]:
     for match in FUNCTION_START.finditer(source):
         name = match.group(1)
         start = match.end()  # after the opening (
-        
+
         # Find the matching { by counting braces
         depth = 0
         body_start = -1
@@ -113,7 +114,7 @@ def extract_functions(source: str) -> list[dict]:
                 if depth == 0:
                     body_end = i
                     break
-        
+
         if body_start >= 0 and body_end >= 0:
             body = source[body_start:body_end]
             functions.append({
@@ -122,7 +123,7 @@ def extract_functions(source: str) -> list[dict]:
                 "body": body,
                 "type": "function",
             })
-    
+
     return functions
 
 
@@ -139,29 +140,29 @@ def compute_cognitive(body: str) -> float:
     score = 0.0
     lines = body.split('\n')
     nesting_depth = 0
-    
+
     for line in lines:
         stripped = line.strip()
         if not stripped or stripped.startswith('//') or stripped.startswith('#'):
             continue
-        
+
         # Track nesting for cognitive load
         opens = sum(1 for p in NESTING_PATTERNS if p.search(stripped))
         closes = stripped.count('}')
-        
+
         if opens > 0:
             nesting_depth += opens
-        
+
         if closes > 0:
             nesting_depth = max(0, nesting_depth - closes)
-        
+
         # Add nesting penalty
         score += nesting_depth * 0.25
-        
+
         # Add boolean penalty
         for bp in BOOLEAN_PATTERNS:
             score += len(bp.findall(stripped)) * 0.5
-    
+
     return round(score, 1)
 
 
@@ -171,16 +172,16 @@ def analyze_php_file(filepath: Path, threshold: int) -> dict:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except Exception as e:
         return {"file": str(filepath), "error": f"Cannot read: {e}", "functions": []}
-    
+
     line_count = source.count('\n')
     functions = extract_functions(source)
-    
+
     results = []
     for func in functions:
         mccabe = compute_mccabe(func["body"])
         cognitive = compute_cognitive(func["body"])
         status = "OK" if mccabe <= threshold else "WARN"
-        
+
         results.append({
             "name": func["name"],
             "line": func["line"],
@@ -189,13 +190,13 @@ def analyze_php_file(filepath: Path, threshold: int) -> dict:
             "cognitive": cognitive,
             "status": status,
         })
-    
+
     # Top 5 most complex
     by_mccabe = sorted(results, key=lambda f: f["mccabe"], reverse=True)[:5]
     avg_mccabe = round(sum(f["mccabe"] for f in results) / max(len(results), 1), 1)
     avg_cognitive = round(sum(f["cognitive"] for f in results) / max(len(results), 1), 1)
     warnings = sum(1 for f in results if f["mccabe"] > threshold)
-    
+
     return {
         "file": str(filepath),
         "lines": line_count,
@@ -231,20 +232,20 @@ def print_report(results: list[dict], threshold: int) -> None:
     total_files = len(results)
     total_funcs = sum(r.get("total_functions", 0) for r in results)
     total_warnings = sum(r.get("warnings", 0) for r in results)
-    
+
     # Collect all functions for global top 10
     all_funcs = []
     for r in results:
         for f in r.get("functions", []):
             all_funcs.append({"file": r["file"], **f})
     global_top10 = sorted(all_funcs, key=lambda f: f["mccabe"], reverse=True)[:10]
-    
+
     for report in results:
         filepath = report["file"]
         funcs = report.get("functions", [])
         top5 = report.get("top5", [])
         warnings = report.get("warnings", 0)
-        
+
         status = "⚠" if warnings > 0 else "✅"
         print(f"\n{'=' * 70}")
         print(f" {status} {filepath}")
@@ -252,7 +253,7 @@ def print_report(results: list[dict], threshold: int) -> None:
         print(f"   Lines: {report['lines']}  |  Functions: {report['total_functions']}")
         print(f"   Avg McCabe: {report['avg_mccabe']}  |  Avg Cognitive: {report['avg_cognitive']}")
         print(f"   Warnings (> {threshold}): {warnings}")
-        
+
         if top5:
             print(f"\n   Top 5 most complex:")
             for f in top5:
@@ -260,7 +261,7 @@ def print_report(results: list[dict], threshold: int) -> None:
                 print(f"     {f['name']:<30s} McCabe {f['mccabe']:3d}  Cog {f['cognitive']:5.1f}  {bar}  [{f['status']}]")
         else:
             print(f"   No functions found")
-    
+
     # Grand summary
     print(f"\n{'=' * 70}")
     print(f" PHP COMPLEXITY SUMMARY")
@@ -269,14 +270,14 @@ def print_report(results: list[dict], threshold: int) -> None:
     print(f"   Total functions:     {total_funcs}")
     print(f"   Avg McCabe:          {round(sum(f['mccabe'] for f in all_funcs) / max(len(all_funcs), 1), 1)}")
     print(f"   Warnings (> {threshold}):    {total_warnings}")
-    
+
     if global_top10:
         print(f"\n   Global Top 10 most complex:")
         for f in global_top10:
             fname = Path(f["file"]).name
             bar = "█" * min(f["mccabe"], 30)
             print(f"     {f['name']:<25s} McCabe {f['mccabe']:3d}  [{fname}] {bar}")
-    
+
     print()
 
 
@@ -286,9 +287,9 @@ def print_json(results: list[dict], threshold: int) -> None:
     for r in results:
         for f in r.get("functions", []):
             all_funcs.append({"file": r["file"], **f})
-    
+
     global_top10 = sorted(all_funcs, key=lambda f: f["mccabe"], reverse=True)[:10]
-    
+
     output = {
         "threshold": threshold,
         "summary": {
@@ -301,7 +302,7 @@ def print_json(results: list[dict], threshold: int) -> None:
         "global_top10": global_top10,
         "files": [],
     }
-    
+
     for report in results:
         output["files"].append({
             "file": report["file"],
@@ -313,7 +314,7 @@ def print_json(results: list[dict], threshold: int) -> None:
             "functions": report.get("functions", []),
             "top5": report.get("top5", []),
         })
-    
+
     print(json.dumps(output, indent=2, ensure_ascii=False))
 
 
@@ -332,18 +333,18 @@ def main() -> None:
     parser.add_argument("--threshold", "-t", type=int, default=DEFAULT_THRESHOLD,
                         help=f"McCabe warning threshold (default: {DEFAULT_THRESHOLD})")
     parser.add_argument("--version", action="version", version="php_complexity.py v1.0.0")
-    
+
     args = parser.parse_args()
     target = Path(args.path)
     if not target.exists():
         print(f"'{args.path}' does not exist", file=sys.stderr)
         sys.exit(1)
-    
+
     if not args.json:
         print(f"\n📏 PHP Complexity v1.0.0 — analyzing: {target}")
         print(f"   Threshold: McCabe > {args.threshold}")
         print(f"{'=' * 70}")
-    
+
     if target.is_file():
         if target.suffix != ".php":
             print(f"Not a .php file", file=sys.stderr)
@@ -358,7 +359,7 @@ def main() -> None:
         results = [analyze_php_file(f, args.threshold) for f in files]
     else:
         print(f"Not a file or directory", file=sys.stderr); sys.exit(1)
-    
+
     if args.json:
         print_json(results, args.threshold)
     else:

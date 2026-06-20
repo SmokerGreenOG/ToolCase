@@ -37,7 +37,8 @@ from pathlib import Path
 EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next", ".husky/_",
-    ".git2", ".svn", ".hg",
+    ".git2", ".svn", ".hg", ".backups", ".self_improve_reports",
+    ".rsi_reports", ".rsi_backups", ".pytest_cache", ".cache",
 })
 
 PYTHON_PACKAGE_MARKERS = {"__init__.py", "__init__.pyi"}
@@ -91,7 +92,11 @@ def diagnose_structure(root: Path) -> list[dict]:
             "fix": "mkdir tests",
         })
 
-    if has_tests and not has_src:
+    has_flat_sources = any(
+        path.name != "__init__.py" and not path.name.startswith("test_")
+        for path in root.glob("*.py")
+    )
+    if has_tests and not has_src and not has_flat_sources:
         issues.append({
             "severity": "INFO",
             "type": "structure",

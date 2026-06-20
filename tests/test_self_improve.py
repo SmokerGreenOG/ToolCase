@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -84,6 +85,38 @@ class TestSelfImproveCore(unittest.TestCase):
         from self_improve_loop import CycleReport
         r = CycleReport(cycle=1, mode="dry-run", focus="all", status="blocked")
         self.assertEqual(r.final_exit_code(), 4)
+
+    def test_file_inventory_is_not_reported_as_finding(self):
+        """A healthy source-file count is inventory, not an actionable finding."""
+        from self_improve_loop import CodeScanner
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "example.py").write_text("value = 1\n", encoding="utf-8")
+            scanner = CodeScanner(Path(tmp))
+            self.assertEqual(scanner.scan_files(), [])
+
+    def test_no_report_does_not_create_report_directory(self):
+        """--no-report should keep audited workspaces free of generated state."""
+        import tempfile
+        script = Path(__file__).resolve().parents[1] / "self_improve_loop.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(script),
+                    tmp,
+                    "--dry-run",
+                    "--json",
+                    "--no-report",
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=60,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertFalse((Path(tmp) / ".self_improve_reports").exists())
 
     def test_safety_manager_forbidden_commands(self):
         """SafetyManager should block rm -rf."""

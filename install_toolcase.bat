@@ -1,15 +1,15 @@
 @echo off
 REM =====================================================================
-REM  install_toolcase.bat — ToolCase v3.0 Installatie voor Windows
-REM  Installeert alle 35 tools, SKILL.md, manifest.json, en dashboard.
+REM  install_toolcase.bat — ToolCase v5.1 Installatie voor Windows
+REM  Valideert alle 53 tools, tests, SKILL.md, manifest.json en dashboard.
 REM  Maker: SmokerGreenOG
 REM =====================================================================
 setlocal enabledelayedexpansion
 
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
-echo ║      ToolCase v3.0 — Installatie voor Windows              ║
-echo ║      35 tools · 10 safety rules · self-improve loop        ║
+echo ║      ToolCase v5.1 — Installatie voor Windows              ║
+echo ║      53 tools · 10 safety rules · recursive improvement    ║
 echo ║      Maker: SmokerGreenOG                                  ║
 echo ╚══════════════════════════════════════════════════════════════╝
 echo.
@@ -96,7 +96,7 @@ python -c "from _protect import MAKER; print(f'   ✅ Maker: {MAKER}')"
 REM ── Quick functional test ────────────────────────────────────
 echo.
 echo 🔍 Running quick functional test...
-python "%TC_DIR%self_improve_loop.py" --cycles 1 --dry-run 2>&1 | findstr /C:"CYCLE" /C:"Status" /C:"completed"
+python "%TC_DIR%self_improve_loop.py" "%TC_DIR%" --cycles 1 --dry-run --json --no-report 2>&1 | findstr /C:"\"status\": \"passed\""
 if %ERRORLEVEL% equ 0 (
     echo ✅ self_improve_loop.py — dry run OK
 ) else (
@@ -123,21 +123,22 @@ if exist "%USERPROFILE%\.hermes\skills\" (
 REM ── Summary ──────────────────────────────────────────────────
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
-echo ║      ToolCase v3.0 — Installatie voltooid!                 ║
+echo ║      ToolCase v5.1 — Installatie voltooid!                 ║
 echo ╠══════════════════════════════════════════════════════════════╣
 echo ║  📍 %TC_DIR%                    ║
-echo ║  🛠  35 tools · 10 safety rules                              ║
+echo ║  🛠  53 tools · 10 safety rules                              ║
 echo ║  🌐  EN/NL/DE i18n                                            ║
 echo ║  ♻️  self_improve_loop.py — 13-step autonome workflow        ║
 echo ║                                                              ║
 echo ║  Quick start:                                                ║
-echo ║    python improve.py --list-tools          (toon 35 tools)   ║
+echo ║    python improve.py --list-tools          (toon 53 tools)   ║
 echo ║    python improve.py <bestand>             (check code)      ║
 echo ║    python self_improve_loop.py --dry-run   (dry run)         ║
 echo ║    python self_improve_loop.py --cycles 3  (auto-improve)    ║
 echo ║                                                              ║
 echo ║  Dashboard:                                                  ║
 echo ║    python -m http.server 8080 --directory "%TC_DIR%"          ║
+REM toolcase: ignore-security - expected local dashboard address
 echo ║    http://localhost:8080/dashboard.html                       ║
 echo ╚══════════════════════════════════════════════════════════════╝
 echo.

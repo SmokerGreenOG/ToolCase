@@ -28,7 +28,7 @@ Gebruik:
     python improve.py --depgraph <path>         # Dependency graph
     python improve.py --all <path>              # Alle tools tegelijk
 
-  Nieuwe ToolCase v3.0:
+  ToolCase v5.1:
     python improve.py --command-guard <cmd>      # Guard: command checker
     python improve.py --file-guard <path>        # Guard: file protection
     python improve.py --permission-audit         # Audit: agent perms
@@ -47,7 +47,7 @@ Gebruik:
     python improve.py --self-improve --target . --dry-run
 
   Extra:
-    python improve.py --list-tools               # Toon alle 35 tools
+    python improve.py --list-tools               # Toon alle 53 tools
     python improve.py --json-config              # Output tool config als JSON
     python improve.py --verify-install           # Controleer installatie
 
@@ -400,7 +400,7 @@ Voorbeelden:
   python improve.py src/ --recursive             # Hele directory
   python improve.py --code "def foo(): pass"     # Code snippet
   python improve.py --auto-fix script.py         # Analyseer + automatisch fixen
-  python improve.py --list-tools                 # Toon alle 35 tools
+  python improve.py --list-tools                 # Toon alle 53 tools
   python improve.py --json-config                # Output tool config als JSON
   python improve.py --verify-install             # Controleer installatie
         """,
@@ -412,7 +412,7 @@ Voorbeelden:
     parser.add_argument("--verbose", "-v", action="store_true", help="Uitgebreide uitvoer")
     parser.add_argument("--auto-fix", "-f", action="store_true",
                         help="Probeer automatisch te fixen")
-    parser.add_argument("--version", action="version", version="improve.py v3.0.0")
+    parser.add_argument("--version", action="version", version="improve.py v5.1.0")
     parser.add_argument("--list-tools", action="store_true",
                         help="Toon alle beschikbare tools in de ToolCase")
     parser.add_argument("--json-config", action="store_true",
@@ -462,7 +462,7 @@ Voorbeelden:
     parser.add_argument("--feature-gap", metavar="PATH",
                         help="Feature gap analyzer: vind frontend/backend gaten")
 
-    # Nieuwe ToolCase v3.0 tools
+    # ToolCase v5.1 tools
     parser.add_argument("--command-guard", metavar="CMD",
                         help="Guard: controleer terminal commands op veiligheid")
     parser.add_argument("--file-guard", metavar="FILE",
@@ -511,7 +511,7 @@ Voorbeelden:
     parser.add_argument("--php-dep-audit", metavar="PATH",
                         help="Security: Composer dependency auditor")
 
-    # Nieuwe tool: self_improve_loop.py (35e tool)
+    # Self-improvement workflow
     parser.add_argument("--self-improve", action="store_true",
                         help="♻️  Self-improve: 13-step autonome verbeteringsloop")
     parser.add_argument("--target", dest="self_target",
@@ -578,7 +578,7 @@ Voorbeelden:
         print("\n" + "=" * 60)
         print(t("hermes_hint", lang=lang))
         print("=" * 60)
-        print(f"\n{t('workflow_title', lang=lang, VERSION='3.0.0')}\n")
+        print(f"\n{t('workflow_title', lang=lang, VERSION='5.1.0')}\n")
         print(t("workflow_step1", lang=lang))
         print(t("workflow_step2", lang=lang))
         print(t("workflow_step3", lang=lang))
@@ -659,7 +659,7 @@ Voorbeelden:
         _run_script("rollback.py", action, target)
         return
 
-    # Nieuwe ToolCase v3.0 dispatcher
+    # ToolCase v5.1 dispatcher
     new_tools = [
         ("command_guard", "command_guard.py", False),
         ("file_guard", "file_guard.py", False),
@@ -724,7 +724,7 @@ Voorbeelden:
                 _run_script(script_name, str(val))
             return
 
-    # Dispatch self_improve_loop.py (35e tool — standalone, no target)
+    # Dispatch self_improve_loop.py (standalone workflow)
     if args.self_improve:
         script = Path(__file__).parent / "self_improve_loop.py"
         print(f"\n{'='*60}\n ♻️  SELF-IMPROVE LOOP — 13-step autonome verbeteringsloop\n{'='*60}")
@@ -764,7 +764,7 @@ Voorbeelden:
         return
 
     # ── Analyse modus ─────────────────────────────────────
-    print(t("code_improvement_tool", lang=lang, VERSION="3.0.0"))
+    print(t("code_improvement_tool", lang=lang, VERSION="5.1.0"))
     print(f"{'='*60}")
 
     if args.code:

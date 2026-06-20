@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-_protect.py — Maker attribution integrity check for ToolCase v3.0.
+_protect.py — Maker attribution integrity check for ToolCase v5.1.
 
 This module verifies that __maker__ == "SmokerGreenOG" across all tools.
 If someone changes the maker name, this module raises a RuntimeError at import time,

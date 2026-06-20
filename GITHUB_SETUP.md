@@ -1,51 +1,51 @@
-# ToolCase v3.0 — Aan de slag met GitHub
+# ToolCase v5.1 publiceren op GitHub
 
-Dit bestand helpt je om ToolCase aan GitHub te linken.
+De map is voorbereid voor publicatie als `SmokerGreenOG/ToolCase`.
 
-## Stap 1: Git initialiseren (eenmalig)
+## 1. Eerste commit maken
 
-Open een terminal in de ToolCase map en voer uit:
+De lokale repository staat al op branch `main`, de GitHub-remote is ingesteld
+en alle publiceerbare bestanden zijn gestaged. Stel eerst je Git-identiteit in
+als die nog ontbreekt:
 
-```bash
-cd D:\ToolCase
-git init
-git add .
-git commit -m "ToolCase v3.0 — 35 tools, self_improve_loop, i18n (EN/NL/DE)"
+```powershell
+git config --global user.name "SmokerGreenOG"
+git config --global user.email "JOUW_GITHUB_EMAIL"
+git commit -m "release: ToolCase v5.1.0"
 ```
 
-## Stap 2: Repository aanmaken op GitHub
+Controleer eventueel vóór de commit met `git status` dat `.env`, caches,
+backups en rapporten niet in de staginglijst staan.
 
-1. Ga naar https://github.com/new
-2. Vul een repository naam in (bijv. `ToolCase`)
-3. Kies **Public** of **Private** (wat je wilt)
-4. **NIET** "Initialize this repository with a README" aanvinken (we hebben er al een)
-5. Klik op **Create repository**
+## 2. Lege GitHub-repository maken
 
-## Stap 3: Lokaal koppelen aan GitHub
+Maak op GitHub een lege repository met de naam `ToolCase`. Voeg via GitHub geen
+README, licentie of `.gitignore` toe; deze bestanden bestaan lokaal al.
 
-Na het aanmaken zie je op GitHub een blokje met "…or push an existing repository from the command line".
+## 3. Uploaden
 
-Kopieer en voer deze commando's uit:
-
-```bash
-git remote add origin https://github.com/JOUW_GEBRUIKERSNAAM/ToolCase.git
-git branch -M main
+```powershell
 git push -u origin main
 ```
 
-Vervang `JOUW_GEBRUIKERSNAAM` door je echte GitHub gebruikersnaam.
+## 4. Release taggen
 
-## Stap 4: Verifiëren
-
-```bash
-git status
-git remote -v
+```powershell
+git tag -a v5.1.0 -m "ToolCase v5.1.0"
+git push origin v5.1.0
 ```
 
-Als het goed is zie je:
-```
-origin  https://github.com/JOUW_GEBRUIKERSNAAM/ToolCase.git (fetch)
-origin  https://github.com/JOUW_GEBRUIKERSNAAM/ToolCase.git (push)
-```
+Maak daarna op GitHub een release vanaf tag `v5.1.0` en gebruik de sectie
+`5.1.0` uit `CHANGELOG.md` als release notes.
 
-Daarna kun je `git push` gebruiken om wijzigingen te uploaden.
+## 5. Lokale verificatie
+
+```powershell
+$env:PYTHONIOENCODING="utf-8"
+$env:PYTHONDONTWRITEBYTECODE="1"
+python improve.py --verify-install
+python -m unittest discover -s tests
+python config_validator.py --json
+python license_checker.py --json
+python self_improve_loop.py . --dry-run --json --no-report
+```

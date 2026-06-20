@@ -3,7 +3,7 @@
     "version": "5.1.0",
     "maker": "SmokerGreenOG",
     "description": "ToolCase — Code Improvement Toolkit configuratie",
-    "last_updated": "2026-06-19"
+    "last_updated": "2026-06-20"
   },
   "categories": [
     {
@@ -119,6 +119,32 @@
         "agent_memory.py",
         "skill_installer.py",
         "workspace_indexer.py"
+      ]
+    },
+    {
+      "id": "config-docs",
+      "name": "Config & Docs",
+      "icon": "📋",
+      "description": "Configuratievalidatie, documentatiesync, licenties en Git-workflow",
+      "tools": [
+        "config_validator.py",
+        "docs_sync_auto_fix.py",
+        "git_workflow_checker.py",
+        "license_checker.py"
+      ]
+    },
+    {
+      "id": "meta-ai",
+      "name": "Meta & AI",
+      "icon": "🤖",
+      "description": "Meta-analyse, visualisatie, profiling en recursive self-improvement",
+      "tools": [
+        "code_churn_analyzer.py",
+        "dependency_visualizer.py",
+        "performance_profiler.py",
+        "prompt_optimizer.py",
+        "recursive_self_improve.py",
+        "type_coverage.py"
       ]
     }
   ],
@@ -373,7 +399,7 @@
       "needs_approval": false
     },
     {
-      "id": 18,
+      "id": 19,
       "name": "rollback.py",
       "type": "Restore",
       "risk": "High",
@@ -390,7 +416,7 @@
       "needs_approval": true
     },
     {
-      "id": 19,
+      "id": 18,
       "name": "todo_tracker.py",
       "type": "Scan",
       "risk": "Low",
@@ -769,6 +795,116 @@
       "command": "python improve.py --php-dep-audit <path>",
       "read_only": false,
       "needs_approval": true
+    },
+    {
+      "id": 44,
+      "name": "code_churn_analyzer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Git", "Quality", "Read-only"],
+      "description": "Analyseert wijzigingsfrequentie en bestandsgrootte om risicovolle hotspots te vinden",
+      "command": "python code_churn_analyzer.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 45,
+      "name": "config_validator.py",
+      "type": "Validate",
+      "risk": "Low",
+      "tags": ["Config", "Read-only"],
+      "description": "Valideert tools_config.json, manifest.json, scripts en categorie-toewijzingen",
+      "command": "python config_validator.py [--json]",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 46,
+      "name": "dependency_visualizer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Dependencies", "Mermaid", "Read-only"],
+      "description": "Genereert Mermaid dependencydiagrammen voor Python-projecten",
+      "command": "python dependency_visualizer.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 47,
+      "name": "docs_sync_auto_fix.py",
+      "type": "Modify",
+      "risk": "Medium",
+      "tags": ["Docs", "Automation", "Needs Approval"],
+      "description": "Synchroniseert tool- en testtellingen in README.md",
+      "command": "python docs_sync_auto_fix.py [--dry-run]",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 48,
+      "name": "git_workflow_checker.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Git", "Workflow", "Read-only"],
+      "description": "Controleert branchnaam, commits en repositoryhygiëne",
+      "command": "python git_workflow_checker.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 49,
+      "name": "license_checker.py",
+      "type": "Validate",
+      "risk": "Low",
+      "tags": ["License", "Compliance", "Read-only"],
+      "description": "Controleert maker-attributie en beschermingsimports",
+      "command": "python license_checker.py [--json]",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 50,
+      "name": "performance_profiler.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Performance", "Read-only"],
+      "description": "Detecteert statische performance-antipatronen",
+      "command": "python performance_profiler.py <path>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 51,
+      "name": "prompt_optimizer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["AI", "Prompt", "Read-only"],
+      "description": "Analyseert prompts op duidelijkheid, structuur en tokengebruik",
+      "command": "python prompt_optimizer.py --analyze <prompt>",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 52,
+      "name": "recursive_self_improve.py",
+      "type": "Workflow",
+      "risk": "Medium",
+      "tags": ["AI", "Automation", "Needs Approval"],
+      "description": "Voert cyclische analyse, verbetering, evaluatie en leerlussen uit",
+      "command": "python recursive_self_improve.py <path> [--dry-run]",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 53,
+      "name": "type_coverage.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "tags": ["Python", "Typing", "Read-only"],
+      "description": "Meet typehintdekking per Python-bestand",
+      "command": "python type_coverage.py <path>",
+      "read_only": true,
+      "needs_approval": false
     }
   ],
   "ignored_dirs": [

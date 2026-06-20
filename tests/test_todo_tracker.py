@@ -58,6 +58,16 @@ class TestTodoTracker(unittest.TestCase):
         results = list(scan_file(p, self.tmp))
         self.assertEqual(len(results), 0)
 
+    def test_marker_words_inside_code_are_ignored(self):
+        """Words such as template/debug are not TODO markers."""
+        from todo_tracker import scan_file
+        p = self.tmp / "clean.py"
+        p.write_text(
+            'template = "value"\n# one debug marker per line\n',
+            encoding="utf-8",
+        )
+        self.assertEqual(list(scan_file(p, self.tmp)), [])
+
 
 if __name__ == "__main__":
     unittest.main()

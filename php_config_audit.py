@@ -68,7 +68,7 @@ DEBUG_MODE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Hardcoded secrets
+    # Embedded secret values
 SECRET_PATTERN = re.compile(
     r'(?:DB_PASSWORD|DB_USERNAME|MAIL_PASSWORD|SECRET|API_KEY|APP_KEY)\s*=\s*[\"\'](?!\$\{)[^\"\']{3,}[\"\']',
 )
@@ -108,10 +108,10 @@ def audit_config(filepath: Path) -> dict:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except:
         return {"file": str(filepath), "findings": []}
-    
+
     findings = []
     name = filepath.name.lower()
-    
+
     # .env specific checks
     if name.startswith(".env"):
         if SECRET_PATTERN.search(source):
@@ -120,7 +120,7 @@ def audit_config(filepath: Path) -> dict:
             findings.append({"severity": "HIGH", "message": "APP_DEBUG=true — turn off in production"})
         if filepath.name == ".env" and not filepath.parent.name.startswith("."):
             findings.append({"severity": "MEDIUM", "message": ".env in web-accessible directory — move outside webroot"})
-    
+
     # php.ini checks
     if name.endswith(".ini") or "php.ini" in name:
         for setting, info in PHP_INI_BEST_PRACTICES.items():
@@ -134,7 +134,7 @@ def audit_config(filepath: Path) -> dict:
                 if info["recommended"] in ("On", "1") and value.lower() in ("off", "0", "false"):
                     findings.append({"severity": info["severity"],
                                      "message": f"{setting} = {value} (recommended: {info['recommended']})"})
-    
+
     # .htaccess checks
     if name == ".htaccess":
         if "Options -Indexes" not in source:
@@ -143,7 +143,7 @@ def audit_config(filepath: Path) -> dict:
             findings.append({"severity": "LOW", "message": "Missing X-Content-Type-Options: nosniff header"})
         if "Header set X-Frame-Options" not in source:
             findings.append({"severity": "LOW", "message": "Missing X-Frame-Options header (clickjacking)"})
-    
+
     return {"file": str(filepath), "findings": findings}
 
 
@@ -153,15 +153,15 @@ def audit_php_code(filepath: Path) -> dict:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except:
         return {"file": str(filepath), "findings": []}
-    
+
     findings = []
-    
+
     # display_errors / error_reporting in code
     for match in DISPLAY_ERRORS_PATTERN.finditer(source):
         line = source[:match.start()].count('\n') + 1
         findings.append({"severity": "HIGH", "line": line,
                         "message": "display_errors/error_reporting enabled in code"})
-    
+
     # ini_set calls
     for match in INI_SET_PATTERN.finditer(source):
         setting = match.group(1)
@@ -172,7 +172,7 @@ def audit_php_code(filepath: Path) -> dict:
                 line = source[:match.start()].count('\n') + 1
                 findings.append({"severity": info["severity"], "line": line,
                                 "message": f"ini_set('{setting}', '{value}') — recommended: '{info['recommended']}'"})
-    
+
     return {"file": str(filepath), "findings": findings}
 
 
@@ -180,11 +180,11 @@ def print_report(config_results: list, code_results: list) -> None:
     all_findings = []
     for r in config_results + code_results:
         all_findings.extend(r["findings"])
-    
+
     high = sum(1 for f in all_findings if f["severity"] == "HIGH")
     medium = sum(1 for f in all_findings if f["severity"] == "MEDIUM")
     low = sum(1 for f in all_findings if f["severity"] == "LOW")
-    
+
     for r in config_results:
         if r["findings"]:
             status = "🔴" if any(f["severity"] == "HIGH" for f in r["findings"]) else "⚠"
@@ -195,24 +195,24 @@ def print_report(config_results: list, code_results: list) -> None:
                 sev = "[HIGH]" if f["severity"] == "HIGH" else "[MED]" if f["severity"] == "MEDIUM" else "[LOW]"
                 line_info = f" line {f['line']}" if f.get("line") else ""
                 print(f"     {sev}{line_info} {f['message']}")
-    
+
     for r in code_results:
         if r["findings"]:
             print(f"\n  💻 {r['file']} ({len(r['findings'])} code issues)")
             for f in r["findings"]:
                 sev = "[HIGH]" if f["severity"] == "HIGH" else "[MED]"
                 print(f"     {sev} line {f['line']}: {f['message']}")
-    
+
     if not all_findings:
         print("\n   ✅ No config issues found")
-    
+
     print(f"\n{'=' * 70}")
     print(f" CONFIG AUDIT SUMMARY")
     print(f"{'=' * 70}")
     print(f"   Config files:  {len(config_results)}")
     print(f"   Code files:    {len(code_results)}")
     print(f"   HIGH: {high}  |  MEDIUM: {medium}  |  LOW: {low}")
-    
+
     health = "CRITICAL" if high > 0 else "WARNING" if medium > 0 else "CLEAN"
     print(f"   Health: {health}")
     print()
@@ -222,7 +222,7 @@ def print_json(config_results: list, code_results: list) -> None:
     all_findings = []
     for r in config_results + code_results:
         all_findings.extend(r["findings"])
-    
+
     output = {
         "summary": {
             "config_files": len(config_results),
@@ -243,25 +243,25 @@ def main():
     parser.add_argument("path", help="PHP project directory")
     parser.add_argument("--json", "-j", action="store_true")
     parser.add_argument("--version", action="version", version="php_config_audit.py v1.0.0")
-    
+
     args = parser.parse_args()
     target = Path(args.path)
     if not target.exists():
         print(f"Not found", file=sys.stderr); sys.exit(1)
-    
+
     root = target if target.is_dir() else target.parent
-    
+
     print(f"\n⚙️  PHP Config Audit v1.0.0 — {target}")
     print(f"{'=' * 70}")
-    
+
     config_files = find_config_files(root)
     php_files = find_php_files(root)
-    
+
     print(f"   Config files: {len(config_files)}  |  PHP files: {len(php_files)}")
-    
+
     config_results = [audit_config(f) for f in config_files]
     code_results = [audit_php_code(f) for f in php_files]
-    
+
     if args.json:
         print_json(config_results, code_results)
     else:

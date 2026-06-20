@@ -1,18 +1,18 @@
 ---
 name: toolcase-self-improve
-description: "ToolCase v5.1 — 43 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
+description: "ToolCase v5.1 — 53 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
 version: 5.1.0
 author: SmokerGreenOG
 metadata:
   hermes:
-    tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit, rsi, recursive, php]
+    tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit, rsi, recursive]
 ---
 
 # ToolCase v5.1 — Self-Improvement Skill
 
 ## Overview
 
-ToolCase is a **50-tool code analysis and improvement toolkit**.  
+ToolCase is a **53-tool code analysis and improvement toolkit**.
 Use this skill when the user wants to **audit, improve, or self-heal** their codebase.
 
 **Key files:**
@@ -20,9 +20,9 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 |------|---------|
 | `recursive_self_improve.py` | **RSI** — recursive self-improvement with learning memory |
 | `self_improve_loop.py` | 13-step autonomous improvement loop |
-| `improve.py` | Main orchestrator — dispatches all 43 tools |
+| `improve.py` | Main orchestrator — dispatches 53 registered tools |
 | `i18n.py` | Translations (EN/NL/DE) |
-| `tools_config.json` | Central config — 43 tools, 8 categories, 10 rules |
+| `tools_config.json` | Central config — 53 tools, 10 categories, 10 rules |
 | `dashboard.html` | Web dashboard |
 | `_protect.py` | Maker attribution verification (SHA256) |
 | `manifest.json` | Hermes skill manifest |
@@ -82,10 +82,10 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 | If user says... | Use this tool | Example |
 |----------------|---------------|---------|
 | "Scan routes" | `route_scanner.py` | `python route_scanner.py <path>` |
-| "Link frontend-backend" | `frontend_backend_linker.py` | `python fe_be_linker.py <path>` |
+| "Link frontend-backend" | `frontend_backend_linker.py` | `python frontend_backend_linker.py <path>` |
 | "Check UI consistency" | `ui_consistency.py` | `python ui_consistency.py <path>` |
-| "Find feature gaps" | `feature_gap_analyzer.py` | `python feature_gap.py <path>` |
-| "Check API contracts" | `api_contract_checker.py` | `python api_contract.py <path>` |
+| "Find feature gaps" | `feature_gap_analyzer.py` | `python feature_gap_analyzer.py <path>` |
+| "Check API contracts" | `api_contract_checker.py` | `python api_contract_checker.py <path>` |
 
 ### 6. Safety — Guards (ALWAYS use these first for dangerous operations)
 
@@ -105,19 +105,6 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 | "Make a release" | `release_packager.py` | `python release_packager.py <path>` |
 | "Generate changelog" | `changelog_generator.py` | `python changelog_generator.py --git-log HEAD~10..HEAD` |
 
-
-### 9. PHP Tools (8 tools)
-
-| If user says... | Use this tool | Example |
-|----------------|---------------|---------|
-| "Check PHP security" | `php_checker.py` | `python php_checker.py <path> -r` |
-| "Check PHP complexity" | `php_complexity.py` | `python php_complexity.py <path> -r` |
-| "Show PHP dependencies" | `php_depgraph.py` | `python php_depgraph.py <path> -r` |
-| "Find PHP dead code" | `php_dead_code.py` | `python php_dead_code.py <path> -r` |
-| "Audit PHP config" | `php_config_audit.py` | `python php_config_audit.py <path>` |
-| "Check PHP version compat" | `php_version_audit.py` | `python php_version_audit.py <path> --target 8.1` |
-| "Run PHP tests" | `php_test_runner.py` | `python php_test_runner.py <path>` |
-| "Audit Composer deps" | `php_dep_audit.py` | `python php_dep_audit.py <path>` |
 ### 8. Lifecycle
 
 | If user says... | Use this tool | Example |
@@ -131,7 +118,7 @@ Use this skill when the user wants to **audit, improve, or self-heal** their cod
 
 ## The `self_improve_loop.py` — 13-Step Autonomous Workflow
 
-This is the crown jewel — an autonomous loop that coordinates the full 35-tool workflow.
+This is the crown jewel — an autonomous loop that coordinates the registered tool workflow.
 
 ### How to invoke
 
@@ -191,7 +178,11 @@ These rules are **enforced in code** — never bypass them:
 
 ---
 
-## Full Tool Reference (43 tools)
+## Core Tool Reference
+
+The tables below cover the original core workflow. The canonical complete
+53-tool registry, including PHP, config and meta tooling, is maintained in
+`manifest.json` and `tools_config.json`.
 
 ### Analyse & Code Quality (7)
 
@@ -282,7 +273,7 @@ python improve.py --all <path>                 # Full scan
 python complexity.py <path> --recursive        # Complexity hotspots
 python dead_code_finder.py <path>              # Dead code
 python security_scan.py <path>                 # Security audit
-python todo_tracker.py <path>                  # TODO/FIXME inventory
+python todo_tracker.py <path>                  # Task-marker inventory
 python project_doctor.py <path>                # Project health
 
 # Phase 3: Self-improve
@@ -306,9 +297,9 @@ python self_improve_loop.py <path> --cycles 3  # Full auto-improve
 
 **When user says "check my frontend":**
 1. `python route_scanner.py <path>` — scan routes
-2. `python feature_gap.py <path>` — find missing states
-3. `python button_scan.py <path>` — check interactivity
-4. `python fake_ui.py <path>` — detect mock UI
+2. `python feature_gap_analyzer.py <path>` — find missing states
+3. `python button_action_scanner.py <path>` — check interactivity
+4. `python fake_ui_detector.py <path>` — detect mock UI
 
 **When user says "build is broken":**
 1. `python build_doctor.py <path>` — diagnose build
@@ -317,7 +308,7 @@ python self_improve_loop.py <path> --cycles 3  # Full auto-improve
 
 **When user says "make a release":**
 1. `python release_packager.py <path>` — package release
-2. `python changelog.py --git-log HEAD~10..HEAD` — changelog
+2. `python changelog_generator.py --git-log HEAD~10..HEAD` — changelog
 3. `python backup_manager.py snapshot <path>` — snapshot
 
 ---

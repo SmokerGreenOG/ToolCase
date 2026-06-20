@@ -51,26 +51,26 @@ def analyze_file(filepath: Path, root: Path) -> dict:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except:
         return {"file": str(filepath), "includes": [], "namespace": None, "uses": [], "classes": []}
-    
+
     rel = str(filepath.relative_to(root)) if filepath.is_relative_to(root) else filepath.name
-    
+
     # Includes
     includes = []
     for m in INCLUDE_PATTERN.finditer(source):
         includes.append({"path": m.group(1), "line": source[:m.start()].count('\n') + 1})
-    
+
     # Namespace
     ns_match = NAMESPACE_PATTERN.search(source)
     namespace = ns_match.group(1) if ns_match else None
-    
+
     # Use statements
     uses = []
     for m in USE_PATTERN.finditer(source):
         uses.append({"fqcn": m.group(1), "alias": m.group(2) or m.group(1).split('\\')[-1]})
-    
+
     # Classes
     classes = CLASS_PATTERN.findall(source)
-    
+
     return {
         "file": rel,
         "includes": includes,
@@ -86,7 +86,7 @@ def detect_circular(graph: dict) -> list[list[str]]:
     visited = set()
     stack = []
     cycles = []
-    
+
     def dfs(node, path):
         visited.add(node)
         stack.append(node)
@@ -100,23 +100,23 @@ def detect_circular(graph: dict) -> list[list[str]]:
                 return True
         stack.pop()
         return False
-    
+
     for node in list(graph.keys()):
         if node not in visited:
             dfs(node, [node])
-    
+
     return cycles
 
 
 def print_report(results: list[dict], cycles: list[list[str]]) -> None:
     total_includes = sum(len(r["includes"]) for r in results)
-    
+
     for r in results:
         status = "🔴" if r["file"] in [c[0] for c in cycles] else "✅"
         print(f"\n{'=' * 70}")
         print(f" {status} {r['file']}")
         print(f"{'=' * 70}")
-        
+
         if r["namespace"]:
             print(f"   Namespace: {r['namespace']}")
         if r["classes"]:
@@ -133,20 +133,20 @@ def print_report(results: list[dict], cycles: list[list[str]]) -> None:
             print(f"   Included by ({len(r['included_by'])}):")
             for ib in r["included_by"]:
                 print(f"     - {ib}")
-    
+
     print(f"\n{'=' * 70}")
     print(f" DEPENDENCY SUMMARY")
     print(f"{'=' * 70}")
     print(f"   Files:        {len(results)}")
     print(f"   Total includes: {total_includes}")
-    
+
     if cycles:
         print(f"\n   ⚠ CIRCULAR DEPENDENCIES ({len(cycles)}):")
         for i, cycle in enumerate(cycles, 1):
             print(f"     Cycle {i}: {' → '.join(cycle)}")
     else:
         print(f"   ✅ No circular dependencies")
-    
+
     print()
 
 
@@ -169,23 +169,23 @@ def main():
     parser.add_argument("--recursive", "-r", action="store_true", help="Recursive scan")
     parser.add_argument("--json", "-j", action="store_true", help="JSON output")
     parser.add_argument("--version", action="version", version="php_depgraph.py v1.0.0")
-    
+
     args = parser.parse_args()
     target = Path(args.path)
     if not target.exists():
         print(f"'{args.path}' not found", file=sys.stderr); sys.exit(1)
-    
+
     root = target if target.is_dir() else target.parent
     files = [target] if target.is_file() else (discover_php_files(target) if args.recursive else sorted(target.glob("*.php")))
-    
+
     if not files:
         print("No PHP files found"); sys.exit(0)
-    
+
     print(f"\n🔗 PHP DepGraph v1.0.0 — {len(files)} file(s)")
     print(f"{'=' * 70}")
-    
+
     results = [analyze_file(f, root) for f in files]
-    
+
     # Build dependency graph
     file_map = {r["file"]: r for r in results}
     graph = defaultdict(list)
@@ -195,9 +195,9 @@ def main():
             # Mark included_by
             if inc["path"] in file_map:
                 file_map[inc["path"]]["included_by"].append(r["file"])
-    
+
     cycles = detect_circular(dict(graph))
-    
+
     if args.json:
         print_json(results, cycles)
     else:

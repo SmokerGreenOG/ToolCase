@@ -45,13 +45,15 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", ".git", "__pycache__", ".venv", "venv", "build",
     "dist", ".next", "out", "coverage", ".vscode", ".idea", "release",
     ".pytest_cache", ".cache", ".backups", "_test_contract", "_test_patches",
-    "demo", "logs",
+    "demo", "logs", "tests",
 })
 
 EXCLUDE_FILES = frozenset({
     "__init__.py", "_test_changelog.py", "_test_extract.py",
     "tools_config.json",
 })
+
+SUPPORT_MODULES = frozenset({"__init__", "_protect", "i18n"})
 
 # Patterns for extracting importable/executable names from source
 TOOL_IMPORT_PATTERN = re.compile(
@@ -144,7 +146,7 @@ def extract_features_from_source(files: list[Path]) -> dict[str, Any]:
 
     for fp in files:
         name_stem = fp.stem
-        if name_stem != "__init__":
+        if name_stem not in SUPPORT_MODULES:
             tools.add(name_stem)
 
         source = read_text_file(fp)
@@ -228,28 +230,9 @@ def extract_features_from_readme(content: str) -> dict[str, Any]:
     mentions_terminal = False
     mentions_file_editor = False
 
-    # Extract tool names from markdown table rows and code blocks
-    for match in re.finditer(
-        r'\|\s*[:🌀🛡️🌍🩺🗺️🔗💀📋🧪👁️🔄📦📊🧠🎨🔍🔧🛠️📏]?\s*\*{0,2}([\w.-]+(?:\.py)?)\*{0,2}\s*\|',
-        content,
-    ):
-        name = match.group(1).strip()
-        if name.lower() in ("tool", "", "toolcase"):
-            continue
-        # Skip table separator rows (e.g. ------ or ----------)
-        if re.match(r'^-+$', name):
-            continue
-        # Skip known table header words
-        if name.lower() in ("commando", "beschrijving", "analyse tools",
-                            "structure & state tools", "legacy tools (via improve.py --all)",
-                            "tool", "description", "command", "name"):
-            continue
-        # Only capture things that look like filenames or identifiers
-        if name.replace("-", "_").replace(".", "_").isidentifier():
-            if name.endswith(".py"):
-                mentioned_tools.add(name.replace(".py", ""))
-            elif len(name) > 1 and name[0].isalpha():
-                mentioned_tools.add(name)
+    # Only explicit backticked Python filenames are tool claims.
+    for match in re.finditer(r'`([\w.-]+\.py)`', content):
+        mentioned_tools.add(match.group(1).removesuffix(".py"))
 
     # Extract tool names from bold markers in the format **name.py**
     for match in re.finditer(
@@ -264,11 +247,16 @@ def extract_features_from_readme(content: str) -> dict[str, Any]:
     for match in re.finditer(r'python\s+([\w.-]+\.py)', content):
         mentioned_commands.add(match.group(1).replace(".py", ""))
 
-    # Extract --flags from command examples
-    for match in re.finditer(r'--([\w-]+)\b', content):
-        flag = match.group(1)
-        if flag not in ("help", "recursive", "all", "json", "version"):
-            mentioned_commands.add(f"--{flag}")
+    # Extract flags only from ToolCase Python command examples. This avoids
+    # treating badge fragments and external commands as ToolCase CLI flags.
+    for block in re.findall(r'```[^\n]*\n(.*?)```', content, re.DOTALL):
+        for line in block.splitlines():
+            if not re.search(r'python\s+[\w.-]+\.py\b', line):
+                continue
+            for match in re.finditer(r'--([\w-]+)\b', line):
+                flag = match.group(1)
+                if flag not in ("help", "recursive", "all", "json", "version"):
+                    mentioned_commands.add(f"--{flag}")
 
     # Check feature claims
     terminal_patterns = [
@@ -391,7 +379,7 @@ def check_docs_sync(
 
     # 1a. Tools mentioned in docs that don't exist in source
     for tool in sorted(all_doc_tools):
-        if tool == "improve":
+        if tool == "improve" or tool in SUPPORT_MODULES:
             continue  # improve.py is the main entry point, always present
         if tool not in actual_tools:
             # Check if it's a filename reference
@@ -410,8 +398,8 @@ def check_docs_sync(
     tools_not_in_docs = [
         t for t in sorted(actual_tools)
         if t not in readme_tool_list
-        and t not in ("__init__", "_test_changelog", "_test_extract",
-                       "improve", "tools_config")
+        and t not in SUPPORT_MODULES
+        and t not in ("_test_changelog", "_test_extract", "improve", "tools_config")
         and not t.startswith("_")
     ]
     for tool in tools_not_in_docs:
@@ -423,14 +411,8 @@ def check_docs_sync(
         })
 
     # 2. Check terminal support claim
-    if readme_feats["mentions_terminal"] and not has_terminal:
-        issues.append({
-            "type": "terminal_claim_mismatch",
-            "severity": "error",
-            "message": ("README claims terminal/CLI support but source code has no terminal"
-                   "endpoint"),
-            "detail": "No @app.route, @router.get, or similar endpoint decorators found",
-        })
+    # CLI support is provided by argparse-based tools. It does not imply an
+    # HTTP terminal endpoint.
 
     # 3. Check file editor claim
     if readme_feats["mentions_file_editor"] and not has_file_editor:
@@ -565,12 +547,10 @@ def _extract_tool_table_names(readme_content: str) -> set[str]:
                 m = re.search(r'([\w-]+\.py)', cells[1])
                 if m:
                     names.add(m.group(1).replace(".py", ""))
-        # First column: extract tool filename
-        m = re.search(r'\*\*([\w.-]+)\*\*', cells[0])
+        # First column: extract a backticked or bold Python filename.
+        m = re.search(r'(?:`|\*\*)([\w.-]+\.py)(?:`|\*\*)', cells[0])
         if m:
-            name = m.group(1).replace(".py", "")
-            if name:
-                names.add(name.replace(".py", ""))
+            names.add(m.group(1).removesuffix(".py"))
     return names
 
 

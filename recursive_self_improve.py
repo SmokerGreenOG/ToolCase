@@ -56,8 +56,6 @@ from typing import Any, Optional
 # -- Constants
 TOOLCASE_DIR = Path(__file__).parent.resolve()
 MEMORY_FILE = TOOLCASE_DIR / ".rsi_memory.json"
-REPORT_DIR = TOOLCASE_DIR / ".rsi_reports"
-BACKUP_DIR = TOOLCASE_DIR / ".rsi_backups"
 MAX_CYCLES = 10
 TIMEOUT_SHORT = 15
 TIMEOUT_MEDIUM = 60
@@ -500,10 +498,11 @@ class ImprovementExecutor:
     def create_backup(self, filepath: Path) -> Optional[str]:
         if not filepath.exists():
             return None
-        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        backup_dir = self.workspace / ".rsi_backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:19]
         bak_name = f"{filepath.name}.{ts}.rsi_bak"
-        bak_path = BACKUP_DIR / bak_name
+        bak_path = backup_dir / bak_name
         shutil.copy2(str(filepath), str(bak_path))
         self.backups[str(filepath)] = str(bak_path)
         return str(bak_path)
@@ -675,7 +674,9 @@ class RecursiveSelfImprove:
         self.workspace = workspace
         self.focus = focus
         self.dry_run = dry_run
-        self.memory = ImprovementMemory(memory_path or MEMORY_FILE)
+        self.memory = ImprovementMemory(
+            memory_path or (workspace / ".rsi_memory.json")
+        )
         self.analyzer = SelfAnalyzer(workspace, focus)
         self.planner = ImprovementPlanner(self.memory, focus)
         self.executor = ImprovementExecutor(workspace)
@@ -852,11 +853,12 @@ class RecursiveSelfImprove:
             print(f"\n  {arrow} Totaal over {len(self.reports)} cycli: "
                   f"{first_q:.4f} -> {last_q:.4f} ({total_delta:+.4f})")
             print(f"  Geleerde patronen: {len(self.memory.patterns)}")
-            print(f"  Memory: {MEMORY_FILE}")
+            print(f"  Memory: {self.memory.path}")
 
-            REPORT_DIR.mkdir(parents=True, exist_ok=True)
+            report_dir = self.workspace / ".rsi_reports"
+            report_dir.mkdir(parents=True, exist_ok=True)
             ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            rf = REPORT_DIR / f"rsi_report_{ts}.json"
+            rf = report_dir / f"rsi_report_{ts}.json"
             rf.write_text(json.dumps([r.to_dict() for r in self.reports],
                                      indent=2, ensure_ascii=False), encoding="utf-8")
             print(f"  Report saved: {rf}")

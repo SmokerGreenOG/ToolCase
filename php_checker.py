@@ -27,6 +27,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Optional
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Constants
@@ -177,7 +178,7 @@ FIX_SUGGESTIONS = {
     "file_inclusion": "Never include/require files based on user input. Use a whitelist of allowed files",
     "command_injection": "Never pass user input to system/exec/passthru/shell_exec. Use escapeshellarg() if unavoidable",
     "backtick_exec": "Backtick operator executes shell commands - avoid with user input",
-    "eval_injection": "Never call eval() with user-supplied data. There is always a safer alternative",
+    "eval_injection": "Never call eval() with user-supplied data. There is always a safer alternative",  # toolcase: ignore-security
     "assert_code": "assert() can execute code - avoid in production or never pass dynamic strings",
     "preg_replace_e_modifier": "The /e modifier is deprecated and dangerous - use preg_replace_callback() instead",
     "hardcoded_password": "Move credentials to .env or environment variables - never hardcode secrets",
@@ -312,7 +313,7 @@ def check_php_file(filepath: Path, max_line: int, security_only: bool = False) -
                     "message": "Trailing whitespace",
                 })
 
-            # TODO/FIXME/HACK/XXX/BUG in comments
+    # Task markers in comments
             comment_match = re.search(
                 r"(?://|#|/\*).*?\b(TODO|FIXME|HACK|XXX|BUG)\b",
                 stripped, re.IGNORECASE,

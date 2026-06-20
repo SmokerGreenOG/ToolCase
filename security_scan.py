@@ -81,6 +81,7 @@ LOW_RISK_PATTERNS = {
         r'192\.168\.\d{1,3}\.\d{1,3})(?!\d)'
     ),
     "localhost_url": re.compile(
+        # toolcase: ignore-security — scanner signature, not a runtime URL.
         r'(?:http://localhost|http://127\.0\.0\.1)(?::\d+)?'
     ),
     "commented_auth": re.compile(
@@ -154,6 +155,8 @@ EXCLUDE_EXTENSIONS = frozenset({
     ".lock", ".sum",
 })
 
+SUPPRESSION_MARKER = "toolcase: ignore-security"
+
 
 def scan_file(filepath: Path) -> list[dict]:
     """Scan a single file for security issues."""
@@ -169,10 +172,18 @@ def scan_file(filepath: Path) -> list[dict]:
     lines = content.split("\n")
     findings = []
 
+    def is_suppressed(line_no: int) -> bool:
+        """Allow intentional examples without excluding an entire file."""
+        current = lines[line_no - 1].lower() if line_no <= len(lines) else ""
+        previous = lines[line_no - 2].lower() if line_no > 1 else ""
+        return SUPPRESSION_MARKER in current or SUPPRESSION_MARKER in previous
+
     # Check each pattern
     for pattern_name, pattern in HIGH_RISK_PATTERNS.items():
         for match in pattern.finditer(content):
             line_no = content[:match.start()].count("\n") + 1
+            if is_suppressed(line_no):
+                continue
             context_line = lines[line_no - 1].strip() if line_no <= len(lines) else ""
             findings.append({
                 "file": str(filepath),
@@ -187,6 +198,8 @@ def scan_file(filepath: Path) -> list[dict]:
     for pattern_name, pattern in MEDIUM_RISK_PATTERNS.items():
         for match in pattern.finditer(content):
             line_no = content[:match.start()].count("\n") + 1
+            if is_suppressed(line_no):
+                continue
             context_line = lines[line_no - 1].strip() if line_no <= len(lines) else ""
             findings.append({
                 "file": str(filepath),
@@ -201,6 +214,8 @@ def scan_file(filepath: Path) -> list[dict]:
     for pattern_name, pattern in LOW_RISK_PATTERNS.items():
         for match in pattern.finditer(content):
             line_no = content[:match.start()].count("\n") + 1
+            if is_suppressed(line_no):
+                continue
             context_line = lines[line_no - 1].strip() if line_no <= len(lines) else ""
             findings.append({
                 "file": str(filepath),

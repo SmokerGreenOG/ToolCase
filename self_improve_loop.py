@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-self_improve_loop.py — Autonomous self-improvement loop for ToolCase v3.0.
+self_improve_loop.py — Autonomous self-improvement loop for ToolCase v5.1.
 
 CLI commands:
     python self_improve_loop.py .                    # Default: dry-run, 1 cycle
@@ -48,8 +48,6 @@ from typing import Any
 
 # ── Constants ─────────────────────────────────────────────
 TOOLCASE_DIR = Path(__file__).parent.resolve()
-REPORT_DIR = TOOLCASE_DIR / ".self_improve_reports"
-BACKUP_DIR = TOOLCASE_DIR / ".backups"
 MAX_CYCLES_LIMIT = 5  # Hard limit to prevent infinite loops
 TIMEOUT_SHORT = 30
 TIMEOUT_MEDIUM = 60
@@ -158,9 +156,10 @@ class SafetyManager:
         p = self.within_workspace(path)
         if not p.exists():
             return None
-        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        backup_dir = self.workspace / ".backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup = BACKUP_DIR / f"{p.name}.{ts}.bak"
+        backup = backup_dir / f"{p.name}.{ts}.bak"
         shutil.copy2(str(p), str(backup))
         self.backups[str(p)] = backup
         return str(backup)
@@ -234,16 +233,8 @@ class CodeScanner:
             return {"error": str(e)}
 
     def scan_files(self) -> list[Finding]:
-        """Step 1: List all .py files in workspace."""
-        files = sorted(self.workspace.rglob("*.py"))
-        files = [f for f in files if not any(
-            p.startswith(".") for p in f.relative_to(self.workspace).parts
-        )]
-        return [
-            Finding(category="code-quality", severity="info",
-                    message=f"Found {len(files)} .py files",
-                    suggestion=""),
-        ]
+        """Step 1: Inventory source files without reporting healthy state as a finding."""
+        return []
 
     def scan_code_quality(self) -> list[Finding]:
         """Step 2: Code quality via improve.py."""
@@ -345,12 +336,15 @@ class CodeScanner:
         if self.focus not in ("all", "code-quality"):
             return findings
 
-        r = self._run_tool("todo_tracker.py", [str(self.workspace)])
+        r = self._run_tool("todo_tracker.py", [str(self.workspace), "--json"])
         output = r.get("output", "")
         marker_count = 0
-        for line in output.split("\n"):
-            if "TODO" in line or "FIXME" in line or "HACK" in line:
-                marker_count += 1
+        json_start = output.find("{")
+        if json_start >= 0:
+            try:
+                marker_count = int(json.loads(output[json_start:]).get("total", 0))
+            except (json.JSONDecodeError, TypeError, ValueError):
+                marker_count = 0
         if marker_count > 0:
             findings.append(Finding(
                 category="code-quality", severity="medium",
@@ -365,13 +359,18 @@ class CodeScanner:
         if self.focus not in ("all", "code-quality"):
             return findings
 
-        r = self._run_tool("dead_code_finder.py", [str(self.workspace)])
+        r = self._run_tool("dead_code_finder.py", [str(self.workspace), "--json"])
         output = r.get("output", "")
-        for line in output.split("\n"):
-            if "Ongebruikte" in line or "unused" in line.lower():
+        json_start = output.find("[")
+        if json_start >= 0:
+            try:
+                items = json.loads(output[json_start:])
+            except json.JSONDecodeError:
+                items = []
+            if items:
                 findings.append(Finding(
                     category="code-quality", severity="medium",
-                    message=line.strip()[:100],
+                    message=f"{len(items)} possible dead-code finding(s)",
                 ))
         return findings
 
@@ -381,9 +380,14 @@ class CodeScanner:
         if self.focus not in ("all", "code-quality", "docs"):
             return findings
 
-        # Check for __init__.py in subdirs
+        # Check only directories that actually contain Python package modules.
         for subdir in sorted(self.workspace.iterdir()):
-            if subdir.is_dir() and not subdir.name.startswith("."):
+            if (
+                subdir.is_dir()
+                and not subdir.name.startswith(".")
+                and subdir.name != "__pycache__"
+                and any(subdir.glob("*.py"))
+            ):
                 init = subdir / "__init__.py"
                 if not init.exists():
                     findings.append(Finding(
@@ -1141,7 +1145,7 @@ def run_one_cycle(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="self_improve_loop.py — Autonomous self-improvement for ToolCase v3.0",
+        description="self_improve_loop.py — Autonomous self-improvement for ToolCase v5.1",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "CLI commands:\n"
@@ -1176,6 +1180,8 @@ def main():
                         help=f"Number of improvement cycles (max {MAX_CYCLES_LIMIT})")
     parser.add_argument("--json", action="store_true",
                         help="Output machine-readable JSON")
+    parser.add_argument("--no-report", action="store_true",
+                        help="Do not write a report file to the target workspace")
     parser.add_argument("--focus", choices=["all", "docs", "security", "code-quality", "tests"],
                         default="all",
                         help="Focus scanning on a specific area")
@@ -1257,18 +1263,20 @@ def main():
         output = generator.human_report()
         print(output)
 
-    # ── Save report to file ──
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    ext = "json" if args.json else "txt"
-    report_path = REPORT_DIR / f"self_improve_{ts}.{ext}"
-    if args.json:
-        report_path.write_text(json.dumps(
-            generator.json_report(), indent=2, ensure_ascii=False, default=str
-        ), encoding="utf-8")
-    else:
-        report_path.write_text(output, encoding="utf-8")
-    print(f"\n📄 Report saved: {report_path}")
+    # ── Save report to file unless explicitly disabled ──
+    if not args.no_report:
+        report_dir = workspace / ".self_improve_reports"
+        report_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        ext = "json" if args.json else "txt"
+        report_path = report_dir / f"self_improve_{ts}.{ext}"
+        if args.json:
+            report_path.write_text(json.dumps(
+                generator.json_report(), indent=2, ensure_ascii=False, default=str
+            ), encoding="utf-8")
+        else:
+            report_path.write_text(output, encoding="utf-8")
+        print(f"\n📄 Report saved: {report_path}")
 
     # ── Determine exit code ──
     for rep in reports:

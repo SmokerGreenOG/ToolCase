@@ -2,7 +2,7 @@
   "name": "toolcase-self-improve",
   "version": "5.1.0",
   "author": "SmokerGreenOG",
-  "description": "ToolCase v3.0 — 35 tools, self-improvement loop, 10 safety rules, EN/NL/DE i18n",
+  "description": "ToolCase v5.1 — 53 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n",
   "hermes": {
     "skill_type": "workflow",
     "tags": [
@@ -22,13 +22,13 @@
     "entry_points": {
       "self_improve_loop": {
         "script": "self_improve_loop.py",
-        "command": "python self_improve_loop.py [--cycles N] [--target PATH] [--dry-run] [--json]",
+        "command": "python self_improve_loop.py [PATH] [--cycles N] [--dry-run] [--json]",
         "description": "Full 13-step self-improvement loop"
       },
       "improve": {
         "script": "improve.py",
         "command": "python improve.py <file> [--list-tools] [--lang en|nl|de]",
-        "description": "Main orchestrator — all 35 tools"
+        "description": "Main orchestrator — 53 registered tools"
       }
     },
     "safety_rules": [
@@ -388,6 +388,86 @@
       "type": "Execute",
       "risk": "Medium",
       "desc": "Composer audit: vulnerabilities, outdated packages, licenses"
+    },
+    {
+      "id": 44,
+      "name": "code_churn_analyzer",
+      "script": "code_churn_analyzer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "Git churn and code hotspot analysis"
+    },
+    {
+      "id": 45,
+      "name": "config_validator",
+      "script": "config_validator.py",
+      "type": "Validate",
+      "risk": "Low",
+      "desc": "Validate config, manifest, scripts, and categories"
+    },
+    {
+      "id": 46,
+      "name": "dependency_visualizer",
+      "script": "dependency_visualizer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "Generate Mermaid dependency diagrams"
+    },
+    {
+      "id": 47,
+      "name": "docs_sync_auto_fix",
+      "script": "docs_sync_auto_fix.py",
+      "type": "Modify",
+      "risk": "Medium",
+      "desc": "Synchronize README tool and test counts"
+    },
+    {
+      "id": 48,
+      "name": "git_workflow_checker",
+      "script": "git_workflow_checker.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "Check branch, commit, and repository hygiene"
+    },
+    {
+      "id": 49,
+      "name": "license_checker",
+      "script": "license_checker.py",
+      "type": "Validate",
+      "risk": "Low",
+      "desc": "Validate maker attribution and protection imports"
+    },
+    {
+      "id": 50,
+      "name": "performance_profiler",
+      "script": "performance_profiler.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "Detect static performance anti-patterns"
+    },
+    {
+      "id": 51,
+      "name": "prompt_optimizer",
+      "script": "prompt_optimizer.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "Analyze prompt clarity, structure, and token usage"
+    },
+    {
+      "id": 52,
+      "name": "recursive_self_improve",
+      "script": "recursive_self_improve.py",
+      "type": "Workflow",
+      "risk": "Medium",
+      "desc": "Recursive analyze, improve, evaluate, and learn workflow"
+    },
+    {
+      "id": 53,
+      "name": "type_coverage",
+      "script": "type_coverage.py",
+      "type": "Analyze",
+      "risk": "Low",
+      "desc": "Measure Python type-hint coverage"
     }
   ],
   "categories": [
@@ -481,6 +561,28 @@
         32,
         33,
         34
+      ]
+    },
+    {
+      "name": "Config & Docs",
+      "icon": "📋",
+      "tools": [
+        45,
+        47,
+        48,
+        49
+      ]
+    },
+    {
+      "name": "Meta & AI",
+      "icon": "🤖",
+      "tools": [
+        44,
+        46,
+        50,
+        51,
+        52,
+        53
       ]
     }
   ]

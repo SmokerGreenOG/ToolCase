@@ -21,13 +21,8 @@ ROOT = Path(__file__).parent.resolve()
 
 def count_tools() -> int:
     """Count all Python tools in root directory."""
-    count = 0
-    for fp in sorted(ROOT.glob("*.py")):
-        if (not fp.name.startswith("_")
-                and not fp.name.startswith("test_")
-                and fp.name not in ("i18n.py", "__init__.py", "improve.py")):
-            count += 1
-    return count
+    support_modules = {"__init__.py", "_protect.py", "i18n.py"}
+    return sum(1 for fp in ROOT.glob("*.py") if fp.name not in support_modules)
 
 
 def count_tests() -> int:
@@ -47,9 +42,7 @@ def generate_tool_list() -> str:
     """Generate a formatted tool list for README."""
     tools = []
     for fp in sorted(ROOT.glob("*.py")):
-        if (not fp.name.startswith("_")
-                and not fp.name.startswith("test_")
-                and fp.name not in ("i18n.py", "__init__.py")):
+        if fp.name not in {"__init__.py", "_protect.py", "i18n.py"}:
             # Read first docstring line
             content = fp.read_text(encoding="utf-8", errors="replace")
             docs_match = re.search(r'"""(.*?)"""', content, re.DOTALL)

@@ -37,10 +37,10 @@ class TestI18n(unittest.TestCase):
 
     def test_t_function_returns_string(self):
         """t() should always return a string."""
-        result = t("toolcase_title", lang="en", COUNT=35, VERSION="3.0.0")
+        result = t("toolcase_title", lang="en", COUNT=53, VERSION="5.1.0")
         self.assertIsInstance(result, str)
-        self.assertIn("35", result)
-        self.assertIn("3.0.0", result)
+        self.assertIn("53", result)
+        self.assertIn("5.1.0", result)
 
     def test_t_missing_key_returns_questionmarks(self):
         """t() with unknown key should return ??key??."""

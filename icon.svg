@@ -1,45 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <!-- Background -->
   <rect width="512" height="512" rx="96" fill="#0b0b0b"/>
-  
+
   <!-- Toolbox base -->
   <rect x="96" y="196" width="320" height="220" rx="24" fill="#1a1a2e" stroke="#c8f03c" stroke-width="6"/>
-  
+
   <!-- Toolbox handle -->
   <rect x="176" y="156" width="160" height="48" rx="12" fill="#c8f03c"/>
   <rect x="196" y="144" width="120" height="40" rx="8" fill="#0b0b0b"/>
-  
+
   <!-- Code bracket { -->
   <path d="M 270 240 L 248 256 L 270 272" fill="none" stroke="#c8f03c" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
-  
+
   <!-- Code bracket } -->
   <path d="M 242 240 L 264 256 L 242 272" fill="none" stroke="#c8f03c" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
-  
+
   <!-- Center dash / -->
   <line x1="256" y1="240" x2="256" y2="272" stroke="#c8f03c" stroke-width="12" stroke-linecap="round"/>
-  
+
   <!-- Tool slots on toolbox -->
   <rect x="136" y="300" width="48" height="48" rx="8" fill="#c8f03c" opacity="0.15"/>
   <rect x="200" y="300" width="48" height="48" rx="8" fill="#c8f03c" opacity="0.15"/>
   <rect x="264" y="300" width="48" height="48" rx="8" fill="#c8f03c" opacity="0.15"/>
   <rect x="328" y="300" width="48" height="48" rx="8" fill="#c8f03c" opacity="0.15"/>
-  
+
   <!-- Wrench icon in first slot -->
   <path d="M 160 316 L 160 332 M 155 324 L 165 324" stroke="#c8f03c" stroke-width="4" stroke-linecap="round"/>
   <circle cx="160" cy="324" r="6" fill="none" stroke="#c8f03c" stroke-width="3"/>
-  
+
   <!-- Shield in second slot -->
   <path d="M 224 310 L 224 338 M 218 314 Q 224 308 230 314 L 224 310 Z" fill="none" stroke="#c8f03c" stroke-width="3" stroke-linecap="round"/>
-  
+
   <!-- Bug in third slot -->
   <circle cx="288" cy="320" r="7" fill="none" stroke="#c8f03c" stroke-width="3"/>
   <circle cx="285" cy="318" r="2" fill="#c8f03c"/>
   <circle cx="291" cy="318" r="2" fill="#c8f03c"/>
-  
+
   <!-- Sparkle in fourth slot -->
   <path d="M 352 312 L 352 318 M 349 315 L 355 315" stroke="#c8f03c" stroke-width="3" stroke-linecap="round"/>
-  
+
   <!-- Version badge -->
   <rect x="186" y="370" width="140" height="32" rx="16" fill="#c8f03c"/>
-  <text x="256" y="392" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#0b0b0b" text-anchor="middle">v3.0</text>
+  <text x="256" y="392" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#0b0b0b" text-anchor="middle">v5.1</text>
 </svg>

@@ -23,6 +23,8 @@ import json
 import os
 import re
 import sys
+import io
+import tokenize
 from collections import defaultdict, Counter
 from datetime import datetime
 from pathlib import Path
@@ -34,7 +36,8 @@ from pathlib import Path
 
 EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next",
+    ".tox", ".eggs", "build", "dist", ".next", ".backups", "tests",
+    ".self_improve_reports", ".rsi_reports",
 })
 
 EXCLUDE_EXTENSIONS = frozenset({
@@ -48,7 +51,9 @@ EXCLUDE_EXTENSIONS = frozenset({
 
 # Marker detection patterns — only matches in comments (#) or docstrings (""")
 TODO_PATTERN = re.compile(
-    r'(?:#|\"\"\").*?((?:TODO|FIXME|HACK|XXX|BUG|OPTIMIZE|OPTIMISE|NOTE|TEMP|WORKAROUND|KLUDGE|HARCODED))'
+    r'(?:#|//|/\*+|<!--|--\s+|\"\"\"|\'\'\')\s*'
+    r'((?:TODO|FIXME|HACK|XXX|BUG|OPTIMIZE|OPTIMISE|NOTE|TEMP|'
+    r'WORKAROUND|KLUDGE|HARDCODED|HARCODED))\b'
     r'(?:\s*[\(\[#]\s*(\w[\w.@+-]*)\s*[\)\]]?)?'  # Optional assignee
     r'(?:\s*[:;]\s*)?'  # Optional separator
     r'([^\n]*)',  # Description
@@ -70,6 +75,7 @@ CATEGORIES = {
     "TEMP": "temp",
     "WORKAROUND": "workaround",
     "KLUDGE": "kludge",
+    "HARDCODED": "hardcoded",
     "HARCODED": "harcoded",
 }
 
@@ -130,8 +136,22 @@ def scan_file(filepath: Path, base_path: Path = None) -> list[dict]:
         return todos
 
     lines = content.split("\n")
+    candidates: list[tuple[int, str]]
+    if filepath.suffix.lower() == ".py":
+        candidates = []
+        try:
+            tokens = tokenize.generate_tokens(io.StringIO(content).readline)
+            candidates = [
+                (token.start[0], token.string)
+                for token in tokens
+                if token.type == tokenize.COMMENT
+            ]
+        except (tokenize.TokenError, IndentationError):
+            candidates = list(enumerate(lines, 1))
+    else:
+        candidates = list(enumerate(lines, 1))
 
-    for i, line in enumerate(lines, 1):
+    for i, line in candidates:
         for match in TODO_PATTERN.finditer(line):
             marker = match.group(1).upper()
             assignee = match.group(2)

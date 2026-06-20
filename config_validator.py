@@ -80,9 +80,8 @@ def validate() -> dict:
         ok.append(f"All {len(cfg_set | mf_set)} config tools exist on disk ✅")
 
     # --- Tools on disk NOT in config ---
-    all_py = {p.name for p in ROOT.glob("*.py")
-              if not p.name.startswith("_") and not p.name.startswith("test_")
-              and p.name not in ("i18n.py", "improve.py")}  # improve is orchestrator
+    support_modules = {"__init__.py", "_protect.py", "i18n.py"}
+    all_py = {p.name for p in ROOT.glob("*.py") if p.name not in support_modules}
     config_tools_set = cfg_set | mf_set
     unregistered = all_py - config_tools_set
     if unregistered:

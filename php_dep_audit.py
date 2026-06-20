@@ -19,10 +19,10 @@ __maker__ = "SmokerGreenOG"
 import _protect
 import argparse
 import json
-import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 COMPOSER = shutil.which("composer") or shutil.which("composer.phar")
@@ -34,19 +34,19 @@ def find_composer_files(root: Path) -> dict:
         "composer_lock": None,
         "vendor_dir": None,
     }
-    
+
     for path in [root, root.parent] if not root.is_dir() else [root]:
         json_path = path / "composer.json"
         lock_path = path / "composer.lock"
         vendor = path / "vendor"
-        
+
         if json_path.exists():
             result["composer_json"] = str(json_path)
         if lock_path.exists():
             result["composer_lock"] = str(lock_path)
         if vendor.exists():
             result["vendor_dir"] = str(vendor)
-    
+
     return result
 
 
@@ -55,12 +55,12 @@ def parse_composer_json(root: Path) -> dict:
     json_path = root / "composer.json"
     if not json_path.exists():
         return {}
-    
+
     try:
         data = json.loads(json_path.read_text(encoding="utf-8"))
     except:
         return {"error": "Cannot parse composer.json"}
-    
+
     return {
         "name": data.get("name", "unknown"),
         "description": data.get("description", ""),
@@ -80,14 +80,14 @@ def parse_composer_lock(root: Path) -> dict:
     lock_path = root / "composer.lock"
     if not lock_path.exists():
         return {}
-    
+
     try:
         data = json.loads(lock_path.read_text(encoding="utf-8"))
     except:
         return {"error": "Cannot parse composer.lock"}
-    
+
     packages = data.get("packages", []) + data.get("packages-dev", [])
-    
+
     # Group by type
     by_type = {}
     licenses = {}
@@ -96,7 +96,7 @@ def parse_composer_lock(root: Path) -> dict:
         by_type[ptype] = by_type.get(ptype, 0) + 1
         for lic in pkg.get("license", []):
             licenses[lic] = licenses.get(lic, 0) + 1
-    
+
     return {
         "total_packages": len(packages),
         "packages_prod": len(data.get("packages", [])),
@@ -112,17 +112,17 @@ def run_composer_audit(root: Path) -> dict:
     """Run composer audit for vulnerability scanning."""
     if not COMPOSER:
         return {"error": "Composer not installed", "vulnerabilities": []}
-    
+
     try:
         result = subprocess.run(
             [COMPOSER, "audit", "--format=json", "--no-interaction"],
             cwd=str(root), capture_output=True, text=True, timeout=120,
             encoding="utf-8", errors="replace",
         )
-        
+
         if result.returncode == 0:
             return {"clean": True, "vulnerabilities": []}
-        
+
         try:
             data = json.loads(result.stdout)
             vulns = []
@@ -136,7 +136,7 @@ def run_composer_audit(root: Path) -> dict:
             return {"clean": False, "vulnerabilities": vulns}
         except:
             return {"clean": None, "vulnerabilities": [], "raw": result.stdout[:1000]}
-    
+
     except subprocess.TimeoutExpired:
         return {"error": "Audit timed out", "vulnerabilities": []}
     except FileNotFoundError:
@@ -147,7 +147,7 @@ def run_composer_outdated(root: Path) -> dict:
     """Check for outdated packages."""
     if not COMPOSER:
         return {"error": "Composer not installed", "outdated": []}
-    
+
     try:
         result = subprocess.run(
             [COMPOSER, "outdated", "--format=json", "--no-interaction", "--direct"],
@@ -176,7 +176,7 @@ def print_report(json_info: dict, lock_info: dict, audit: dict, outdated: dict) 
     print(f"\n{'=' * 70}")
     print(f" COMPOSER AUDIT")
     print(f"{'=' * 70}")
-    
+
     # Project info
     if json_info and "name" in json_info:
         print(f"\n   Project: {json_info['name']}")
@@ -184,17 +184,17 @@ def print_report(json_info: dict, lock_info: dict, audit: dict, outdated: dict) 
         print(f"   License: {', '.join(json_info.get('license', []))}")
         print(f"   Dependencies: {json_info['dependencies'].get('require', 0)} prod, "
               f"{json_info['dependencies'].get('require-dev', 0)} dev")
-    
+
     # Lock info
     if lock_info:
         print(f"\n   Installed: {lock_info['total_packages']} packages "
               f"({lock_info['packages_prod']} prod, {lock_info['packages_dev']} dev)")
-        
+
         if lock_info.get("by_type"):
             print(f"   By type:")
             for ptype, count in sorted(lock_info["by_type"].items(), key=lambda x: -x[1])[:5]:
                 print(f"     - {ptype}: {count}")
-    
+
     # Vulnerabilities
     print(f"\n   Vulnerabilities: ", end="")
     if audit.get("clean") is True:
@@ -209,7 +209,7 @@ def print_report(json_info: dict, lock_info: dict, audit: dict, outdated: dict) 
                 print(f"       {v['link']}")
     else:
         print("⚠ Could not determine")
-    
+
     # Outdated
     if outdated.get("outdated"):
         print(f"\n   Outdated ({outdated['count']}):")
@@ -218,7 +218,7 @@ def print_report(json_info: dict, lock_info: dict, audit: dict, outdated: dict) 
             print(f"     {status_icon} {pkg['name']}: {pkg['current']} → {pkg['latest']}")
     elif not outdated.get("error"):
         print(f"   Outdated: ✅ All up to date")
-    
+
     print()
 
 
@@ -239,40 +239,40 @@ def main():
     parser.add_argument("--skip-audit", action="store_true", help="Skip vulnerability scan")
     parser.add_argument("--skip-outdated", action="store_true", help="Skip outdated check")
     parser.add_argument("--version", action="version", version="php_dep_audit.py v1.0.0")
-    
+
     args = parser.parse_args()
     root = Path(args.path)
     if not root.exists():
         print(f"Not found", file=sys.stderr); sys.exit(1)
     if not root.is_dir():
         root = root.parent
-    
+
     print(f"\n📦 PHP Dependency Audit v1.0.0 — {root}")
     print(f"{'=' * 70}")
-    
+
     composer_files = find_composer_files(root)
-    
+
     if not composer_files["composer_json"]:
         print("   No composer.json found")
         sys.exit(0)
-    
+
     print(f"   composer.json: {'✅' if composer_files['composer_json'] else '❌ Not found'}")
     print(f"   composer.lock: {'✅' if composer_files['composer_lock'] else '❌ Not found'}")
     print(f"   vendor/:       {'✅' if composer_files['vendor_dir'] else '❌ Not found'}")
-    
+
     json_info = parse_composer_json(root)
     lock_info = parse_composer_lock(root) if not args.skip_audit else {}
-    
+
     audit = {}
     if not args.skip_audit:
         print(f"\n   Running composer audit...")
         audit = run_composer_audit(root)
-    
+
     outdated = {}
     if not args.skip_outdated:
         print(f"   Checking outdated packages...")
         outdated = run_composer_outdated(root)
-    
+
     if args.json:
         print_json_output(json_info, lock_info, audit, outdated)
     else:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-i18n.py — Central translation module for ToolCase v3.0.
+i18n.py — Central translation module for ToolCase v5.1.
 
 Provides gettext-like functionality for English, Dutch, and German.
 

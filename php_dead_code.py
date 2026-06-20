@@ -20,6 +20,7 @@ import argparse
 import json
 import re
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", ".venv", "venv", "dist", "build", ".cache"}
@@ -64,19 +65,19 @@ def analyze_file(filepath: Path) -> dict:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except:
         return {"file": str(filepath), "functions": [], "classes": [], "commented_blocks": 0, "empty_funcs": []}
-    
+
     # Extract function names and class names
     functions = [{"name": m.group(1), "line": source[:m.start()].count('\n') + 1} for m in FUNC_DEF.finditer(source)]
     classes = [m.group(1) for m in CLASS_DEF.finditer(source)]
-    
+
     # Commented-out code blocks
     commented_blocks = len(COMMENTED_BLOCK.findall(source))
-    
+
     # Empty functions
     empty_funcs = [{"name": m.group(1), "line": source[:m.start()].count('\n') + 1} for m in re.finditer(
         r'function\s+(\w+)\s*\([^)]*\)\s*\{\s*\}', source
     )]
-    
+
     return {
         "file": str(filepath),
         "functions": functions,
@@ -90,17 +91,17 @@ def find_unused(project_results: list[dict]) -> dict:
     """Cross-reference all function calls vs definitions across the project."""
     all_defs = {}  # func_name -> [(file, line), ...]
     all_calls = set()
-    
+
     for r in project_results:
         # Read full source
         try:
             source = Path(r["file"]).read_text(encoding="utf-8", errors="replace")
         except:
             continue
-        
+
         for f in r["functions"]:
             all_defs.setdefault(f["name"], []).append((r["file"], f["line"]))
-        
+
         # Find function calls (foo(, $obj->foo(, Class::foo(, self::foo()
         for match in re.finditer(r'(?:\$?\w+(?:->|::))?(\w+)\s*\(', source):
             call_name = match.group(1)
@@ -113,12 +114,12 @@ def find_unused(project_results: list[dict]) -> dict:
                                 'endif', 'enddeclare', 'extends', 'implements', 'trait', 'insteadof',
                                 'callable', 'goto', 'const', 'var', 'yield', 'from', 'match'):
                 all_calls.add(call_name)
-    
+
     unused = {}
     for name, locations in all_defs.items():
         if name not in all_calls:
             unused[name] = locations
-    
+
     return unused
 
 
@@ -127,21 +128,21 @@ def print_report(results: list[dict], unused: dict) -> None:
     total_classes = sum(len(r["classes"]) for r in results)
     total_commented = sum(r["commented_blocks"] for r in results)
     total_empty = sum(len(r["empty_funcs"]) for r in results)
-    
+
     for r in results:
         status = "⚠" if (r["commented_blocks"] > 0 or r["empty_funcs"]) else "✅"
         print(f"\n{'=' * 70}")
         print(f" {status} {r['file']}")
         print(f"{'=' * 70}")
         print(f"   Functions: {len(r['functions'])}  |  Classes: {len(r['classes'])}")
-        
+
         if r["empty_funcs"]:
             print(f"   Empty functions ({len(r['empty_funcs'])}):")
             for ef in r["empty_funcs"]:
                 print(f"     - {ef['name']}() (line {ef['line']})")
         if r["commented_blocks"] > 0:
             print(f"   Commented-out blocks: {r['commented_blocks']}")
-    
+
     print(f"\n{'=' * 70}")
     print(f" DEAD CODE SUMMARY")
     print(f"{'=' * 70}")
@@ -150,7 +151,7 @@ def print_report(results: list[dict], unused: dict) -> None:
     print(f"   Classes:     {total_classes}")
     print(f"   Empty funcs: {total_empty}")
     print(f"   Commented:   {total_commented}")
-    
+
     if unused:
         print(f"\n   ⚠ UNUSED FUNCTIONS ({len(unused)}):")
         for name, locations in sorted(unused.items()):
@@ -158,7 +159,7 @@ def print_report(results: list[dict], unused: dict) -> None:
                 print(f"     - {name}() in {file}:{line}")
     else:
         print(f"   ✅ No unused functions detected")
-    
+
     print()
 
 
@@ -184,22 +185,22 @@ def main():
     parser.add_argument("--recursive", "-r", action="store_true")
     parser.add_argument("--json", "-j", action="store_true")
     parser.add_argument("--version", action="version", version="php_dead_code.py v1.0.0")
-    
+
     args = parser.parse_args()
     target = Path(args.path)
     if not target.exists():
         print(f"Not found", file=sys.stderr); sys.exit(1)
-    
+
     files = [target] if target.is_file() else (discover_php_files(target) if args.recursive else sorted(target.glob("*.php")))
     if not files:
         print("No PHP files"); sys.exit(0)
-    
+
     print(f"\n💀 PHP Dead Code v1.0.0 — {len(files)} file(s)")
     print(f"{'=' * 70}")
-    
+
     results = [analyze_file(f) for f in files]
     unused = find_unused(results) if len(results) > 1 else {}
-    
+
     if args.json:
         print_json(results, unused)
     else:
