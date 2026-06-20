@@ -18,12 +18,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Verify install
-        run: python improve.py --verify-install
+        run: python3 improve.py --verify-install
       - name: Syntax check all tools
-        run: python -c "import ast, pathlib; [ast.parse(p.read_text()) for p in pathlib.Path('.').rglob('*.py') if '__pycache__' not in str(p)]"
+        run: python3 -m py_compile improve.py depgraph.py complexity.py recursive_self_improve.py self_improve_loop.py build_doctor.py php_checker.py security_scan.py
       - name: Dry-run self-improve
-        run: python recursive_self_improve.py . --dry-run --cycles 1 --json --no-report
+        run: python3 recursive_self_improve.py . --dry-run --cycles 1 --json --no-report
       - name: Install test dependencies
         run: pip install pytest pyyaml
       - name: Run tests
-        run: python -m pytest tests/ -v --tb=short
+        run: python3 -m pytest tests/ -v --tb=short
