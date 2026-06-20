@@ -19,10 +19,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Verify install
         run: python3 improve.py --verify-install
-      - name: Syntax check all tools
-        run: python3 -m py_compile improve.py depgraph.py complexity.py recursive_self_improve.py self_improve_loop.py build_doctor.py php_checker.py security_scan.py
+      - name: Syntax check all 68 tools
+        run: python3 check_syntax.py
       - name: Dry-run self-improve
-        run: python3 recursive_self_improve.py . --dry-run --cycles 1 --json
+        run: python3 recursive_self_improve.py . --dry-run --cycles 1 --json --no-report
       - name: Install test dependencies
         run: pip install pytest pyyaml
       - name: Run tests

@@ -199,7 +199,12 @@ def detect_runner(root: Path, test_info: list[dict]) -> str:
                 scores[runner] += 1
 
     if not scores:
-        return "pytest"  # Default
+        # Default: prefer pytest if available, else unittest
+        try:
+            import pytest
+            return "pytest"
+        except ImportError:
+            return "unittest"
 
     # Return highest-scoring runner
     return max(scores, key=scores.get)

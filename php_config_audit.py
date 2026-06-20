@@ -23,7 +23,7 @@ import re
 import sys
 from pathlib import Path
 
-EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", ".venv", "venv"}
+EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", "tests/fixtures", ".venv", "venv"}
 
 # Recommended PHP production settings
 PHP_INI_BEST_PRACTICES = {

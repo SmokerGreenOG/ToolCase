@@ -33,7 +33,7 @@ function process_order($items, $user, $payment_method) {
             throw new InvalidArgumentException("Negative quantity");
         }
     }
-
+    
     switch ($payment_method) {
         case 'credit':
             $fee = $total * 0.025;
@@ -47,15 +47,15 @@ function process_order($items, $user, $payment_method) {
         default:
             $fee = 0;
     }
-
+    
     if ($user['vip'] && $total > 100) {
         $fee = 0;
     }
-
+    
     if ($total > 1000 && !$user['verified']) {
         throw new Exception("Large orders require verification");
     }
-
+    
     return $total + $fee;
 }
 
@@ -72,7 +72,7 @@ class OrderProcessor {
             return false;
         }
     }
-
+    
     private function process($order) {
         return $order->save() && $order->notify();
     }

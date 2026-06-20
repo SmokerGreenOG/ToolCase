@@ -1154,7 +1154,7 @@ def run_one_cycle(
             return report
 
         # Rule 10: Validate
-        if test_result["status"] == "warning":
+        if test_result["status"] == "warning" and report.status not in ("blocked", "failed", "rolled_back"):
             report.status = "warning"
             report.warnings.append("Test warnings found")
 

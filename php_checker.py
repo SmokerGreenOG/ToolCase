@@ -36,7 +36,7 @@ from typing import Optional
 DEFAULT_MAX_LINE_LENGTH = 120
 
 EXCLUDE_DIRS = {
-    "node_modules", "vendor", ".git", "__pycache__",
+    "node_modules", "vendor", ".git", "__pycache__", "tests/fixtures",
     ".venv", "venv", "dist", "build", ".cache",
     "storage", "bootstrap/cache", "wp-content/cache",
 }

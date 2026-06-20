@@ -141,7 +141,7 @@ RISK_LEVELS = {
 }
 
 EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
+    "node_modules", "demo", "target", ".git", "__pycache__", "tests/fixtures", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next", "vendor",
     ".backups", ".self_improve_reports", "release", "tests",
         ".rsi_backups",

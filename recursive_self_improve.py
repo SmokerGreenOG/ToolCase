@@ -676,10 +676,12 @@ class RecursiveSelfImprove:
     """Main RSI loop -- elke cyclus wordt slimmer."""
 
     def __init__(self, workspace: Path, focus: str = "all",
-                 dry_run: bool = False, memory_path: Optional[Path] = None):
+                 dry_run: bool = False, no_report: bool = False,
+                 memory_path: Optional[Path] = None):
         self.workspace = workspace
         self.focus = focus
         self.dry_run = dry_run
+        self.no_report = no_report
         self.memory = ImprovementMemory(
             memory_path or (workspace / ".rsi_memory.json")
         )
@@ -861,13 +863,16 @@ class RecursiveSelfImprove:
             print(f"  Geleerde patronen: {len(self.memory.patterns)}")
             print(f"  Memory: {self.memory.path}")
 
-            report_dir = self.workspace / ".rsi_reports"
-            report_dir.mkdir(parents=True, exist_ok=True)
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            rf = report_dir / f"rsi_report_{ts}.json"
-            rf.write_text(json.dumps([r.to_dict() for r in self.reports],
-                                     indent=2, ensure_ascii=False), encoding="utf-8")
-            print(f"  Report saved: {rf}")
+            if not self.no_report:
+                report_dir = self.workspace / ".rsi_reports"
+                report_dir.mkdir(parents=True, exist_ok=True)
+                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                rf = report_dir / f"rsi_report_{ts}.json"
+                rf.write_text(json.dumps([r.to_dict() for r in self.reports],
+                                         indent=2, ensure_ascii=False), encoding="utf-8")
+                print(f"  Report saved: {rf}")
+            else:
+                print(f"  Report skipped (--no-report)")
 
         return self.reports
 
@@ -897,8 +902,9 @@ def main() -> None:
     parser.add_argument("--focus", "-f",
                         choices=["all", "types", "docs", "code-quality", "todos"],
                         default="all", help="Focus area")
-    parser.add_argument("--dry-run", "-n", action="store_true", help="Alleen analyse")
+    parser.add_argument("--dry-run", "-n", action="store_true", help="Alleen analyse, geen wijzigingen")
     parser.add_argument("--json", "-j", action="store_true", help="JSON output")
+    parser.add_argument("--no-report", action="store_true", help="Geen rapport of memory opslaan")
     parser.add_argument("--learn-from", metavar="FILE", help="Laad memory uit bestand")
     parser.add_argument("--version", action="version", version="rsi v1.0.0")
 
@@ -914,7 +920,8 @@ def main() -> None:
 
     rsi = RecursiveSelfImprove(
         workspace=target, focus=args.focus,
-        dry_run=args.dry_run, memory_path=memory_path,
+        dry_run=args.dry_run, no_report=args.no_report,
+        memory_path=memory_path,
     )
     reports = rsi.run(cycles=cycles)
 

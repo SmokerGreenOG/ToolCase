@@ -43,6 +43,9 @@ release/
 .rsi_backups/
 .rsi_memory.json
 
+# Test fixtures (intentionally vulnerable code)
+tests/fixtures/
+
 # Node (for test_runner)
 node_modules/
 

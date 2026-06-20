@@ -24,6 +24,7 @@ __maker__ = "SmokerGreenOG"
 
 import _protect
 import argparse
+import ast
 import json
 import re
 import shlex

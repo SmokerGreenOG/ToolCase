@@ -22,7 +22,7 @@ import sys
 from collections import defaultdict, deque
 from pathlib import Path
 
-EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", ".venv", "venv", "dist", "build", ".cache"}
+EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", "tests/fixtures", ".venv", "venv", "dist", "build", ".cache"}
 
 INCLUDE_PATTERN = re.compile(
     r'(?:include|require|include_once|require_once)\s*(?:\(?\s*)?'
