@@ -8,7 +8,7 @@ metadata:
     tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit, rsi, recursive]
 ---
 
-# ToolCase v5.1 — Self-Improvement Skill
+# ToolCase v5.2 — Self-Improvement Skill
 
 ## Overview
 
