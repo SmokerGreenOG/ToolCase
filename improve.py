@@ -191,7 +191,7 @@ def _verify_install() -> bool:
                 script_path = root / part
                 if not script_path.exists():
                     command_issues += 1
-                    warnings.append(f"Command '{tool.get('name','?')}' references missing script: {part}")
+                    errors.append(f"Command '{tool.get('name','?')}' references missing script: {part}")
                 break  # Only check first .py reference
 
     if command_issues:

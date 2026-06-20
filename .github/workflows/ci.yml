@@ -23,5 +23,7 @@ jobs:
         run: python -c "import ast, pathlib; [ast.parse(p.read_text()) for p in pathlib.Path('.').rglob('*.py') if '__pycache__' not in str(p)]"
       - name: Dry-run self-improve
         run: python recursive_self_improve.py . --dry-run --cycles 1 --json --no-report
+      - name: Install test dependencies
+        run: pip install pytest pyyaml
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short

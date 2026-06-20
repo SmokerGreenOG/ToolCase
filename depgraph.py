@@ -31,7 +31,7 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__"
+EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__",
         ".backups",
         
         ".rsi_backups",
