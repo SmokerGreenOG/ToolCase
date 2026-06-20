@@ -1086,17 +1086,17 @@ def run_one_cycle(
     forbidden_count = sum(1 for c in changes if c.category == "forbidden")
     print(f"     {safe_count} safe, {approval_count} need approval, {forbidden_count} forbidden")
 
-    # Report findings by severity
+    # Report findings by severity (don't downgrade blocked/failed)
     critical = [f for f in findings if f.severity == "critical"]
     high = [f for f in findings if f.severity == "high"]
-    if critical:
+    if critical and report.status not in ("blocked",):
         report.status = "failed"
         print("     🔴 Critical issues found — will not apply changes")
-    elif high:
+    elif high and report.status not in ("blocked", "failed"):
         if mode == "safe-only":
             report.status = "warning"
         print("     🟠 High severity issues found")
-    elif findings:
+    elif findings and report.status not in ("blocked", "failed", "rolled_back"):
         report.status = "warning" if any(f.severity == "medium" for f in findings) else "passed"
 
     # Blocked by safety

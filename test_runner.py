@@ -207,7 +207,18 @@ def detect_runner(root: Path, test_info: list[dict]) -> str:
             return "unittest"
 
     # Return highest-scoring runner
-    return max(scores, key=scores.get)
+    best = max(scores, key=scores.get)
+    
+    # If pytest was selected but isn't installed, fallback to unittest
+    if best == "pytest":
+        try:
+            import pytest
+        except ImportError:
+            if "unittest" in scores:
+                return "unittest"
+            return "unittest"  # Default fallback
+    
+    return best
 
 
 def run_tests(workdir: Path, runner: str, test_files: list[dict],
