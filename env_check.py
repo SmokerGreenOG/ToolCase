@@ -141,7 +141,15 @@ def extract_referenced_env_vars(root: Path) -> set[str]:
         r'\$(\w+)\b)'
     )
 
-    EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__", ".venv", "venv"})
+    EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__", ".venv", "venv"
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]

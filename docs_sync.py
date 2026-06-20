@@ -46,7 +46,12 @@ EXCLUDE_DIRS = frozenset({
     "dist", ".next", "out", "coverage", ".vscode", ".idea", "release",
     ".pytest_cache", ".cache", ".backups", "_test_contract", "_test_patches",
     "demo", "logs", "tests",
-})
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 EXCLUDE_FILES = frozenset({
     "__init__.py", "_test_changelog.py", "_test_extract.py",

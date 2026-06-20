@@ -32,7 +32,14 @@ from pathlib import Path
 
 EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 # Well-known insecure/outdated packages (name -> issue)
 KNOWN_ISSUES = {

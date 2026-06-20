@@ -180,6 +180,25 @@ def _verify_install() -> bool:
     print(f"tools_config tools: {len(config_scripts)}")
     print(f"Categories:         {len(config.get('categories', []))}")
 
+    # ── Validate that each configured command references an existing script ──
+    command_issues = 0
+    for tool in config.get("tools", []):
+        cmd = tool.get("command", "")
+        # Extract script name from command (e.g. "python command_guard.py <cmd>")
+        parts = cmd.split()
+        for part in parts:
+            if part.endswith(".py") and not part.startswith("<"):
+                script_path = root / part
+                if not script_path.exists():
+                    command_issues += 1
+                    warnings.append(f"Command '{tool.get('name','?')}' references missing script: {part}")
+                break  # Only check first .py reference
+
+    if command_issues:
+        print(f"Command refs:        {command_issues} broken")
+    else:
+        print("Command refs:        all valid")
+
     for warning in warnings:
         print(f"WARN: {warning}")
     for error in errors:

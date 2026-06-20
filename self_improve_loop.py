@@ -326,12 +326,9 @@ class CodeScanner:
             if json_start >= 0:
                 data = json.loads(output[json_start:])
                 for f_item in data.get("findings", data.get("results", [])):
-                    risk = f_item.get("risk", "MEDIUM").lower()
-                    sev = {
-                        "high": "critical",
-                        "medium": "high",
-                        "low": "medium",
-                    }.get(risk, "medium")
+                    risk = f_item.get("risk", "low").lower()
+                    # Preserve original severity — no escalation
+                    sev = risk if risk in ("critical", "high", "medium", "low", "info") else "low"
                     findings.append(Finding(
                         category="security", severity=sev,
                         message=f_item.get("pattern", "Security issue"),
@@ -1286,18 +1283,21 @@ def main():
 
     # ── Save report to file unless explicitly disabled ──
     if not args.no_report:
-        report_dir = workspace / ".self_improve_reports"
-        report_dir.mkdir(parents=True, exist_ok=True)
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        ext = "json" if args.json else "txt"
-        report_path = report_dir / f"self_improve_{ts}.{ext}"
-        if args.json:
-            report_path.write_text(json.dumps(
-                generator.json_report(), indent=2, ensure_ascii=False, default=str
-            ), encoding="utf-8")
-        else:
-            report_path.write_text(output, encoding="utf-8")
-        print(f"\n📄 Report saved: {report_path}")
+        try:
+            report_dir = workspace / ".self_improve_reports"
+            report_dir.mkdir(parents=True, exist_ok=True)
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            ext = "json" if args.json else "txt"
+            report_path = report_dir / f"self_improve_{ts}.{ext}"
+            if args.json:
+                report_path.write_text(json.dumps(
+                    generator.json_report(), indent=2, ensure_ascii=False, default=str
+                ), encoding="utf-8")
+            else:
+                report_path.write_text(output, encoding="utf-8")
+            print(f"\n📄 Report saved: {report_path}")
+        except (PermissionError, OSError) as e:
+            print(f"\n⚠️  Could not save report: {e}", file=sys.stderr)
 
     # ── Determine exit code ──
     for rep in reports:

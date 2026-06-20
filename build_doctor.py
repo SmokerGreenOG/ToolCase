@@ -43,7 +43,14 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next", ".husky/_", ".git2",
     ".svn", ".hg", "coverage", ".nyc_output",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 EXIT_OK = 0
 EXIT_ISSUES = 1       # problems found
@@ -692,26 +699,33 @@ def check_python_imports(root: Path) -> list[dict]:
         })
         return issues
 
-    # Try to compile each Python file to check syntax
+    # Try to parse each Python file with ast to check syntax (no .pyc written)
     for py_file in py_files:
         try:
-            # Use py_compile which handles file paths properly (avoids backslash escaping issues)
-            result = _run([python_cmd, "-m", "py_compile", str(py_file)], root)
-            if result.returncode != 0:
-                err = result.stderr.strip()
-                # Filter out "Skipped" messages — py_compile may list multiple files
-                err_lines = [l for l in err.split("\n") if "Skipped" not in l and "Listing" not in l]
-                msg = err_lines[-1] if err_lines else "Syntax error"
-                issues.append({
-                    "severity": "ERROR",
-                    "type": "python",
-                    "check": "Python syntax",
-                    "file": str(py_file.relative_to(root)),
-                    "message": msg,
-                    "cause": "Python syntax error",
-                    "suggested_fix": f"Fix syntax in {py_file.name}",
-                    "retry_command": f"{python_cmd} -m py_compile \"{py_file}\"",
-                })
+            source = _safe_read(py_file)
+            ast.parse(source, filename=str(py_file))
+        except SyntaxError as e:
+            issues.append({
+                "severity": "ERROR",
+                "type": "python",
+                "check": "Python syntax",
+                "file": str(py_file.relative_to(root)),
+                "message": f"Syntax error: {e.msg} (line {e.lineno})",
+                "cause": "Python syntax error",
+                "suggested_fix": f"Fix syntax in {py_file.name}",
+                "retry_command": f"{python_cmd} -m py_compile \"{py_file}\"",
+            })
+        except PermissionError:
+            issues.append({
+                "severity": "WARN",
+                "type": "python",
+                "check": "Python syntax",
+                "file": str(py_file.relative_to(root)),
+                "message": "Could not check syntax: file not readable (permissions)",
+                "cause": "Permission denied",
+                "suggested_fix": "Check file permissions",
+                "retry_command": "",
+            })
         except Exception as e:
             issues.append({
                 "severity": "WARN",
@@ -734,8 +748,12 @@ def check_python_imports(root: Path) -> list[dict]:
 def check_missing_python_imports(root: Path, py_files: list[Path]) -> list[dict]:
     """Check for imported modules that might be missing."""
     issues = []
-    stdlib_modules = {
-        "os", "sys", "re", "json", "math", "time", "datetime", "pathlib",
+    # Use Python's own stdlib list (3.10+) with fallback for older versions
+    try:
+        stdlib_modules = set(sys.stdlib_module_names)
+    except AttributeError:
+        stdlib_modules = {
+            "os", "sys", "re", "json", "math", "time", "datetime", "pathlib",
         "collections", "functools", "itertools", "typing", "abc", "enum",
         "hashlib", "random", "string", "textwrap", "uuid", "copy", "dis",
         "inspect", "pprint", "argparse", "logging", "subprocess", "shutil",

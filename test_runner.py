@@ -34,7 +34,14 @@ from pathlib import Path
 EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 # Test file patterns per language
 TEST_PATTERNS = {

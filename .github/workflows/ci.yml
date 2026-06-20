@@ -1,0 +1,27 @@
+name: ToolCase CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Verify install
+        run: python improve.py --verify-install
+      - name: Syntax check all tools
+        run: python -c "import ast, pathlib; [ast.parse(p.read_text()) for p in pathlib.Path('.').rglob('*.py') if '__pycache__' not in str(p)]"
+      - name: Dry-run self-improve
+        run: python recursive_self_improve.py . --dry-run --cycles 1 --json --no-report
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short

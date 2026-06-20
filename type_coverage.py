@@ -21,7 +21,8 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", ".git", "__pycache__", ".venv", "venv",
     ".backups", ".rsi_reports", ".rsi_backups", "release",
     "build", "dist",
-})
+        ".self_improve_reports",
+        })
 
 
 def analyze_file(filepath: Path) -> dict:

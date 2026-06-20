@@ -41,7 +41,14 @@ from pathlib import Path
 EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     "build", "dist", ".next", "out", "coverage", ".tox",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 # Styles — dark purple / neon theme
 STYLE = {

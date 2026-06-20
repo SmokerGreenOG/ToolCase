@@ -39,7 +39,14 @@ from pathlib import Path
 EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     "build", "dist", ".next", "out", "coverage", ".vscode", ".idea",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 FRONTEND_EXTENSIONS = frozenset({
     ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte", ".html", ".css",

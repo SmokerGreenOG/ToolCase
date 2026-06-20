@@ -66,7 +66,14 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", ".git", "__pycache__", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next", ".pytest_cache",
     ".mypy_cache", ".ruff_cache", ".cursor",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 # ToolCase tools available for dependency checking
 TOOLCASE_TOOLS = frozenset({

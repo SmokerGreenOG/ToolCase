@@ -58,7 +58,14 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next", ".husky/_",
     ".git2", ".svn", ".hg", ".idea", ".vscode", "coverage", ".nyc_output",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 EXCLUDE_PATTERNS = frozenset({
     "*.pyc", "*.pyo", "*.bak", "*.orig", "*.rej", "*.swp", "*.swo",

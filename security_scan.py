@@ -144,7 +144,10 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next", "vendor",
     ".backups", ".self_improve_reports", "release", "tests",
-})
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        })
 
 EXCLUDE_EXTENSIONS = frozenset({
     ".pyc", ".pyo", ".so", ".dll", ".dylib", ".exe",

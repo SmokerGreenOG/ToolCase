@@ -442,7 +442,7 @@
         "Needs Approval"
       ],
       "description": "Controleert terminal commands voordat de agent ze mag uitvoeren. Detecteert/blokkeert rm -rf, del /s, format, curl|sh, wget|sh, powershell download execute en gevaarlijke chmod/chown",
-      "command": "python tools/command_guard.py <command>",
+      "command": "python command_guard.py <command>",
       "read_only": false,
       "needs_approval": true
     },
@@ -459,7 +459,7 @@
         "Needs Approval"
       ],
       "description": "Beschermt belangrijke bestanden (.env, package.json, config) tegen overschrijven. Laat diff zien, vraagt approval en blokkeert mass-edit/delete operaties",
-      "command": "python tools/file_guard.py <file>",
+      "command": "python file_guard.py <file>",
       "read_only": false,
       "needs_approval": true
     },
@@ -474,7 +474,7 @@
         "Core"
       ],
       "description": "Controleert welke rechten de agent heeft: lezen, schrijven, terminal, dependencies, .env lezen, internet, buiten workspace schrijven",
-      "command": "python tools/permission_audit.py",
+      "command": "python permission_audit.py",
       "read_only": true,
       "needs_approval": false
     },
@@ -490,7 +490,7 @@
         "Read-only"
       ],
       "description": "Controleert of frontend API calls overeenkomen met backend endpoints: endpoint path, HTTP method, request body, response field mismatches en ontbrekende error/loading handling",
-      "command": "python tools/api_contract_checker.py <path>",
+      "command": "python api_contract_checker.py <path>",
       "read_only": true,
       "needs_approval": false
     },
@@ -506,7 +506,7 @@
         "Read-only"
       ],
       "description": "Detecteert of een app alleen demo/fake UI toont: hardcoded files, mock project tree, demo responses, placeholder routes, buttons zonder echte actie, fake terminal output",
-      "command": "python tools/fake_ui_detector.py --frontend <path> --backend <path>",
+      "command": "python fake_ui_detector.py --frontend <path> --backend <path>",
       "read_only": true,
       "needs_approval": false
     },
@@ -521,7 +521,7 @@
         "Read-only"
       ],
       "description": "Zoekt knoppen, forms en menu-items die geen echte actie hebben: buttons zonder onClick, lege onClick, forms zonder submit, disabled buttons zonder reden, href='#'",
-      "command": "python tools/button_action_scanner.py <path>",
+      "command": "python button_action_scanner.py <path>",
       "read_only": true,
       "needs_approval": false
     },
@@ -535,7 +535,7 @@
         "Read-only"
       ],
       "description": "Analyseert React/Vue/Svelte state usage: useState die nooit verandert, useEffect zonder dependency sanity, unused state/props, ontbrekende loading/error state",
-      "command": "python tools/state_inspector.py <path>",
+      "command": "python state_inspector.py <path>",
       "read_only": true,
       "needs_approval": false
     },
@@ -551,7 +551,7 @@
         "Needs Approval"
       ],
       "description": "Diagnostiek voor buildproblemen: npm run build, vite build, tsc --noEmit, Python import errors, missing imports, verkeerde tsconfig/alias paden, broken package scripts",
-      "command": "python tools/build_doctor.py --npm <path>",
+      "command": "python build_doctor.py --npm <path>",
       "read_only": false,
       "needs_approval": true
     },
@@ -565,7 +565,7 @@
         "Debug"
       ],
       "description": "Vindt logs en vat errors samen: scant logs/, *.log, npm-debug.log, tracebacks, backend errors, crash reports",
-      "command": "python tools/log_viewer.py <path>",
+      "command": "python log_viewer.py <path>",
       "read_only": true,
       "needs_approval": false
     },
@@ -579,7 +579,7 @@
         "Read-only"
       ],
       "description": "Pakt een error/traceback en vertaalt die naar normale uitleg plus fix suggestions",
-      "command": "python tools/error_explainer.py <error_message>",
+      "command": "python error_explainer.py <error_message>",
       "read_only": true,
       "needs_approval": false
     },
@@ -595,7 +595,7 @@
         "Needs Approval"
       ],
       "description": "Maakt een release package: preflight checks, tests/build run, .env guard, release folder, zip, changelog, install instructies. Blokkeert als .env/API keys gevonden zijn of build/tests falen",
-      "command": "python tools/release_packager.py <path>",
+      "command": "python release_packager.py <path>",
       "read_only": false,
       "needs_approval": true
     },
@@ -609,7 +609,7 @@
         "Read-only"
       ],
       "description": "Maakt automatisch een changelog uit git diff, patches of tool reports (Added/Fixed/Changed/Security/Removed format)",
-      "command": "python tools/changelog_generator.py <path>",
+      "command": "python changelog_generator.py <path>",
       "read_only": true,
       "needs_approval": false
     },
@@ -626,7 +626,7 @@
         "Needs Approval"
       ],
       "description": "Beheert snapshots en backups: maak snapshot voor patches, bewaar vorige versies, backup history, diff, restore per bestand of volledige snapshot",
-      "command": "python tools/backup_manager.py <action> <target>",
+      "command": "python backup_manager.py <action> <target>",
       "read_only": false,
       "needs_approval": true
     },
@@ -640,7 +640,7 @@
         "Read-only"
       ],
       "description": "Controleert of README/docs overeenkomen met echte code: terminal support claims, feature claims, install instructies en ontbrekende/oude documentatie",
-      "command": "python tools/docs_sync.py <path>",
+      "command": "python docs_sync.py <path>",
       "read_only": true,
       "needs_approval": false
     },
@@ -655,7 +655,7 @@
         "Needs Approval"
       ],
       "description": "Installeert en valideert Hermes/Sabine skills: folder structuur, metadata, commands/prompts, permissions, tool dependencies en registry updates",
-      "command": "python tools/skill_installer.py <skill_name>",
+      "command": "python skill_installer.py <skill_name>",
       "read_only": false,
       "needs_approval": true
     },

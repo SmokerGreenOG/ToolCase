@@ -35,7 +35,14 @@ from pathlib import Path
 EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     "build", "dist", ".next", "out",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 # Route patterns for different routers
 ROUTE_PATTERNS = {

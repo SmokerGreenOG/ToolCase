@@ -344,7 +344,14 @@ EXCLUDE_DIRS = frozenset({
     ".tox", ".eggs", "build", "dist", ".next", "vendor",
     "target", ".svn", ".hg", ".idea", ".vscode",
     "bower_components", "jspm_packages", ".cache",
-})
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 
 # ---------------------------------------------------------------------------
 # Detection logic

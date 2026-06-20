@@ -31,7 +31,15 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__"})
+EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__"
+        ".backups",
+        
+        ".rsi_backups",
+        
+        ".rsi_reports",
+        
+        ".self_improve_reports",
+        })
 DEFAULT_MAX_DEPTH = 3
 
 # Regex patterns per language
