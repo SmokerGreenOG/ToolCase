@@ -882,8 +882,11 @@ class ReportGenerator:
         medium = sum(1 for f in all_findings if f.severity == "medium")
         low = sum(1 for f in all_findings if f.severity in ("low", "info"))
 
+        # ── Determine overall status ──
         total_status = "passed"
-        if rollback_executed:
+        if any(rep.status == "blocked" for rep in self.reports):
+            total_status = "blocked"
+        elif rollback_executed:
             total_status = "rolled_back"
         elif final_tests.get("status") == "failed":
             total_status = "failed"
@@ -1024,7 +1027,9 @@ class ReportGenerator:
                 rollback_reason = rep.rollback.get("reason")
 
         total_status = "passed"
-        if rollback_executed:
+        if any(rep.status == "blocked" for rep in self.reports):
+            total_status = "blocked"
+        elif rollback_executed:
             total_status = "rolled_back"
         elif final_tests.get("status") == "failed":
             total_status = "failed"
