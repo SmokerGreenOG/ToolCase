@@ -22,7 +22,7 @@ jobs:
       - name: Syntax check all tools
         run: python3 -m py_compile improve.py depgraph.py complexity.py recursive_self_improve.py self_improve_loop.py build_doctor.py php_checker.py security_scan.py
       - name: Dry-run self-improve
-        run: python3 recursive_self_improve.py . --dry-run --cycles 1 --json --no-report
+        run: python3 recursive_self_improve.py . --dry-run --cycles 1 --json
       - name: Install test dependencies
         run: pip install pytest pyyaml
       - name: Run tests
