@@ -47,6 +47,7 @@ def discover_php_files(root: Path) -> list[Path]:
 
 
 def analyze_file(filepath: Path, root: Path) -> dict:
+    """Analyze a single PHP file for includes/requires and namespaces."""
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except:
@@ -87,7 +88,8 @@ def detect_circular(graph: dict) -> list[list[str]]:
     stack = []
     cycles = []
 
-    def dfs(node, path):
+    def dfs(node: str, path: list[str]) -> None:
+        """Depth-first traversal for cycle detection."""
         visited.add(node)
         stack.append(node)
         for neighbor in graph.get(node, []):
@@ -109,6 +111,7 @@ def detect_circular(graph: dict) -> list[list[str]]:
 
 
 def print_report(results: list[dict], cycles: list[list[str]]) -> None:
+    """Print a human-readable dependency graph report."""
     total_includes = sum(len(r["includes"]) for r in results)
 
     for r in results:
@@ -151,6 +154,7 @@ def print_report(results: list[dict], cycles: list[list[str]]) -> None:
 
 
 def print_json(results: list[dict], cycles: list[list[str]]) -> None:
+    """Print a machine-readable JSON dependency report."""
     output = {
         "summary": {
             "total_files": len(results),

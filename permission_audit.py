@@ -183,6 +183,7 @@ def print_table(report: list[dict]) -> None:
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
+
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Agent Permission Auditor — simulate-check what the agent can do.",

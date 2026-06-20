@@ -173,6 +173,7 @@ def run_composer_outdated(root: Path) -> dict:
 
 
 def print_report(json_info: dict, lock_info: dict, audit: dict, outdated: dict) -> None:
+    """Print a human-readable Composer audit summary to stdout."""
     print(f"\n{'=' * 70}")
     print(f" COMPOSER AUDIT")
     print(f"{'=' * 70}")
@@ -223,6 +224,7 @@ def print_report(json_info: dict, lock_info: dict, audit: dict, outdated: dict) 
 
 
 def print_json_output(json_info: dict, lock_info: dict, audit: dict, outdated: dict) -> None:
+    """Print a machine-readable JSON Composer audit report to stdout."""
     output = {
         "project": json_info,
         "installed": lock_info,

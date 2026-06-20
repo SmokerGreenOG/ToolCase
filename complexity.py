@@ -664,7 +664,7 @@ def summary(results: list[dict]) -> dict:
     }
 
 
-def print_table(results: list[dict], threshold: int = 0):
+def print_table(results: list[dict], threshold: int = 0) -> None:
     """Print een tabel met functiecomplexiteit."""
     if threshold:
         filtered = [r for r in results
@@ -694,7 +694,7 @@ def print_table(results: list[dict], threshold: int = 0):
         )
 
 
-def print_summary(summ: dict, filepath: str):
+def print_summary(summ: dict, filepath: str) -> None:
     """Print een mooie samenvatting."""
     print(f"\n{'='*60}")
     print(f"  Samenvatting: {filepath}")
@@ -714,7 +714,7 @@ def print_summary(summ: dict, filepath: str):
     print(f"{'='*60}\n")
 
 
-def scan_recursive(path: str, threshold: int = 0, json_output: bool = False):
+def scan_recursive(path: str, threshold: int = 0, json_output: bool = False) -> None:
     """Scan een directory recursief voor .py, .ts, .rs bestanden."""
     extensions = {".py", ".ts", ".rs"}
     all_results = {}

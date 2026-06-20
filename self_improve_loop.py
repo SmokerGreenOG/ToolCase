@@ -142,6 +142,10 @@ class SafetyManager:
 
     # ── Rule 4: Workspace sandbox ──────────────────────────
     def within_workspace(self, path: str | Path) -> Path:
+        """Resolve and validate that a path falls inside the allowed workspace.
+
+        Returns the resolved Path if within the workspace.
+        """
         p = Path(path).resolve()
         try:
             p.relative_to(self.workspace)
@@ -153,6 +157,7 @@ class SafetyManager:
 
     # ── Rule 1: Backup ────────────────────────────────────
     def create_backup(self, path: str | Path) -> str | None:
+        """Create a timestamped backup of a file before modification."""
         p = self.within_workspace(path)
         if not p.exists():
             return None
@@ -166,6 +171,10 @@ class SafetyManager:
 
     # ── Rule 7: No destructive commands ───────────────────
     def is_command_forbidden(self, cmd: str) -> str | None:
+        """Check if a command matches any forbidden pattern.
+
+        Returns the matched pattern name if forbidden, None otherwise.
+        """
         cmd_lower = cmd.lower()
         for pattern in FORBIDDEN_COMMANDS:
             if pattern.lower() in cmd_lower:
@@ -174,6 +183,10 @@ class SafetyManager:
 
     # ── Rule 2: No secrets printed ────────────────────────
     def is_file_forbidden_to_read(self, path: str | Path) -> str | None:
+        """Check if a file path matches sensitive file patterns.
+
+        Returns the matched pattern name if forbidden, None otherwise.
+        """
         name = Path(path).name.lower()
         for pattern in FORBIDDEN_FILE_READS:
             if pattern in name:
@@ -182,6 +195,10 @@ class SafetyManager:
 
     # ── Rule 5: Approval prompt ───────────────────────────
     def require_approval(self, action: str, details: str) -> bool:
+        """Prompt the user for confirmation before a dangerous action.
+
+        Returns True if the user approves (y/yes), False otherwise.
+        """
         print(f"\n  ⚠  Approval needed: {action}")
         print(f"     {details}")
         print(f"  [y/N] ", end="", flush=True)
@@ -192,6 +209,10 @@ class SafetyManager:
 
     # ── Rule 10: Rollback ─────────────────────────────────
     def rollback(self, path: str | Path) -> bool:
+        """Restore a file from its most recent backup.
+
+        Returns True if the rollback succeeded.
+        """
         p = str(path)
         if p in self.backups:
             backup = self.backups[p]

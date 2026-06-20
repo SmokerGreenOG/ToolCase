@@ -397,7 +397,7 @@ def get_lang() -> str:
     return _DEFAULT_LANG
 
 
-def add_lang_arg(parser) -> None:
+def add_lang_arg(parser: argparse.ArgumentParser) -> None:
     """Add a --lang argument to an argparse parser."""
     parser.add_argument(
         "--lang", choices=["en", "nl", "de"], default=_DEFAULT_LANG,

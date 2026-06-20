@@ -199,7 +199,8 @@ def print_tree(index: dict, max_depth: int = 3) -> None:
             else:
                 tree[prefix]["files"].append(f)
 
-    def print_node(prefix: str, depth: int, indent: str = ""):
+    def print_node(prefix: str, depth: int, indent: str = "") -> None:
+        """Recursively print a directory tree node up to max_depth."""
         if depth > max_depth:
             return
 

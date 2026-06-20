@@ -1,11 +1,11 @@
-# ⚡ ToolCase v5.1 — AI Agent Code Toolkit
+# ⚡ ToolCase v5.2 — AI Agent Code Toolkit
 
-[![Version](https://img.shields.io/badge/version-5.1.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.1.0)
+[![Version](https://img.shields.io/badge/version-5.2.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.2.0)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
 [![Tests](https://img.shields.io/badge/tests-70%2F70-success?style=flat-square)]()
-[![Audit](https://img.shields.io/badge/self--audit-passing-brightgreen?style=flat-square)]()
+[![Audit](https://img.shields.io/badge/self--audit-perfect_1.0-brightgreen?style=flat-square)]()
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 

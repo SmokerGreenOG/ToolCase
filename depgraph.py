@@ -106,7 +106,7 @@ def _is_external_import(module: str, project_files: set) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def parse_python(content: str, filepath: Path, project_files: set):
+def parse_python(content: str, filepath: Path, project_files: set) -> list:
     """Parse Python imports from content."""
     imports = []
     for match in PYTHON_IMPORT_RE.finditer(content):
@@ -141,7 +141,7 @@ def parse_python(content: str, filepath: Path, project_files: set):
     return imports
 
 
-def parse_typescript(content: str, filepath: Path, project_files: set):
+def parse_typescript(content: str, filepath: Path, project_files: set) -> list:
     """Parse TypeScript/JS imports from content."""
     imports = []
     for match in TS_IMPORT_RE.finditer(content):
@@ -158,7 +158,7 @@ def parse_typescript(content: str, filepath: Path, project_files: set):
     return imports
 
 
-def parse_rust(content: str, filepath: Path, project_files: set):
+def parse_rust(content: str, filepath: Path, project_files: set) -> list:
     """Parse Rust use/mod statements from content."""
     imports = []
 
@@ -216,7 +216,7 @@ PARSERS = {
 }
 
 
-def parse_file(filepath: Path, root: Path, project_files: set):
+def parse_file(filepath: Path, root: Path, project_files: set) -> tuple:
     """Parse a single file and return (filepath, lang, [imports])."""
     ext = filepath.suffix.lower()
     lang = EXT_MAP.get(ext)
@@ -237,7 +237,7 @@ def parse_file(filepath: Path, root: Path, project_files: set):
 # ---------------------------------------------------------------------------
 
 
-def build_graph(root: Path, show_external: bool = False):
+def build_graph(root: Path, show_external: bool = False) -> tuple[dict, set]:
     """
     Walk *root*, parse every recognised source file, and return:
         graph: dict[filepath -> list[import_dict]]
@@ -300,7 +300,7 @@ def render_tree(
     depth: int = DEFAULT_MAX_DEPTH,
     seen: set = None,
     _current_depth: int = 0,
-):
+) -> list:
     """Render an ASCII dependency tree rooted at *start_path*."""
     if _current_depth > depth:
         return []
@@ -409,7 +409,7 @@ def find_cycles(graph: dict, show_external: bool = False) -> list:
     color = {fp: WHITE for fp in graph}
     parent = {}
 
-    def dfs(u: str):
+    def dfs(u: str) -> None:
         color[u] = GRAY
         for v in adj[u]:
             if color.get(v) == GRAY:

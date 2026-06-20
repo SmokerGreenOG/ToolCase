@@ -45,7 +45,7 @@ class PrettyHandler(http.server.SimpleHTTPRequestHandler):
         icon = chr(9989) if status < 400 else chr(9888) if status < 500 else chr(10060)
         print(f"  {icon} {args[0]} -> {status} ({args[2]})")
 
-    def end_headers(self):
+    def end_headers(self) -> None:
         """CORS headers toestaan voor lokale ontwikkeling."""
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Cache-Control", "no-store")

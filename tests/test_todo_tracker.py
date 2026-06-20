@@ -6,6 +6,7 @@ import unittest
 import tempfile
 from pathlib import Path
 
+
 class TestDeadCode(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())

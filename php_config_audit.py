@@ -62,7 +62,7 @@ DISPLAY_ERRORS_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# APP_DEBUG / APP_ENV
+# Debug-mode environment detection
 DEBUG_MODE_PATTERN = re.compile(
     r'(?:APP_DEBUG|DEBUG|ENVIRONMENT)\s*=\s*(?:true|1|development|dev|local)',
     re.IGNORECASE,

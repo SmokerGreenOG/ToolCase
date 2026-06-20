@@ -8,6 +8,7 @@ import subprocess
 import json
 from pathlib import Path
 
+
 class TestPromptOptimizer(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())

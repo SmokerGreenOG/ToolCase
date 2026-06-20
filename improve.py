@@ -76,6 +76,7 @@ from i18n import t, add_lang_arg, get_lang
 # Documentatie helper — toon tool-overzicht
 # ─────────────────────────────────────────────
 
+
 def _show_tool_list(lang: str = "en") -> None:
     """Print a tool overview in the requested language."""
     cfg_path = Path(__file__).parent / "tools_config.json"

@@ -89,7 +89,12 @@ def discover_test_files(root: Path) -> dict:
     return result
 
 
-def run_phpunit(root: Path, config_file: str = None, filter_test: str = None, coverage: bool = False) -> dict:
+def run_phpunit(
+    root: Path,
+    config_file: str = None,
+    filter_test: str = None,
+    coverage: bool = False,
+) -> dict:
     """Run PHPUnit tests."""
     cmd = [PHPUNIT or PHP, "vendor/bin/phpunit"]
     if config_file:

@@ -260,6 +260,10 @@ class ImprovementMemory:
         self.save()
 
     def learn_pattern(self, category: str, description: str, code: str = "") -> str:
+        """Register a learned pattern, or increment tries if it already exists.
+
+        Returns the pattern's unique ID.
+        """
         pid = hashlib.md5(f"{category}:{description}".encode()).hexdigest()[:12]
         for p in self.patterns:
             if p.pattern_id == pid:
@@ -273,6 +277,7 @@ class ImprovementMemory:
         return pid
 
     def get_best_patterns(self, category: str, top_n: int = 3) -> list[LearnedPattern]:
+        """Return the top-N patterns for a category that have been tried at least twice."""
         candidates = [p for p in self.patterns
                       if p.category == category and p.times_tried >= 2]
         candidates.sort(key=lambda p: p.success_rate * p.avg_improvement, reverse=True)
@@ -430,6 +435,7 @@ class ImprovementPlanner:
         self.focus = focus
 
     def plan(self, metrics: list[MetricSnapshot], cycle: int) -> list[ImprovementAttempt]:
+        """Generate a prioritized list of improvement attempts based on metric snapshots."""
         attempts: list[ImprovementAttempt] = []
         seen = set()
 
