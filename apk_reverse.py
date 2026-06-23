@@ -213,7 +213,8 @@ def analyze_executable(apk_path: Path) -> list[dict[str, Any]]:
                         "strings": _parse_int(stdout, r"string_ids_size\s*:\s*(\d+)"),
                         "types": _parse_int(stdout, r"type_ids_size\s*:\s*(\d+)"),
                         "prototypes": _parse_int(stdout, r"proto_ids_size\s*:\s*(\d+)"),
-                        "data_size_kb": round(_parse_int(stdout, r"data_size\s*:\s*(\d+)") / 1024, 1),
+                        "data_size_kb": round(
+                            _parse_int(stdout, r"data_size\\s*:\\s*(\\d+)") / 1024, 1),
                         "dex_version": _parse_str(stdout, r"DEX version '(\d+)'") or "?",
                         "method": "dexdump",
                     })
@@ -986,7 +987,10 @@ def main() -> None:
     if not args.json:
         print(f"🔍 Analyzing {apk_path.name}...")
     output_dir = Path(args.output_dir) if args.output_dir else None
-    print_report(generate_report(apk_path, aapt, output_dir, args.no_decompile, args.threads), args.json)
+    print_report(
+        generate_report(apk_path, aapt, output_dir, args.no_decompile, args.threads),
+        args.json,
+    )
 
 
 if __name__ == "__main__":

@@ -92,6 +92,7 @@ BOOLEAN_PATTERNS = [
 # Core analysis
 # ═══════════════════════════════════════════════════════════════════
 
+
 def extract_functions(source: str) -> list[dict]:
     """Extract all function/method bodies from PHP source."""
     functions = []
@@ -227,6 +228,7 @@ def discover_php_files(root: Path) -> list[Path]:
 # Output
 # ═══════════════════════════════════════════════════════════════════
 
+
 def print_report(results: list[dict], threshold: int) -> None:
     """Human-readable report."""
     total_files = len(results)
@@ -321,6 +323,7 @@ def print_json(results: list[dict], threshold: int) -> None:
 # ═══════════════════════════════════════════════════════════════════
 # CLI
 # ═══════════════════════════════════════════════════════════════════
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
