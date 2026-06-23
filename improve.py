@@ -530,6 +530,8 @@ Voorbeelden:
                         help="Execute: PHP test runner (PHPUnit/Pest)")
     parser.add_argument("--php-dep-audit", metavar="PATH",
                         help="Security: Composer dependency auditor")
+    parser.add_argument("--apk-reverse", metavar="APK",
+                        help="Reverse: Android APK reverse engineering & decompilation")
 
     # Self-improvement workflow
     parser.add_argument("--self-improve", action="store_true",
@@ -590,6 +592,7 @@ Voorbeelden:
         args.php_complexity, args.php_depgraph, args.php_dead_code,
         args.php_config_audit, args.php_version_audit,
         args.php_test_runner, args.php_dep_audit,
+        args.apk_reverse,
         args.self_improve,
     ]
 
@@ -704,6 +707,7 @@ Voorbeelden:
         ("php_version_audit", "php_version_audit.py", False),
         ("php_test_runner", "php_test_runner.py", False),
         ("php_dep_audit", "php_dep_audit.py", False),
+        ("apk_reverse", "apk_reverse.py", False),
     ]
     for arg_name, script_name, is_flag in new_tools:
         val = getattr(args, arg_name, None)
@@ -732,6 +736,7 @@ Voorbeelden:
                 "php_version_audit": "📅 PHP VERSION AUDIT",
                 "php_test_runner": "🧪 PHP TEST RUNNER",
                 "php_dep_audit": "📦 PHP DEP AUDIT",
+                "apk_reverse": "🔍 APK REVERSE",
             }
             title = icon_map.get(arg_name, script_name.replace('.py', '').upper())
             print(f"\n{'='*60}\n {title}\n{'='*60}")

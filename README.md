@@ -1,6 +1,6 @@
 # ⚡ ToolCase v5.2 — AI Agent Code Toolkit
 
-[![Version](https://img.shields.io/badge/version-5.2.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.2.0)
+[![Version](https://img.shields.io/badge/version-5.3.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.3.0)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
@@ -9,7 +9,7 @@
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **53 tools · 10 categories · 10 safety rules · reproducible self-audit**
+> **54 tools · 10 categories · 10 safety rules · reproducible self-audit**
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -19,7 +19,7 @@
 
 **ToolCase** is a portable, production-ready code improvement toolkit designed for **AI agents** (Hermes, Claude Code, Codex) and **developers**.
 
-It gives you **53 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, recursive self-improvement, and AI prompt optimization.
+It gives you **54 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, recursive self-improvement, and AI prompt optimization.
 
 **Zero external dependencies. Python 3.11+ only.** Runs on Windows, macOS, and Linux.
 
@@ -28,7 +28,7 @@ It gives you **53 tools** across 10 categories — from static analysis and secu
 ## 🖥️ Quick Start
 
 ```bash
-# 1. Browse all 53 tools
+# 1. Browse all 54 tools
 python improve.py --list-tools
 
 # 2. Full project audit (all tools)
@@ -140,6 +140,11 @@ registry is maintained in `manifest.json` and `tools_config.json`.
 | `php_version_audit.py` | Version compatibility: deprecated/removed for PHP 5.x-8.x |
 | `php_test_runner.py` | Test runner: PHPUnit/Pest discovery + execution |
 | `php_dep_audit.py` | Composer audit: vulnerabilities, outdated packages, licenses |
+
+### 🔍 APK Reverse Engineering
+| Tool | Description |
+|------|-------------|
+| `apk_reverse.py` | Full APK decompilation (jadx → Java), manifest parsing, security scan, resource decoding, size optimization, signing verification, URL/string scan, APK comparison |
 
 ### 🩺 Project Health
 | Tool | Description |

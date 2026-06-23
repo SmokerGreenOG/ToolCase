@@ -1,6 +1,6 @@
 {
   "name": "toolcase-self-improve",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "author": "SmokerGreenOG",
   "description": "ToolCase v5.2 — 53 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n",
   "hermes": {
@@ -468,6 +468,14 @@
       "type": "Analyze",
       "risk": "Low",
       "desc": "Measure Python type-hint coverage"
+    },
+    {
+      "id": 54,
+      "name": "apk_reverse",
+      "script": "apk_reverse.py",
+      "type": "Reverse Engineering",
+      "risk": "Low",
+      "desc": "Android APK reverse engineering: manifest parsing, DEX→Java decompilation (jadx), component analysis, permissions audit"
     }
   ],
   "categories": [
@@ -486,7 +494,8 @@
         37,
         38,
         39,
-        41
+        41,
+        54
       ]
     },
     {

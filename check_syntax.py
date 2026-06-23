@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Syntax check all Python files using AST (no .pyc written)."""
+__maker__ = "SmokerGreenOG"
+import _protect
 import ast
 import sys
 from pathlib import Path
