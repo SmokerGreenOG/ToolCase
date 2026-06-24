@@ -148,7 +148,10 @@
         "type_coverage.py",
         "rsi_llm_bridge.py",
         "rsi_report_html.py",
-        "rsi_apply_docs.py"
+        "rsi_apply_docs.py",
+        "scan_reliability.py",
+        "release_readiness.py",
+        "sarif_exporter.py"
       ]
     }
   ],
@@ -1012,6 +1015,55 @@
       "command": "python rsi_apply_docs.py [--dry-run] [--id <request_id>]",
       "read_only": false,
       "needs_approval": true
+    },
+    {
+      "id": 58,
+      "name": "scan_reliability.py",
+      "type": "Meta",
+      "risk": "Low",
+      "tags": [
+        "Meta",
+        "Quality",
+        "Reliability",
+        "Read-only"
+      ],
+      "description": "Meet scannerbetrouwbaarheid: found/scanned/skipped/errors per scanner, reliability score 0.0-1.0, per-file error tracking",
+      "command": "python scan_reliability.py <path> [--json] [--scan <name>]",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 59,
+      "name": "release_readiness.py",
+      "type": "Release",
+      "risk": "Low",
+      "tags": [
+        "Release",
+        "CI",
+        "Quality",
+        "Read-only"
+      ],
+      "description": "Pre-release GO/NO-GO checklist: version consistency, tool counts, syntax, tests, security scan, install verify, generated files, changelog, git tag",
+      "command": "python release_readiness.py [--json] [--ci]",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 60,
+      "name": "sarif_exporter.py",
+      "type": "Export",
+      "risk": "Low",
+      "tags": [
+        "Export",
+        "SARIF",
+        "GitHub",
+        "Security",
+        "Read-only"
+      ],
+      "description": "Exporteer ToolCase findings als SARIF v2.1.0 voor GitHub Code Scanning integratie — toont findings direct in Security tab",
+      "command": "python sarif_exporter.py --scan security --path . -o toolcase.sarif",
+      "read_only": true,
+      "needs_approval": false
     }
   ],
   "ignored_dirs": [

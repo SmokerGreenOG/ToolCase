@@ -79,7 +79,7 @@ def analyze_file(filepath: Path) -> dict:
         """
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
-    except:
+    except (OSError, UnicodeDecodeError):
         return {"file": str(filepath), "functions": [], "classes": [], "commented_blocks": 0, "empty_funcs": []}
 
     # Extract function names and class names
@@ -112,7 +112,7 @@ def find_unused(project_results: list[dict]) -> dict:
         # Read full source
         try:
             source = Path(r["file"]).read_text(encoding="utf-8", errors="replace")
-        except:
+        except (OSError, UnicodeDecodeError):
             continue
 
         for f in r["functions"]:

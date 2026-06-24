@@ -200,7 +200,7 @@ def audit_file(filepath: Path, target_version: str) -> dict:
         """
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
-    except:
+    except (OSError, UnicodeDecodeError):
         return {"file": str(filepath), "findings": []}
 
     findings = []

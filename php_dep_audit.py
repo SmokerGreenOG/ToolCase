@@ -66,7 +66,7 @@ def parse_composer_json(root: Path) -> dict:
 
     try:
         data = json.loads(json_path.read_text(encoding="utf-8"))
-    except:
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return {"error": "Cannot parse composer.json"}
 
     return {
@@ -91,7 +91,7 @@ def parse_composer_lock(root: Path) -> dict:
 
     try:
         data = json.loads(lock_path.read_text(encoding="utf-8"))
-    except:
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return {"error": "Cannot parse composer.lock"}
 
     packages = data.get("packages", []) + data.get("packages-dev", [])
@@ -142,7 +142,7 @@ def run_composer_audit(root: Path) -> dict:
                     "link": adv.get("link", ""),
                 })
             return {"clean": False, "vulnerabilities": vulns}
-        except:
+        except (json.JSONDecodeError, KeyError, IndexError):
             return {"clean": None, "vulnerabilities": [], "raw": result.stdout[:1000]}
 
     except subprocess.TimeoutExpired:
@@ -174,9 +174,9 @@ def run_composer_outdated(root: Path) -> dict:
                         "status": pkg.get("latest-status", "unknown"),
                     })
             return {"outdated": outdated_list, "count": len(outdated_list)}
-        except:
+        except (json.JSONDecodeError, KeyError, IndexError):
             return {"outdated": [], "count": 0, "raw": result.stdout[:500]}
-    except:
+    except (OSError, subprocess.SubprocessError):
         return {"outdated": [], "count": 0}
 
 

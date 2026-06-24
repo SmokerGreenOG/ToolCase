@@ -25,6 +25,8 @@ import _protect
 
 import argparse
 import json
+import os
+import re
 import shutil
 import stat
 import subprocess
@@ -66,14 +68,21 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", ".git", "__pycache__", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next", ".pytest_cache",
     ".mypy_cache", ".ruff_cache", ".cursor",
-        ".backups",
-        
-        ".rsi_backups",
-        
-        ".rsi_reports",
-        
-        ".self_improve_reports",
-        })
+    ".backups",
+    ".rsi_backups",
+    ".rsi_reports",
+    ".self_improve_reports",
+})
+
+# Generated report files to skip in security scans and other tools
+GENERATED_REPORT_GLOBS = (
+    "*_audit_report.md",
+    "*_audit_report.html",
+    "*.rsi_reports/*",
+    "*.self_improve_reports/*",
+    "*.rsi_backups/*",
+    "codex_audit_report.*",
+)
 
 # ToolCase tools available for dependency checking
 TOOLCASE_TOOLS = frozenset({
@@ -533,9 +542,13 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def install_skill(source: str, force: bool = False) -> dict[str, Any]:
+def install_skill(source: str, force: bool = False,
+                  trust_executables: bool = False) -> dict[str, Any]:
     """
     Install a skill from a source path or name.
+
+    Security: symlinks are rejected by default (use --force to allow).
+    Executable commands require explicit --trust-executables.
 
     Returns a dict with result information.
     """
@@ -613,19 +626,68 @@ def install_skill(source: str, force: bool = False) -> dict[str, Any]:
             result["success"] = True
             return result
 
-    # Copy skill directory
+    # Security: scan for symlinks in source before copying
+    symlinks_found: list[str] = []
+    for root, dirs, files in os.walk(src_path):
+        # Check directory symlinks
+        for d in dirs:
+            full = Path(root) / d
+            if full.is_symlink():
+                symlinks_found.append(str(full))
+        # Check file symlinks
+        for f in files:
+            full = Path(root) / f
+            if full.is_symlink():
+                symlinks_found.append(str(full))
+
+    if symlinks_found:
+        symlink_list = "\n    ".join(symlinks_found[:10])
+        msg = (f"⚠ Security: {len(symlinks_found)} symlink(s) gevonden in "
+               f"skill package. Symlinks kunnen buiten de target directory wijzen "
+               f"en zijn een supply-chain risico.\n  Symlinks:\n    {symlink_list}")
+        if force:
+            result["warnings"].append(msg)
+            result["warnings"].append(
+                "Symlinks worden toch gekopieerd vanwege --force. "
+                "Controleer handmatig of alle symlink-targets binnen de skill registry blijven.")
+        else:
+            result["messages"].append(
+                f"❌ {msg}\n  Gebruik --force om symlinks toch toe te staan "
+                f"(niet aanbevolen voor untrusted packages).")
+            result["success"] = False
+            return result
+
+    # Copy skill directory (with symlinks dereferenced for safety)
     try:
-        shutil.copytree(
-            src_path,
-            target_dir,
-            ignore=shutil.ignore_patterns("__pycache__", ".git", "node_modules"),
-            symlinks=True,
-        )
+        if force:
+            # Force mode: copy with symlinks preserved (user accepts risk)
+            shutil.copytree(
+                src_path,
+                target_dir,
+                ignore=shutil.ignore_patterns("__pycache__", ".git", "node_modules"),
+                symlinks=True,
+            )
+        else:
+            # Safe mode: dereference symlinks (copy actual content instead of links)
+            def _safe_copy(src: str, dst: str, *, follow_symlinks: bool = True):
+                """Copy function that dereferences symlinks for safety."""
+                return shutil.copy2(src, dst, follow_symlinks=follow_symlinks)
+
+            shutil.copytree(
+                src_path,
+                target_dir,
+                ignore=shutil.ignore_patterns("__pycache__", ".git", "node_modules"),
+                symlinks=False,  # Never follow symlinks — copy the content instead
+                copy_function=_safe_copy,
+            )
     except OSError as e:
         result["messages"].append(f"❌ Kopieer fout: {e}")
         return result
 
-    # Update registry index
+    # Security: verify no paths resolve outside the target directory
+    _verify_containment(target_dir, result)
+
+    # Update registry index with source origin and trust status
     index = _read_registry_index()
     index[skill_name] = {
         "name": skill_name,
@@ -634,6 +696,9 @@ def install_skill(source: str, force: bool = False) -> dict[str, Any]:
         "description": str(metadata.get("description", "")),
         "installed_at": datetime.now().isoformat(),
         "source": str(src_path.resolve()),
+        "source_type": "local" if src_path.is_relative_to(Path.home()) else "external",
+        "executables_trusted": trust_executables,
+        "symlinks_were_present": len(symlinks_found) > 0,
     }
     _write_registry_index(index)
 
@@ -645,18 +710,55 @@ def install_skill(source: str, force: bool = False) -> dict[str, Any]:
     else:
         result["messages"].append("✅ Validatie: geslaagd")
 
-    # Make command files executable
+    # Make command files executable ONLY if explicitly trusted
     commands_dir = target_dir / "commands"
     if commands_dir.exists():
         for cmd_file in commands_dir.iterdir():
             if cmd_file.is_file() and cmd_file.suffix in {".sh", ".py", ".js"}:
-                try:
-                    current = cmd_file.stat().st_mode
-                    cmd_file.chmod(current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-                except OSError:
-                    pass
+                if trust_executables:
+                    try:
+                        current = cmd_file.stat().st_mode
+                        cmd_file.chmod(current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                    except OSError:
+                        pass
+                else:
+                    result["warnings"].append(
+                        f"Command '{cmd_file.name}' is NIET uitvoerbaar gemaakt. "
+                        f"Gebruik --trust-executables om dit toe te staan.")
+
+    if not trust_executables and commands_dir.exists():
+        cmd_count = len([f for f in commands_dir.iterdir()
+                        if f.is_file() and f.suffix in {".sh", ".py", ".js"}])
+        if cmd_count > 0:
+            result["messages"].append(
+                f"ℹ {cmd_count} command bestand(en) niet uitvoerbaar. "
+                f"Gebruik --trust-executables om uitvoerbaar te maken.")
 
     return result
+
+
+def _verify_containment(target_dir: Path, result: dict[str, Any]) -> None:
+    """Verify all files in target_dir resolve within target_dir (no symlink escapes)."""
+    issues: list[str] = []
+    for root, dirs, files in os.walk(target_dir):
+        for name in dirs + files:
+            full = Path(root) / name
+            try:
+                resolved = full.resolve()
+                if not str(resolved).startswith(str(target_dir.resolve())):
+                    issues.append(
+                        f"⚠ Path containment violation: {full} → {resolved}")
+            except OSError:
+                issues.append(f"⚠ Cannot resolve path: {full}")
+
+    if issues:
+        for issue in issues[:5]:
+            result["warnings"].append(issue)
+        if len(issues) > 5:
+            result["warnings"].append(f"... en nog {len(issues) - 5} containment issues")
+        result["warnings"].append(
+            "Path containment check gefaald. Deze skill kan toegang hebben "
+            "tot bestanden buiten zijn eigen directory.")
 
 
 # ---------------------------------------------------------------------------
@@ -960,7 +1062,8 @@ def main() -> None:
     # ── install ───────────────────────────────────────────────────
     inst_parser = subparsers.add_parser("install", help="Installeer een skill")
     inst_parser.add_argument("source", help="Skill naam of pad naar skill directory")
-    inst_parser.add_argument("--force", "-f", action="store_true", help="Forceer installatie (overschrijf bestaand, negeer fouten)")
+    inst_parser.add_argument("--force", "-f", action="store_true", help="Forceer installatie (overschrijf bestaand, negeer fouten, sta symlinks toe)")
+    inst_parser.add_argument("--trust-executables", action="store_true", help="Maak command bestanden uitvoerbaar (alleen voor vertrouwde skill packages)")
     inst_parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
 
     # ── test ──────────────────────────────────────────────────────
@@ -1014,7 +1117,9 @@ def main() -> None:
 
     # ── Handle install ────────────────────────────────────────────
     elif args.command == "install":
-        result = install_skill(args.source, force=args.force)
+        trust_exec = getattr(args, "trust_executables", False)
+        result = install_skill(args.source, force=args.force,
+                               trust_executables=trust_exec)
 
         if use_json:
             _print_json(result)

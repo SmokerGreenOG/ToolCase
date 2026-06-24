@@ -2,7 +2,7 @@
   "name": "toolcase-self-improve",
   "version": "5.4.0",
   "author": "SmokerGreenOG",
-  "description": "ToolCase v5.2 — 53 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n",
+  "description": "ToolCase v5.4 — 57 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n",
   "hermes": {
     "skill_type": "workflow",
     "tags": [
@@ -28,7 +28,7 @@
       "improve": {
         "script": "improve.py",
         "command": "python improve.py <file> [--list-tools] [--lang en|nl|de]",
-        "description": "Main orchestrator — 53 registered tools"
+        "description": "Main orchestrator — 57 registered tools"
       }
     },
     "safety_rules": [
@@ -499,7 +499,31 @@
       "script": "rsi_apply_docs.py",
       "type": "Modify",
       "risk": "Medium",
-      "desc": "Batch docstring applicator: voegt ontbrekende docstrings toe via AST, valideert syntax"
+      "desc": "Batch docstring applicator: leest RSI queue, voegt docstrings toe via AST"
+    },
+    {
+      "id": 58,
+      "name": "scan_reliability",
+      "script": "scan_reliability.py",
+      "type": "Meta",
+      "risk": "Low",
+      "desc": "Meet scannerbetrouwbaarheid: found/scanned/skipped/errors per scanner, reliability score 0.0-1.0"
+    },
+    {
+      "id": 59,
+      "name": "release_readiness",
+      "script": "release_readiness.py",
+      "type": "Release",
+      "risk": "Low",
+      "desc": "Pre-release GO/NO-GO checklist: versions, tests, security, install verify, changelog, git tag"
+    },
+    {
+      "id": 60,
+      "name": "sarif_exporter",
+      "script": "sarif_exporter.py",
+      "type": "Export",
+      "risk": "Low",
+      "desc": "Export ToolCase findings als SARIF v2.1.0 voor GitHub Code Scanning integratie"
     }
   ],
   "categories": [
@@ -618,7 +642,10 @@
         53,
         55,
         56,
-        57
+        57,
+        58,
+        59,
+        60
       ]
     }
   ]

@@ -169,7 +169,7 @@ def find_apkanalyzer() -> Path | None:
         r = subprocess.run(["where", "apkanalyzer"], capture_output=True, text=True, timeout=5)
         if r.returncode == 0 and r.stdout.strip():
             return Path(r.stdout.strip().splitlines()[0])
-    except:
+    except (OSError, subprocess.SubprocessError):
         pass
     return None
 
@@ -662,7 +662,8 @@ def decode_resources(apk_path: Path) -> dict[str, Any]:
                         if candidate.isprintable() and len(candidate) >= 2:
                             if candidate not in {s["value"] for s in strings}:
                                 strings.append({"value": candidate, "locale": "default"})
-                    except: pass
+                    except (UnicodeDecodeError, IndexError):
+                        pass
                 if byte1 >= 2 and byte2 == 0:
                     try:
                         raw16 = arsc_data[pos + 2: pos + 2 + byte1 * 2]
@@ -670,7 +671,8 @@ def decode_resources(apk_path: Path) -> dict[str, Any]:
                         if candidate.isprintable() and len(candidate) >= 2:
                             if candidate not in {s["value"] for s in strings}:
                                 strings.append({"value": candidate, "locale": "default"})
-                    except: pass
+                    except (UnicodeDecodeError, IndexError):
+                        pass
                 pos += 1
             seen = set()
             unique = []

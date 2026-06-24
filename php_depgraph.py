@@ -58,7 +58,7 @@ def analyze_file(filepath: Path, root: Path) -> dict:
     """Analyze a single PHP file for includes/requires and namespaces."""
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
-    except:
+    except (OSError, UnicodeDecodeError):
         return {"file": str(filepath), "includes": [], "namespace": None, "uses": [], "classes": []}
 
     rel = str(filepath.relative_to(root)) if filepath.is_relative_to(root) else filepath.name

@@ -56,7 +56,7 @@ def discover_test_files(root: Path) -> dict:
                                 result["test_files"].append(str(f))
                             for f in dir_path.rglob("test_*.php"):
                                 result["test_files"].append(str(f))
-            except:
+            except (OSError, PermissionError):
                 pass
             break
 

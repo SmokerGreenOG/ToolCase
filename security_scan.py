@@ -144,10 +144,19 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", "demo", "target", ".git", "__pycache__", "tests/fixtures", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next", "vendor",
     ".backups", ".self_improve_reports", "release", "tests",
-        ".rsi_backups",
-        
-        ".rsi_reports",
-        })
+    ".rsi_backups",
+    ".rsi_reports",
+})
+
+# Generated report files/patterns — excluded from scans to prevent false positives
+GENERATED_REPORT_PATTERNS = (
+    "*_audit_report.md",
+    "*_audit_report.html",
+    "codex_audit_report.*",
+    "*.rsi_reports/*",
+    "*.self_improve_reports/*",
+    "*.rsi_backups/*",
+)
 
 EXCLUDE_EXTENSIONS = frozenset({
     ".pyc", ".pyo", ".so", ".dll", ".dylib", ".exe",
@@ -160,6 +169,28 @@ EXCLUDE_EXTENSIONS = frozenset({
 
 SUPPRESSION_MARKER = "toolcase: ignore-security"
 
+# Generated report name patterns (lowercase match)
+_GENERATED_NAMES = {
+    "codex_audit_report.md", "codex_audit_report.html",
+    "toolcase_analysis_report.html", "toolcase_analysis_report.md",
+    "dexcore_analysis_report.html",
+}
+
+
+def _is_generated_report(filepath: Path) -> bool:
+    """Check if a file is a generated audit report (to skip in scans)."""
+    name_lower = filepath.name.lower()
+    if name_lower in _GENERATED_NAMES:
+        return True
+    if name_lower.endswith("_audit_report.md") or name_lower.endswith("_audit_report.html"):
+        return True
+    # Check path contains generated report directories
+    path_str = str(filepath).lower().replace("\\", "/")
+    for pattern in GENERATED_REPORT_PATTERNS:
+        if pattern.strip("*").lower() in path_str:
+            return True
+    return False
+
 
 def scan_file(filepath: Path) -> list[dict]:
     """Scan a single file for security issues."""
@@ -167,10 +198,23 @@ def scan_file(filepath: Path) -> list[dict]:
     if ext in EXCLUDE_EXTENSIONS:
         return []
 
+    # Skip generated reports
+    if _is_generated_report(filepath):
+        return []
+
     try:
         content = filepath.read_text(encoding="utf-8", errors="replace")
-    except Exception:
-        return []
+    except (OSError, UnicodeDecodeError) as e:
+        # Log read errors but don't silently swallow
+        return [{
+            "file": str(filepath),
+            "line": 0,
+            "risk": "INFO",
+            "pattern": "read_error",
+            "match": str(e)[:100],
+            "context": f"Could not read file: {e}",
+            "fix": "Check file permissions and encoding",
+        }]
 
     lines = content.split("\n")
     findings = []
@@ -309,7 +353,7 @@ def print_report(findings: list[dict], patterns_only: bool = False) -> None:
         print()
 
 
-def print_json(findings: list[dict]) -> None:
+def print_json(findings: list[dict], stats: dict[str, int] | None = None) -> None:
     """Output findings as JSON."""
     output = {
         "total": len(findings),
@@ -318,6 +362,7 @@ def print_json(findings: list[dict]) -> None:
             "medium": len([f for f in findings if f["risk"] == "MEDIUM"]),
             "low": len([f for f in findings if f["risk"] == "LOW"]),
         },
+        "scan_stats": stats or {},
         "findings": findings,
     }
     print(json.dumps(output, indent=2, ensure_ascii=False))
@@ -339,7 +384,7 @@ Examples:
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
     parser.add_argument("--patterns-only", "-p", action="store_true",
                         help="Groepeer resultaten per patroon i.p.v. per file")
-    parser.add_argument("--version", action="version", version="security_scan.py v1.0.0")
+    parser.add_argument("--version", action="version", version="security_scan.py v1.1.0")
 
     args = parser.parse_args()
 
@@ -353,15 +398,41 @@ Examples:
         print(" Geen bestanden om te scannen")
         sys.exit(0)
 
-    print(f"\n🔍 Security Scan v1.0.0 — scanning {len(files)} bestand(en) in {target}")
+    # Scan error accounting
+    stats = {
+        "found": len(files),
+        "scanned": 0,
+        "skipped_generated": 0,
+        "read_errors": 0,
+    }
+
+    print(f"\n🔍 Security Scan v1.1.0 — scanning {len(files)} bestand(en) in {target}")
 
     all_findings = []
     for fp in files:
+        # Track skipped generated reports
+        if _is_generated_report(fp):
+            stats["skipped_generated"] += 1
+        else:
+            stats["scanned"] += 1
+    
         findings = scan_file(fp)
+        # Track read errors
+        read_errors = [f for f in findings if f.get("pattern") == "read_error"]
+        if read_errors:
+            stats["read_errors"] += len(read_errors)
         all_findings.extend(findings)
 
+    # Print scan summary
+    if stats["skipped_generated"] > 0:
+        print(f"   ℹ {stats['skipped_generated']} generated report(s) overgeslagen")
+    if stats["read_errors"] > 0:
+        print(f"   ⚠ {stats['read_errors']} bestand(en) niet leesbaar (permissies/encoding)")
+    print(f"   ✅ {stats['scanned']} bestand(en) gescand")
+    print()
+
     if args.json:
-        print_json(all_findings)
+        print_json(all_findings, stats)
     else:
         print_report(all_findings, args.patterns_only)
 

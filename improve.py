@@ -47,7 +47,7 @@ Gebruik:
     python improve.py --self-improve --target . --dry-run
 
   Extra:
-    python improve.py --list-tools               # Toon alle 53 tools
+    python improve.py --list-tools               # Toon alle 60 tools
     python improve.py --json-config              # Output tool config als JSON
     python improve.py --verify-install           # Controleer installatie
 

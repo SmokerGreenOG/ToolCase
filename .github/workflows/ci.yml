@@ -19,8 +19,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Verify install
         run: python3 improve.py --verify-install
-      - name: Syntax check all 68 tools
+      - name: Syntax check all Python files
         run: python3 check_syntax.py
+      - name: Version consistency check
+        run: python3 scripts/check_version_consistency.py
       - name: Dry-run self-improve
         run: python3 recursive_self_improve.py . --dry-run --cycles 1 --json --no-report
       - name: Install test dependencies

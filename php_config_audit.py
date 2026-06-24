@@ -106,7 +106,7 @@ def audit_config(filepath: Path) -> dict:
     """Audit a single config file."""
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
-    except:
+    except (OSError, UnicodeDecodeError):
         return {"file": str(filepath), "findings": []}
 
     findings = []
@@ -151,7 +151,7 @@ def audit_php_code(filepath: Path) -> dict:
     """Search PHP files for inline config issues."""
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
-    except:
+    except (OSError, UnicodeDecodeError):
         return {"file": str(filepath), "findings": []}
 
     findings = []

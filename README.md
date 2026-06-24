@@ -9,9 +9,37 @@
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **57 tools · 10 categories · 10 safety rules · RSI v2.0 LLM Bridge · reproducible self-audit**
+> **60 tools · 10 categories · 10 safety rules · RSI v2.0 LLM Bridge · reproducible self-audit**
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
+
+---
+
+## ⚠️ Security Status
+
+ToolCase is openbaar en actief in ontwikkeling, maar security-hardening loopt nog.
+
+**Huidig advies:**
+- Gebruik ToolCase alleen op projecten die je vertrouwt.
+- Installeer geen onbekende of onbetrouwbare skill packages.
+- Behandel gegenereerde auditrapporten als advies, niet als absoluut veiligheidsbewijs.
+- De skill installer (`skill_installer.py`) is gehard tegen symlink-aanvallen en vereist expliciete trust (`--trust-executables`) voor uitvoerbare command-bestanden.
+
+In de laatste lokale audit is geen kritieke broncodekwetsbaarheid bevestigd, maar het project moet nog niet worden gepresenteerd als veilig voor willekeurige untrusted packages.
+
+<details>
+<summary>🇬🇧 English version</summary>
+
+**ToolCase is public and actively maintained, but security hardening is still in progress.**
+
+Current recommendation:
+- Use ToolCase only on projects you trust.
+- Do not install untrusted skill packages.
+- Treat generated audit reports as advisory, not absolute proof of safety.
+- The skill installer has been hardened to reject unsafe symlinks and require explicit trust (`--trust-executables`) for executable command files.
+
+No critical source-code vulnerability was confirmed in the latest local audit, but the project should not yet be marketed as safe for arbitrary untrusted packages.
+</details>
 
 ---
 
@@ -19,7 +47,7 @@
 
 **ToolCase** is a portable, production-ready code improvement toolkit designed for **AI agents** (Hermes, Claude Code, Codex) and **developers**.
 
-It gives you **57 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, **RSI v2.0 recursive self-improvement with LLM Bridge**, and AI prompt optimization.
+It gives you **60 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, **RSI v2.0 recursive self-improvement with LLM Bridge**, and AI prompt optimization.
 
 **🆕 RSI v2.0**: Recursive Self-Improvement nu met Hermes LLM integratie — de RSI analyseert, Hermes fixt, de RSI leert. Geen API keys nodig.
 
@@ -30,7 +58,7 @@ It gives you **57 tools** across 10 categories — from static analysis and secu
 ## 🖥️ Quick Start
 
 ```bash
-# 1. Browse all 54 tools
+# 1. Browse all 60 tools
 python improve.py --list-tools
 
 # 2. Full project audit (all tools)
@@ -105,7 +133,7 @@ hermes -s toolcase-self-improve
 
 ## 🧰 Tool Reference — workflow highlights
 
-ToolCase registers 53 unique tools. Tools can support multiple workflows, so a
+ToolCase registers 60 unique tools. Tools can support multiple workflows, so a
 tool may be relevant to more than one section below. The canonical complete
 registry is maintained in `manifest.json` and `tools_config.json`.
 
@@ -213,6 +241,13 @@ registry is maintained in `manifest.json` and `tools_config.json`.
 | `dependency_visualizer.py` | Mermaid.js dependency diagrams |
 | `_protect.py` | Maker attribution integrity (SHA256) |
 
+### 🔬 Quality Assurance
+| Tool | Description |
+|------|-------------|
+| `scan_reliability.py` | Scanner reliability report — found/scanned/skipped/errors per scanner |
+| `release_readiness.py` | Pre-release GO/NO-GO checklist — 10 checks before you ship |
+| `sarif_exporter.py` | Export findings as SARIF v2.1.0 for GitHub Code Scanning |
+
 ---
 
 ## 🧪 Recursive Self-Improvement (RSI)
@@ -241,7 +276,7 @@ python recursive_self_improve.py . --focus code-quality
 ## 📁 Project Structure
 
 ```
-ToolCase v5.2/
+ToolCase v5.4/
 ├── improve.py                 # Main dispatcher
 ├── recursive_self_improve.py  # RSI — learns & improves itself
 ├── self_improve_loop.py       # 13-step improvement loop
@@ -253,7 +288,10 @@ ToolCase v5.2/
 ├── _protect.py                # Maker signature protection
 ├── install_toolcase.bat       # Windows installer
 ├── LICENSE                    # MIT
-├── *.py                       # 53 registered tool scripts
+├── *.py                       # 60 registered tool scripts
+├── scripts/
+│   ├── check_syntax.py          # AST syntax checker
+│   └── check_version_consistency.py  # CI version validator
 ├── tests/
 │   ├── test_*.py              # 70 unit tests (8 modules)
 │   └── __init__.py
@@ -266,7 +304,7 @@ ToolCase v5.2/
 
 | Metric | Value |
 |--------|-------|
-| Tools | 53 |
+| Tools | 60 |
 | Categories | 10 |
 | Unit tests | 70/70 ✅ |
 | Self-audit | Passing |
@@ -274,7 +312,7 @@ ToolCase v5.2/
 | Security HIGH/MEDIUM | 0 |
 | Config/docs/security findings | 0 |
 | License compliance | Passing |
-| Python files | 65 |
+| Python files | 73 |
 | Lines of code | 26,000+ |
 
 ---
@@ -291,7 +329,7 @@ ToolCase v5.2/
 MIT License — see [LICENSE](LICENSE).
 
 **Maker:** [SmokerGreenOG](https://github.com/SmokerGreenOG)
-**Version:** 5.2.0
+**Version:** 5.4.0
 **Built for:** Hermes Agent · Claude Code · Codex · Every AI Agent
 
 ---
