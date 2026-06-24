@@ -77,8 +77,15 @@ try:
     tc_count = len(tc["tools"])
     if canonical and tv != canonical:
         errors.append(f"tools_config.json ({tv}) != pyproject.toml ({canonical})")
-    if tc_count != 60:
-        errors.append(f"tools_config.json: Expected 60 tools, got {tc_count}")
+    # Tool count must match manifest.json, not a hardcoded number
+    try:
+        with open(ROOT / "manifest.json") as mf:
+            mf_data = json.load(mf)
+        mf_count = len(mf_data.get("tools", []))
+        if tc_count != mf_count:
+            errors.append(f"tools_config.json ({tc_count} tools) != manifest.json ({mf_count} tools)")
+    except Exception:
+        pass  # manifest check is done separately below
 except FileNotFoundError:
     errors.append("tools_config.json: MISSING (required)")
 except Exception as e:

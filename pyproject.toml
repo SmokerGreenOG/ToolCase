@@ -80,6 +80,7 @@ py-modules = [
     "rsi_apply_docs",
     "rsi_llm_bridge",
     "rsi_report_html",
+    "safe_run",
     "sarif_exporter",
     "scan_reliability",
     "security_scan",

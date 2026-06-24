@@ -468,12 +468,21 @@ def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
     else:
         parts = list(cmd)
 
+    # Flags whose next argument is NOT a file path
+    _CODE_FLAGS = frozenset({"-c", "-e", "-m", "--command", "-Command", "-EncodedCommand", "-enc"})
+
     paths = []
+    skip_next = False
     for part in parts:
+        if skip_next:
+            skip_next = False
+            continue
+        if part in _CODE_FLAGS or part.startswith("-EncodedCommand"):
+            skip_next = True
+            continue
         # Skip flags
         if part.startswith("-"):
             continue
-        # Skip executable name (first arg after the command itself)
         # Heuristic: paths contain / or \\ or start with .
         if "/" in part or "\\" in part or part.startswith("."):
             paths.append(part)
@@ -541,10 +550,11 @@ def classify_command(command: str | list[str]) -> ClassificationResult:
     highest_risk: Risk | None = None
 
     for pattern_def in ALL_PATTERNS:
-        match = pattern_def.regex.search(cmd_str)
-        if not match:
-            # Also try on the original command string (not lowercased)
-            match = pattern_def.regex.search(cmd_str if cmd_lower != cmd_str else "")
+        # Always search on lowercased command for case-insensitive matching
+        match = pattern_def.regex.search(cmd_lower)
+        if not match and cmd_lower != cmd_str:
+            # Fallback: try original-case for patterns that need it
+            match = pattern_def.regex.search(cmd_str)
         if match:
             if highest_risk is None or pattern_def.risk > highest_risk:
                 highest_risk = pattern_def.risk
@@ -606,7 +616,7 @@ def safe_run(
 
     Args:
         cmd: Command as list (preferred) or string.
-        workspace: If set, command paths must be within this directory.
+        workspace: If set, command paths and cwd must be within this directory.
         risk_level: Maximum allowed risk ('safe', 'low', 'medium', 'high').
                     'blocked' commands are never allowed.
         approval_required: If True, require explicit approval for >= MEDIUM risk.
@@ -614,20 +624,70 @@ def safe_run(
         allow_shell_interpreters: Allow `python -c`, `bash -c`, etc.
         allow_encoded_commands: Allow PowerShell -EncodedCommand etc.
         timeout: Subprocess timeout in seconds.
-        cwd: Working directory for the subprocess.
+        cwd: Working directory for the subprocess. Must be within workspace.
         capture_output: Capture stdout/stderr.
         text: Decode output as text.
         env: Environment variables.
-        **kwargs: Passed to subprocess.run().
+        **kwargs: REJECTED — dangerous kwargs (shell, executable, preexec_fn, etc.)
+                  are explicitly blocked. Only safe kwargs are forwarded.
 
     Returns:
         SafeRunResult with execution output and safety metadata.
-
-    Raises:
-        PermissionError: If command is blocked.
     """
+    # ── Reject dangerous kwargs ────────────────────────────
+    DANGEROUS_KWARGS = frozenset({
+        "shell", "executable", "preexec_fn", "start_new_session",
+        "pipesize", "pass_fds", "restore_signals",
+    })
+    dangerous = [k for k in kwargs if k in DANGEROUS_KWARGS]
+    if dangerous:
+        return SafeRunResult(
+            returncode=-1,
+            blocked=True,
+            block_reason=f"Rejected dangerous kwargs: {', '.join(sorted(dangerous))}",
+        )
+    # Keep only safe kwargs
+    safe_kwargs = {k: v for k, v in kwargs.items() if k not in DANGEROUS_KWARGS}
+
+    # ── Normalise command to list ──────────────────────────
+    if isinstance(cmd, str):
+        cmd_list = shlex.split(cmd)
+    else:
+        cmd_list = list(cmd)
+    cmd_str = " ".join(shlex.quote(str(p)) for p in cmd_list)
+
+    # ── cwd containment ────────────────────────────────────
+    if workspace is not None:
+        ws = resolve_workspace(workspace)
+        if cwd is not None:
+            cwd_resolved = Path(cwd).resolve()
+            if not is_within_workspace(cwd_resolved, ws):
+                _log.warning("CWD VIOLATION: cwd=%s outside workspace=%s", cwd, ws)
+                return SafeRunResult(
+                    returncode=-1,
+                    blocked=True,
+                    block_reason=f"cwd outside workspace: {cwd}",
+                )
+        # Resolve paths relative to effective cwd
+        effective_cwd = Path(cwd).resolve() if cwd else Path.cwd()
+        resolved_paths = []
+        for p in _extract_paths_from_command(cmd_list):
+            # Skip the executable itself (first arg)
+            if p == cmd_list[0]:
+                continue
+            resolved = (effective_cwd / p).resolve()
+            resolved_paths.append(str(resolved))
+        for p in resolved_paths:
+            if not is_within_workspace(p, ws):
+                _log.warning("WORKSPACE VIOLATION: %s (path=%s)", cmd_str, p)
+                return SafeRunResult(
+                    returncode=-1,
+                    blocked=True,
+                    block_reason=f"Path outside workspace: {p}",
+                )
+
     # ── Classify ──────────────────────────────────────────
-    classification = classify_command(cmd)
+    classification = classify_command(cmd_str)
 
     # Determine max allowed risk
     max_risk = Risk.SAFE
@@ -697,24 +757,7 @@ def safe_run(
             ),
         )
 
-    # ── Workspace containment ─────────────────────────────
-    if workspace is not None:
-        ws = resolve_workspace(workspace)
-        cmd_paths = _extract_paths_from_command(cmd)
-        for p in cmd_paths:
-            if not is_within_workspace(p, ws):
-                _log.warning(
-                    "WORKSPACE VIOLATION: %s (path=%s, workspace=%s)",
-                    classification.command,
-                    p,
-                    ws,
-                )
-                return SafeRunResult(
-                    returncode=-1,
-                    classification=classification,
-                    blocked=True,
-                    block_reason=f"Path outside workspace: {p}",
-                )
+    # ── Workspace containment (already checked above, skip duplicate) ──
 
     # ── Approval check ────────────────────────────────────
     if approval_required is None:
@@ -738,8 +781,6 @@ def safe_run(
         )
 
     # ── Execute ───────────────────────────────────────────
-    cmd_list = shlex.split(cmd) if isinstance(cmd, str) else list(cmd)
-    cmd_str = " ".join(shlex.quote(str(p)) for p in cmd_list)
 
     _log.info(
         "EXECUTE: %s (risk=%s, workspace=%s)",
@@ -750,13 +791,13 @@ def safe_run(
 
     try:
         result = subprocess.run(
-            cmd if isinstance(cmd, (list, str)) else cmd_list,
+            cmd_list,
             timeout=timeout,
             cwd=str(cwd) if cwd else None,
             capture_output=capture_output,
             text=text,
             env=env,
-            **kwargs,
+            **safe_kwargs,
         )
         _log.info(
             "COMPLETED: %s (exit=%d)",

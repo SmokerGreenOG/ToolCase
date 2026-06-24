@@ -536,7 +536,7 @@
     {
       "id": 62,
       "name": "check_syntax",
-      "script": "scripts/check_syntax.py",
+      "script": "check_syntax.py",
       "type": "Analyse",
       "risk": "Low",
       "desc": "Syntax checker — ast.parse() + compile() voor volledige validatie, vangt from __future__ placement errors"

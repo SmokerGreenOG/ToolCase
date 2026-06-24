@@ -115,7 +115,16 @@ def do_snapshot(base: Path, target: str, *, json_out: bool) -> int:
     try:
         if src.is_dir():
             dest_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(src, dest_path, dirs_exist_ok=True)
+            # Exclude backup dir, build artifacts, and generated reports from snapshots
+            _SNAPSHOT_EXCLUDE = frozenset({
+                BACKUP_DIR_NAME, ".rsi_reports", ".rsi_backups",
+                ".self_improve_reports", ".rsi_fix_queue",
+                "build", "dist", ".git", "__pycache__", ".venv", "venv",
+                ".pytest_cache", ".egg-info",
+            })
+            def _ignore(dirname: str, names: list[str]) -> set[str]:
+                return {n for n in names if n in _SNAPSHOT_EXCLUDE or n.endswith(".egg-info")}
+            shutil.copytree(src, dest_path, dirs_exist_ok=True, ignore=_ignore)
         else:
             dest_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dest_path)
@@ -424,6 +433,14 @@ def do_restore(base: Path, snapshot_id: str, *, json_out: bool, force: bool = Fa
             continue
 
         dest = base / rel
+        # Resolve symlinks and verify still within workspace
+        dest_resolved = dest.resolve()
+        try:
+            dest_resolved.relative_to(base.resolve())
+        except ValueError:
+            errors.append({"file": str(rel), "error": "resolves outside workspace (symlink)"})
+            continue
+
         dest.parent.mkdir(parents=True, exist_ok=True)
 
         try:

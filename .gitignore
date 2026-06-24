@@ -52,3 +52,4 @@ node_modules/
 
 # Temp leftovers from fixers
 _fix_*.py
+.safe_run.log

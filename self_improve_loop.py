@@ -1288,7 +1288,7 @@ def main():
         print(output)
 
     # ── Save report to file unless explicitly disabled or dry-run ──
-    if not args.no_report and not args.dry_run:
+    if not args.no_report and mode != "dry-run":
         try:
             report_dir = workspace / ".self_improve_reports"
             report_dir.mkdir(parents=True, exist_ok=True)
