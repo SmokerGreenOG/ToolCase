@@ -36,11 +36,15 @@ All notable changes to ToolCase are documented in this file.
 
 ### Stats
 
-- **57 tools** (was 54): +rsi_llm_bridge, +rsi_report_html, +rsi_apply_docs
-- **Kwaliteit**: 0.9480 → 0.9582 na docstring batch
-- **Docs**: 543 → 578 (+35 docstrings)
-- **25 LLM fixes** verwerkt in eerste run
-- **Cross-file analyse**: 22 duplicate functies gedetecteerd
+|- **60 tools**: +scan_reliability, +release_readiness, +sarif_exporter (v5.5 gates)
+|- **Kwaliteit**: 0.9990 → **1.0000** (alle 78 files scoren 1.0)
+|- **Docs**: 687 → 761 (+74 docstrings, 94.9% coverage)
+|- **Types**: 80 type hints toegevoegd aan test methods
+|- **244 LLM fixes** verwerkt, 19 learned patterns
+|- **E501**: 2 → 0, trailing whitespace: 49 → 0
+|- **Security**: 0 HIGH, 0 MEDIUM, 0 LOW
+|- **Scanner reliability**: 1.0
+|- **Cross-file analyse**: 23 duplicate functies (intentioneel — self-contained tools)
 
 ## [5.2.0] - 2026-06-20
 
