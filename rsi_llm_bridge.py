@@ -46,6 +46,7 @@ import _protect
 import argparse
 import hashlib
 import json
+import re
 import sys
 import time
 from dataclasses import dataclass, field, asdict
@@ -214,6 +215,22 @@ class LLMBridge:
         raw = f"{file_path}:{issue_type}:{description}:{time.time_ns()}"
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
+    def _validate_id(self, request_id: str) -> str:
+        """Validate request ID format and prevent path traversal."""
+        if not re.fullmatch(r"[0-9a-f]{16}", request_id):
+            raise ValueError(f"Invalid request ID format: {request_id}")
+        return request_id
+
+    def _safe_path(self, directory: Path, request_id: str) -> Path:
+        """Build a safe path within directory, validating containment."""
+        rid = self._validate_id(request_id)
+        target = (directory / f"{rid}.json").resolve()
+        try:
+            target.relative_to(directory.resolve())
+        except ValueError:
+            raise ValueError(f"Path traversal blocked: {request_id}")
+        return target
+
     def submit_fix(self, file_path: str, issue_type: str,
                    description: str, context: dict = None,
                    priority: float = 1.0) -> Optional[str]:
@@ -239,7 +256,7 @@ class LLMBridge:
             status="pending",
         )
 
-        req_file = self.pending_dir / f"{req_id}.json"
+        req_file = self._safe_path(self.pending_dir, req_id)
         req_file.write_text(
             json.dumps(request.to_dict(), indent=2, ensure_ascii=False),
             encoding="utf-8",
@@ -249,7 +266,7 @@ class LLMBridge:
 
     def get_result(self, request_id: str) -> Optional[FixResult]:
         """Haal het resultaat van een verwerkte request op."""
-        done_file = self.done_dir / f"{request_id}.json"
+        done_file = self._safe_path(self.done_dir, request_id)
         if done_file.exists():
             try:
                 data = json.loads(done_file.read_text(encoding="utf-8"))
@@ -257,7 +274,7 @@ class LLMBridge:
             except (json.JSONDecodeError, TypeError):
                 return None
 
-        failed_file = self.failed_dir / f"{request_id}.json"
+        failed_file = self._safe_path(self.failed_dir, request_id)
         if failed_file.exists():
             try:
                 data = json.loads(failed_file.read_text(encoding="utf-8"))
@@ -269,7 +286,7 @@ class LLMBridge:
 
     def mark_done(self, request_id: str, result: FixResult) -> None:
         """Markeer een request als afgewerkt (wordt aangeroepen door Hermes)."""
-        req_file = self.pending_dir / f"{request_id}.json"
+        req_file = self._safe_path(self.pending_dir, request_id)
         if req_file.exists():
             req_file.unlink()
 

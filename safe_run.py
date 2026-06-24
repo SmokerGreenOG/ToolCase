@@ -36,6 +36,7 @@ import logging
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -130,6 +131,20 @@ _SYSTEM_EXECUTABLES: frozenset[str] = frozenset({
     "npm", "npx", "pip", "pip3", "cargo",
     "make", "cmake", "gcc", "g++", "clang",
 })
+
+# Build set of resolved paths for known system executables
+def _build_resolved_allowlist() -> frozenset[str]:
+    """Resolve known executables via PATH and sys.executable."""
+    resolved = set()
+    # Always trust the current Python interpreter
+    resolved.add(str(Path(sys.executable).resolve()))
+    for exe in _SYSTEM_EXECUTABLES:
+        found = shutil.which(exe)
+        if found:
+            resolved.add(str(Path(found).resolve()))
+    return frozenset(resolved)
+
+_RESOLVED_SYSTEM_PATHS: frozenset[str] = _build_resolved_allowlist()
 
 # ---------------------------------------------------------------------------
 # Command pattern database
@@ -718,6 +733,7 @@ def safe_run(
     cmd_str = " ".join(shlex.quote(str(p)) for p in cmd_list)
 
     # ── cwd containment ────────────────────────────────────
+    execution_cwd: str | None = str(cwd) if cwd else None
     if workspace is not None:
         ws = resolve_workspace(workspace)
         if cwd is not None:
@@ -733,14 +749,20 @@ def safe_run(
         else:
             # Default cwd to workspace — prevents bare-filename bypass
             effective_cwd = ws
+        execution_cwd = str(effective_cwd)  # <-- USE THIS for subprocess too
         resolved_paths = []
         for p in _extract_paths_from_command(cmd_list):
-            # Known system executables are exempt from workspace containment
-            # (python, git, docker etc. live outside project workspaces)
-            exe_name = Path(p).name.lower()
-            if exe_name in _SYSTEM_EXECUTABLES:
+            # Only exempt executables found via system PATH, not explicit paths
+            # "/tmp/malicious/python" must NOT be exempt just because basename is "python"
+            exe_path = Path(p)
+            exe_name = exe_path.name.lower()
+            is_explicit_path = "/" in p or "\\" in p or (len(p) >= 2 and p[1] == ":")
+            if not is_explicit_path and exe_name in _SYSTEM_EXECUTABLES:
                 continue
+            # Check if resolved explicit path is a known system executable
             resolved = (effective_cwd / p).resolve()
+            if str(resolved) in _RESOLVED_SYSTEM_PATHS:
+                continue
             resolved_paths.append(str(resolved))
         for p in resolved_paths:
             if not is_within_workspace(p, ws):
@@ -871,7 +893,7 @@ def safe_run(
         result = subprocess.run(
             cmd_list,
             timeout=timeout,
-            cwd=str(cwd) if cwd else None,
+            cwd=execution_cwd,
             capture_output=capture_output,
             text=text,
             env=env,

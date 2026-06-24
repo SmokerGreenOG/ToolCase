@@ -330,13 +330,25 @@ def main() -> None:
 
     if args.id:
         bridge = LLMBridge(TOOLCASE_DIR)
-        # Find the request
-        req_file = bridge.pending_dir / f"{args.id}.json"
+        # Validate ID and get safe path
+        try:
+            req_file = bridge._safe_path(bridge.pending_dir, args.id)
+        except ValueError as e:
+            print(f"❌ Invalid request ID: {e}")
+            sys.exit(1)
         if not req_file.exists():
             print(f"❌ Request {args.id} niet gevonden.")
             sys.exit(1)
         data = json.loads(req_file.read_text(encoding="utf-8"))
-        filepath = Path(data["file_path"])
+        filepath = Path(data["file_path"]).resolve()
+        
+        # ── Workspace containment for --id path ──
+        try:
+            filepath.relative_to(bridge.workspace.resolve())
+        except ValueError:
+            print(f"❌ File outside workspace: {filepath}")
+            sys.exit(1)
+            
         result = apply_docstrings(filepath, dry_run=args.dry_run)
         for d in result["details"]:
             print(d)
