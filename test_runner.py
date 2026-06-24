@@ -66,26 +66,26 @@ RUNNER_DETECTION = {
     "pytest": {
         "config_files": ["pytest.ini", "pyproject.toml", "setup.cfg", "conftest.py"],
         "markers": ["pytest"],
-        "command_template": "cd {workdir} && python -m pytest {test_files} {flags}",
+        "command_template": "python -m pytest {test_files} {flags}",
     },
     "unittest": {
         "markers": ["unittest", "import unittest"],
-        "command_template": "cd {workdir} && python -m unittest discover -s {test_dir} {flags}",
+        "command_template": "python -m unittest discover -s {test_dir} {flags}",
     },
     "vitest": {
         "config_files": ["vitest.config.ts", "vitest.config.js"],
         "markers": ["vitest"],
-        "command_template": "cd {workdir} && npx vitest run {test_files} {flags}",
+        "command_template": "npx vitest run {test_files} {flags}",
     },
     "jest": {
         "config_files": ["jest.config.ts", "jest.config.js", "jest.config.json"],
         "markers": ["jest"],
-        "command_template": "cd {workdir} && npx jest {test_files} {flags}",
+        "command_template": "npx jest {test_files} {flags}",
     },
     "cargo_test": {
         "config_files": ["Cargo.toml"],
         "markers": ["#[test]", "#[cfg(test)]"],
-        "command_template": "cd {workdir} && cargo test {flags}",
+        "command_template": "cargo test {flags}",
     },
 }
 

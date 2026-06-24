@@ -120,6 +120,40 @@ if exist "%USERPROFILE%\.hermes\skills\" (
     echo    Download: https://hermes-agent.nousresearch.com
 )
 
+REM ── FAIL GATE — abort if any critical check failed ──────────
+echo.
+if !ERRORS! gtr 0 (
+    echo ╔══════════════════════════════════════════════════════════════╗
+    echo ║      ❌ INSTALLATIE MISLUKT — !ERRORS! compile fout(en)      ║
+    echo ╚══════════════════════════════════════════════════════════════╝
+    pause
+    exit /b 1
+)
+if not exist "%TC_DIR%tools_config.json" (
+    echo ❌ tools_config.json ontbreekt — installatie mislukt.
+    pause
+    exit /b 1
+)
+if not exist "%TC_DIR%manifest.json" (
+    echo ❌ manifest.json ontbreekt — installatie mislukt.
+    pause
+    exit /b 1
+)
+if not exist "%TC_DIR%SKILL.md" (
+    echo ❌ SKILL.md ontbreekt — installatie mislukt.
+    pause
+    exit /b 1
+)
+
+REM ── Quick verify ────────────────────────────────────────────
+echo 🔍 Quick verify: python improve.py --verify-install...
+python "%TC_DIR%improve.py" --verify-install
+if !ERRORLEVEL! neq 0 (
+    echo ❌ verify-install mislukt.
+    pause
+    exit /b 1
+)
+
 REM ── Summary ──────────────────────────────────────────────────
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗

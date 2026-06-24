@@ -188,7 +188,7 @@ These rules are **enforced in code** — never bypass them:
 ## Core Tool Reference
 
 The tables below cover the original core workflow. The canonical complete
-53-tool registry, including PHP, config and meta tooling, is maintained in
+60-tool registry, including PHP, config and meta tooling, is maintained in
 `manifest.json` and `tools_config.json`.
 
 ### Analyse & Code Quality (7)

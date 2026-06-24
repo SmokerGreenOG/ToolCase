@@ -10,7 +10,7 @@
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **60 tools · 10 categories · RSI v2.0 · CI-verified builds**
+> **60 tools · 10 categories · RSI v2.0 · Beta-stage toolkit**
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -38,7 +38,7 @@ ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase 
 - **File guard** (`file_guard.py`): Beschermt configuratiebestanden tegen overschrijving
 - **Skill installer hardening** (`skill_installer.py`): Symlink-bescherming, path containment verificatie, expliciete `--trust-executables` flag
 - **AST + compile syntax checks**: `check_syntax.py` gebruikt `ast.parse()` + `compile()` voor volledige validatie — zero side-effects
-- **Maker attribution**: Alle 61 tools geverifieerd via `__maker__` + SHA256 integriteit
+- **Maker attribution**: Alle tools bevatten `__maker__` + `_protect.py` voor attributiebewaking
 
 > 💡 ToolCase is een **analyse-toolkit**, geen netwerkdienst. Het draait lokaal, maakt geen
 > externe verbindingen, en voert alleen code uit die je zelf aanroept. De skill installer
@@ -313,10 +313,10 @@ ToolCase v5.4/
 | Tools | 60 |
 | Categories | 10 |
 | Unit tests | 70/70 ✅ |
-| Self-audit | Passing |
+| Self-audit | Passing (compile + syntax) |
 | Syntax errors | 0 |
 | Security HIGH/MEDIUM | 0 |
-| Config/docs/security findings | 0 |
+| Config/docs/security findings | Self-reported |
 | License compliance | Passing |
 | Python files | 78 |
 | Lines of code | 34,700+ |

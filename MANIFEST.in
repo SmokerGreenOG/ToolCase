@@ -1,0 +1,14 @@
+include tools_config.json
+include manifest.json
+include SKILL.md
+include dashboard.html
+include rsi_dashboard.html
+include icon.png
+include icon.svg
+include *.bat
+include *.md
+include LICENSE
+graft tests
+graft scripts
+graft docs
+graft demo

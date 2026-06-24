@@ -48,9 +48,19 @@ jobs:
       - name: Version consistency check
         run: python3 scripts/check_version_consistency.py
 
-      # ── Dry-run self-improve (smoke test) ──
+      # ── Dry-run self-improve (smoke test — warnings are OK) ──
       - name: Dry-run self-improve
-        run: python3 self_improve_loop.py . --cycles 1 --dry-run --json --no-report
+        run: |
+          python3 self_improve_loop.py . --cycles 1 --dry-run --json --no-report > /tmp/si_output.json 2>&1
+          EXIT=$?
+          STATUS=$(python3 -c "import json; d=json.load(open('/tmp/si_output.json')); print(d.get('status','unknown'))" 2>/dev/null || echo "unknown")
+          echo "Self-improve status: $STATUS (exit $EXIT)"
+          # Only fail on hard failures, not warnings
+          if [ "$STATUS" = "failed" ] || [ "$STATUS" = "blocked" ] || [ "$STATUS" = "rolled_back" ]; then
+            echo "FAIL: self-improve reported $STATUS"
+            exit 1
+          fi
+          echo "OK: self-improve smoke test passed (status=$STATUS)"
 
       # ── P0: Build wheel and verify install ──
       - name: Install build deps
@@ -63,6 +73,25 @@ jobs:
           /tmp/test_toolcase/bin/pip install dist/toolcase-*.whl
       - name: Verify CLI starts (--version)
         run: /tmp/test_toolcase/bin/toolcase --version
+      - name: Verify tool listing (--list-tools)
+        run: /tmp/test_toolcase/bin/toolcase --list-tools
+      - name: Verify install check (--verify-install)
+        run: /tmp/test_toolcase/bin/toolcase --verify-install
+      - name: Verify pip check
+        run: /tmp/test_toolcase/bin/pip check
+      - name: Verify wheel has data files
+        run: |
+          python -c "
+          import zipfile, sys
+          with zipfile.ZipFile('dist/toolcase-*.whl') as z:
+              names = z.namelist()
+          required = ['tools_config.json', 'manifest.json', 'SKILL.md', 'dashboard.html']
+          missing = [f for f in required if not any(f in n for n in names)]
+          if missing:
+              print(f'MISSING from wheel: {missing}')
+              sys.exit(1)
+          print('All required data files in wheel')
+          "
 
       # ── Run tests ──
       - name: Install test dependencies

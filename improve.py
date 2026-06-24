@@ -28,7 +28,7 @@ Gebruik:
     python improve.py --depgraph <path>         # Dependency graph
     python improve.py --all <path>              # Alle tools tegelijk
 
-  ToolCase v5.1:
+  ToolCase v5.4.0:
     python improve.py --command-guard <cmd>      # Guard: command checker
     python improve.py --file-guard <path>        # Guard: file protection
     python improve.py --permission-audit         # Audit: agent perms
@@ -52,7 +52,7 @@ Gebruik:
     python improve.py --verify-install           # Controleer installatie
 
 Dit bestand is het startpunt. Hermes kan dit bestand ZELF gebruiken
-om zijn eigen code te verbeteren via de code-improvement-loop skill.
+om zijn eigen code te verbeteren via de toolcase-self-improve skill.
 """
 
 __maker__ = "SmokerGreenOG"
@@ -79,7 +79,7 @@ from i18n import t, add_lang_arg, get_lang
 
 def _show_tool_list(lang: str = "en") -> None:
     """Print a tool overview in the requested language."""
-    cfg_path = Path(__file__).parent / "tools_config.json"
+    cfg_path = _data_path("tools_config.json")
     if not cfg_path.exists():
         print(t("could_not_load_config", lang=lang))
         return
@@ -117,9 +117,22 @@ def _show_tool_list(lang: str = "en") -> None:
     print("=" * 60)
 
 
+def _data_path(filename: str) -> Path:
+    """Find a data file — local dir first, then installed wheel data dir."""
+    local = Path(__file__).parent / filename
+    if local.exists():
+        return local
+    # Check installed wheel data directory
+    import sys
+    for base in (sys.prefix, sys.base_prefix):
+        candidate = Path(base) / "share" / "toolcase" / filename
+        if candidate.exists():
+            return candidate
+    return local  # fallback to local path (will fail clearly if missing)
+
+
 def _verify_install() -> bool:
     """Validate that the local ToolCase package is internally consistent."""
-    root = Path(__file__).parent
     required = [
         "README.md",
         "SKILL.md",
@@ -131,12 +144,12 @@ def _verify_install() -> bool:
     warnings = []
 
     for name in required:
-        if not (root / name).exists():
+        if not _data_path(name).exists():
             errors.append(f"Missing required file: {name}")
 
     try:
-        manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8-sig"))
-        config = json.loads((root / "tools_config.json").read_text(encoding="utf-8-sig"))
+        manifest = json.loads(_data_path("manifest.json").read_text(encoding="utf-8-sig"))
+        config = json.loads(_data_path("tools_config.json").read_text(encoding="utf-8-sig"))
     except Exception as exc:
         print(f"Install check failed: {exc}")
         return False
@@ -430,7 +443,7 @@ Voorbeelden:
   python improve.py src/ --recursive             # Hele directory
   python improve.py --code "def foo(): pass"     # Code snippet
   python improve.py --auto-fix script.py         # Analyseer + automatisch fixen
-  python improve.py --list-tools                 # Toon alle 53 tools
+  python improve.py --list-tools                 # Toon alle 60 tools
   python improve.py --json-config                # Output tool config als JSON
   python improve.py --verify-install             # Controleer installatie
         """,
@@ -492,7 +505,7 @@ Voorbeelden:
     parser.add_argument("--feature-gap", metavar="PATH",
                         help="Feature gap analyzer: vind frontend/backend gaten")
 
-    # ToolCase v5.1 tools
+    # ToolCase v5.4.0 tools
     parser.add_argument("--command-guard", metavar="CMD",
                         help="Guard: controleer terminal commands op veiligheid")
     parser.add_argument("--file-guard", metavar="FILE",
@@ -574,7 +587,7 @@ Voorbeelden:
         return
 
     if args.json_config:
-        cfg_path = Path(__file__).parent / "tools_config.json"
+        cfg_path = _data_path("tools_config.json")
         if cfg_path.exists():
             print(cfg_path.read_text(encoding="utf-8"))
         else:
@@ -621,16 +634,11 @@ Voorbeelden:
 
     # ── Tool dispatcher ──────────────────────────────────
     tool_path = Path(__file__).parent
+    _last_exit_code = 0
 
-    def _run_script(script_name: str, *extra_args: str) -> None:
-        """ run script.
-        
-            Args:
-                script_name: Description.
-        
-            Returns:
-                Description.
-            """
+    def _run_script(script_name: str, *extra_args: str) -> int:
+        """Run a tool script and return its exit code."""
+        nonlocal _last_exit_code
         cmd = [sys.executable, str(tool_path / script_name)] + list(extra_args)
         result = subprocess.run(
             cmd,
@@ -641,7 +649,11 @@ Voorbeelden:
         )
         print(result.stdout)
         if result.returncode != 0 and result.stderr.strip():
-            print(f" {t('exit_code', lang=lang, code=result.returncode)} | {result.stderr[:300]}")
+            print(f" {t('exit_code', lang=lang, code=result.returncode)} | {result.stderr[:300]}",
+                  file=sys.stderr)
+        if result.returncode != 0:
+            _last_exit_code = result.returncode
+        return result.returncode
 
     # Legacy tools
     if args.multiscan:
@@ -700,7 +712,7 @@ Voorbeelden:
         _run_script("rollback.py", action, target)
         return
 
-    # ToolCase v5.1 dispatcher
+    # ToolCase v5.4.0 dispatcher
     new_tools = [
         ("command_guard", "command_guard.py", False),
         ("file_guard", "file_guard.py", False),
@@ -765,7 +777,7 @@ Voorbeelden:
                 _run_script(script_name)
             else:
                 _run_script(script_name, str(val))
-            return
+            sys.exit(_last_exit_code)
 
     # Dispatch self_improve_loop.py (standalone workflow)
     if args.self_improve:
@@ -804,7 +816,7 @@ Voorbeelden:
         ]:
             print(f"\n{'='*60}\n 🛠  {tool_name} — {target}\n{'='*60}")
             _run_script(tool_script, target)
-        return
+        sys.exit(_last_exit_code)
 
     # ── Analyse modus ─────────────────────────────────────
     print(t("code_improvement_tool", lang=lang, VERSION="5.4.0"))

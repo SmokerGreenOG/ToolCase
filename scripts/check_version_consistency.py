@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
-"""CI version consistency check — verifies versions and tool counts match across ALL sources.
+"""CI version consistency check — verifies versions, tool counts, and integrity across ALL sources.
 
-Checks: pyproject.toml, manifest.json, tools_config.json, __init__.py (runtime),
-improve.py (--version output), README.md badge, CHANGELOG.md heading, SKILL.md.
+Checks: pyproject.toml (canonical), manifest.json, tools_config.json, __init__.py,
+improve.py (--version output), README.md, CHANGELOG.md, SKILL.md, dashboard.html,
+SECURITY.md, GITHUB_SETUP.md, i18n.py.
+
+All files are MANDATORY — missing files cause failure.
 """
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 try:
-    import tomllib  # Python 3.11+
+    import tomllib
 except ImportError:
     try:
         import tomli as tomllib
@@ -21,40 +25,48 @@ except ImportError:
 ROOT = Path(__file__).parent.parent
 errors = []
 
-# ── Load pyproject.toml version (canonical) ──────────────
+# ── Canonical version from pyproject.toml ──────────────
 try:
     with open(ROOT / "pyproject.toml", "rb") as f:
         ppt = tomllib.load(f)
     canonical = ppt["project"]["version"]
 except Exception as e:
-    errors.append(f"pyproject.toml: {e}")
+    errors.append(f"pyproject.toml: CANNOT READ — {e}")
     canonical = None
 
-def check_file(path: str, pattern: str, label: str) -> None:
-    """Check that a file contains the canonical version."""
+def require_file(path: str, label: str) -> str:
+    """Read a file; fail if missing."""
+    fp = ROOT / path
+    if not fp.exists():
+        errors.append(f"{path}: MISSING (required for {label})")
+        return ""
+    return fp.read_text(encoding="utf-8")
+
+def check_version(path: str, label: str, pattern: str, content: str = None) -> None:
+    """Check that the file contains EXACTLY the canonical version."""
     if canonical is None:
         return
-    try:
-        content = (ROOT / path).read_text(encoding="utf-8")
-        m = re.search(pattern, content)
-        if not m:
-            errors.append(f"{path}: version not found with pattern {pattern!r}")
+    if content is None:
+        content = require_file(path, label)
+        if not content:
             return
-        found = m.group(1)
-        if found != canonical:
-            errors.append(f"{path}: {found} != {canonical} ({label})")
-    except FileNotFoundError:
-        pass  # optional file
-    except Exception as e:
-        errors.append(f"{path}: {e}")
+    m = re.search(pattern, content)
+    if not m:
+        errors.append(f"{path}: version not found ({label})")
+        return
+    found = m.group(1)
+    if found != canonical:
+        errors.append(f"{path}: {found} != {canonical} ({label})")
 
-# ── Core config files ────────────────────────────────────
+# ── Mandatory config files ─────────────────────────────
 try:
     with open(ROOT / "manifest.json") as f:
         mf = json.load(f)
     mv = mf["version"]
     if canonical and mv != canonical:
-        errors.append(f"manifest.json ({mv}) != pyproject.toml ({canonical})")
+        errors.append(f"manifest.json: {mv} != {canonical}")
+except FileNotFoundError:
+    errors.append("manifest.json: MISSING (required)")
 except Exception as e:
     errors.append(f"manifest.json: {e}")
 
@@ -66,64 +78,90 @@ try:
     if canonical and tv != canonical:
         errors.append(f"tools_config.json ({tv}) != pyproject.toml ({canonical})")
     if tc_count != 60:
-        errors.append(f"Expected 60 tools, got {tc_count}")
+        errors.append(f"tools_config.json: Expected 60 tools, got {tc_count}")
+except FileNotFoundError:
+    errors.append("tools_config.json: MISSING (required)")
 except Exception as e:
     errors.append(f"tools_config.json: {e}")
 
-# ── Runtime version (__init__.py) ─────────────────────────
-check_file(
-    "__init__.py",
-    r'__version__\s*=\s*"([^"]+)"',
-    "__init__.__version__",
-)
+# ── Runtime version ────────────────────────────────────
+check_version("__init__.py", "__init__.__version__", r'__version__\s*=\s*"([^"]+)"')
+check_version("improve.py", "improve.py --version", r'version="improve\.py v([^"]+)"')
 
-# ── improve.py --version output ───────────────────────────
-check_file(
-    "improve.py",
-    r'version="improve\.py v([^"]+)"',
-    "improve.py --version",
-)
+# ── Actual CLI output ──────────────────────────────────
+if canonical:
+    try:
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "improve.py"), "--version"],
+            capture_output=True, text=True, timeout=10,
+        )
+        cli_out = result.stdout.strip()
+        cli_expected = f"improve.py v{canonical}"
+        if cli_out != cli_expected:
+            errors.append(f"CLI --version: '{cli_out}' != '{cli_expected}'")
+        if result.returncode != 0:
+            errors.append(f"CLI --version: exit code {result.returncode}")
+    except Exception as e:
+        errors.append(f"CLI --version: {e}")
 
-# ── improve.py embedded version strings ───────────────────
-check_file(
-    "improve.py",
-    r"VERSION=['\"]([^'\"]+)['\"]",
-    "improve.py VERSION=",
-)
+# ── Documentation files ────────────────────────────────
+check_version("README.md", "README badge", r"version-([\d.]+)-")
+check_version("CHANGELOG.md", "CHANGELOG heading", r"## \[([\d.]+)\]")
+check_version("SKILL.md", "SKILL version", r"version:\s*([\d.]+)")
+check_version("GITHUB_SETUP.md", "GITHUB_SETUP tag", r"v([\d.]+)")
 
-# ── README badge ─────────────────────────────────────────
-check_file(
-    "README.md",
-    r"version-([\d.]+)-",
-    "README.md badge",
-)
+# ── dashboard.html ─────────────────────────────────────
+dashboard = require_file("dashboard.html", "dashboard version")
+if dashboard:
+    check_version("dashboard.html", "dashboard <title>", r"ToolCase v([\d.]+)", dashboard)
+    # Also check <span id="version">
+    m2 = re.search(r'id="version">v([\d.]+)<', dashboard)
+    if m2 and m2.group(1) != canonical:
+        errors.append(f"dashboard.html span: {m2.group(1)} != {canonical}")
 
-# ── CHANGELOG heading ─────────────────────────────────────
-check_file(
-    "CHANGELOG.md",
-    r"## \[([\d.]+)\]",
-    "CHANGELOG.md heading",
-)
+# ── SECURITY.md ────────────────────────────────────────
+security = require_file("SECURITY.md", "security policy")
+if security:
+    m = re.search(r'\|\s*([\d.]+)\.x\s*\|', security)
+    if m and not canonical.startswith(m.group(1)):
+        errors.append(f"SECURITY.md: supports {m.group(1)}.x != {canonical}")
 
-# ── SKILL.md ──────────────────────────────────────────────
-check_file(
-    "SKILL.md",
-    r"version:\s*([\d.]+)",
-    "SKILL.md version",
-)
+# ── i18n.py ────────────────────────────────────────────
+i18n = require_file("i18n.py", "i18n translations")
+if i18n:
+    # Check version in header
+    m = re.search(r"v(\d+\.\d+\.\d+)", i18n)
+    if m and m.group(1) != canonical:
+        errors.append(f"i18n.py header: v{m.group(1)} != v{canonical}")
+    # Check old skill names are gone
+    if "code-improvement-loop" in i18n:
+        errors.append("i18n.py: contains old skill name 'code-improvement-loop'")
+    # Check old tool counts
+    if "34 tools" in i18n or "34 Werkzeuge" in i18n:
+        errors.append("i18n.py: contains old tool count '34'")
 
-# ── GITHUB_SETUP.md tag references ────────────────────────
-check_file(
-    "GITHUB_SETUP.md",
-    r"v([\d.]+)",
-    "GITHUB_SETUP.md tag",
-)
+# ── Manifest/tools_config cross-check ──────────────────
+try:
+    with open(ROOT / "manifest.json") as f:
+        manifest_tools = set(json.load(f).get("tools", []))
+    with open(ROOT / "tools_config.json") as f:
+        config_tools = set(t["script"] for t in json.load(f)["tools"].values())
+    if manifest_tools != config_tools:
+        only_manifest = manifest_tools - config_tools
+        only_config = config_tools - manifest_tools
+        if only_manifest:
+            errors.append(f"Tools in manifest not in config: {only_manifest}")
+        if only_config:
+            errors.append(f"Tools in config not in manifest: {only_config}")
+except Exception:
+    pass  # Already checked above
 
-# ── Report ────────────────────────────────────────────────
+# ── Report ─────────────────────────────────────────────
 if errors:
-    print("VERSION/CONFIG INCONSISTENCIES:", file=sys.stderr)
+    print(f"VERSION/CONFIG INCONSISTENCIES ({len(errors)}):", file=sys.stderr)
     for e in errors:
         print(f"  FAIL: {e}", file=sys.stderr)
     sys.exit(1)
 
+tc_count = tc_count if 'tc_count' in dir() else "?"
 print(f"✅ Version {canonical} consistent across all sources, {tc_count} tools in sync")

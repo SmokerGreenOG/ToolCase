@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-i18n.py — Central translation module for ToolCase v5.1.
+i18n.py — Central translation module for ToolCase v5.4.0.
 
 Provides gettext-like functionality for English, Dutch, and German.
 
@@ -139,17 +139,17 @@ TRANS = {
                "korrigieren)"),
     },
     "workflow_step3": {
-        "en": "  3. List tools: python improve.py --list-tools  (show all 34 tools)",
-        "nl": "  3. python improve.py --list-tools              (toon alle 34 tools)",
-        "de": "  3. python improve.py --list-tools              (alle 34 Werkzeuge anzeigen)",
+        "en": "  3. List tools: python improve.py --list-tools  (show all 60 tools)",
+        "nl": "  3. python improve.py --list-tools              (toon alle 60 tools)",
+        "de": "  3. python improve.py --list-tools              (alle 60 Werkzeuge anzeigen)",
     },
     "workflow_loop_hint": {
-        ("The 'code-improvement-loop' skill contains the full"
-               "workflow\nfor Hermes to independently improve code."),
-        ("De 'code-improvement-loop' skill bevat de volledige"
-               "workflow\nvoor Hermes om zelfstandig code te verbeteren."),
-        ("Die 'code-improvement-loop' Skill enthält den vollständigen"
-               "Workflow\nfür Hermes, um Code eigenständig zu verbessern."),
+        "en": ("The 'toolcase-self-improve' skill contains the full"
+               " workflow\nfor Hermes to independently improve code."),
+        "nl": ("De 'toolcase-self-improve' skill bevat de volledige"
+               " workflow\nvoor Hermes om zelfstandig code te verbeteren."),
+        "de": ("Die 'toolcase-self-improve' Skill enthält den vollständigen"
+               " Workflow\nfür Hermes, um Code eigenständig zu verbessern."),
     },
     "workflow_self_hint": {
         "en": ("Tip: Hermes can improve THIS file by loading it\nwith read_file, analyzing with"
@@ -242,9 +242,9 @@ TRANS = {
         "de": "Probleme:  {n}",
     },
     "loop_hint_summary": {
-        "en": "💡 Hermes can tackle these issues via the code-improvement-loop skill.",
-        "nl": "💡 Hermes kan deze issues aanpakken via de code-improvement-loop skill.",
-        "de": "💡 Hermes kann diese Probleme mit der code-improvement-loop Skill beheben.",
+        "en": "💡 Hermes can tackle these issues via the toolcase-self-improve skill.",
+        "nl": "💡 Hermes kan deze issues aanpakken via de toolcase-self-improve skill.",
+        "de": "💡 Hermes kann diese Probleme mit der toolcase-self-improve Skill beheben.",
     },
     "backup_failed": {
         "en": "⚠  Backup failed: {e}",
@@ -265,11 +265,11 @@ TRANS = {
     },
     "auto_fix_mode": {
         "en": ("🔧 Auto-fix mode — attempting syntax repair...\n   (Hermes can do this via the"
-               "code-improvement-loop skill)"),
+               "toolcase-self-improve skill)"),
         "nl": ("🔧 Auto-fix modus — probeer syntax te repareren...\n   (Hermes kan dit via de"
-               "code-improvement-loop skill)"),
+               "toolcase-self-improve skill)"),
         "de": ("🔧 Auto-Fix-Modus — versuche Syntax-Reparatur...\n   (Hermes kann dies mit der"
-               "code-improvement-loop Skill tun)"),
+               "toolcase-self-improve Skill tun)"),
     },
 
     # ── Language names ──

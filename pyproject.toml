@@ -23,6 +23,7 @@ classifiers = [
 toolcase = "improve:main"
 
 [tool.setuptools]
+include-package-data = true
 # All top-level .py modules (flat structure — no src/ layout yet)
 py-modules = [
     "__init__",
@@ -85,11 +86,26 @@ py-modules = [
     "skill_installer",
     "state_inspector",
     "test_runner",
+    "todo_tracker",
+    "type_coverage",
+    "ui_consistency",
+    "workspace_indexer",
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["demo", "demo.*", "docs", "docs.*", "scripts", "scripts.*"]
+
+[tool.setuptools.data-files]
+"share/toolcase" = [
+    "tools_config.json",
+    "manifest.json",
+    "SKILL.md",
+    "dashboard.html",
+    "rsi_dashboard.html",
+    "icon.png",
+    "icon.svg",
+]
 
 [tool.pytest.ini_options]
 addopts = "-v --tb=short"
