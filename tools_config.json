@@ -1,6 +1,6 @@
 {
   "__meta": {
-    "version": "5.3.0",
+    "version": "5.4.0",
     "maker": "SmokerGreenOG",
     "description": "ToolCase — Code Improvement Toolkit configuratie",
     "last_updated": "2026-06-23"
@@ -145,7 +145,10 @@
         "performance_profiler.py",
         "prompt_optimizer.py",
         "recursive_self_improve.py",
-        "type_coverage.py"
+        "type_coverage.py",
+        "rsi_llm_bridge.py",
+        "rsi_report_html.py",
+        "rsi_apply_docs.py"
       ]
     }
   ],
@@ -961,6 +964,54 @@
       "command": "python improve.py --apk-reverse <file.apk>",
       "read_only": true,
       "needs_approval": false
+    },
+    {
+      "id": 55,
+      "name": "rsi_llm_bridge.py",
+      "type": "Bridge",
+      "risk": "Low",
+      "tags": [
+        "AI",
+        "LLM",
+        "Queue",
+        "Read-only"
+      ],
+      "description": "RSI↔Hermes LLM bridge: fix-request queue voor intelligente code verbeteringen zonder API keys. Submit, poll, en leer van LLM-gegenereerde fixes.",
+      "command": "python rsi_llm_bridge.py [list-pending|list-done|show <id>|stats|clear]",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 56,
+      "name": "rsi_report_html.py",
+      "type": "Report",
+      "risk": "Low",
+      "tags": [
+        "Report",
+        "Dashboard",
+        "HTML",
+        "Chart.js"
+      ],
+      "description": "Genereert dark-themed HTML dashboard van RSI resultaten: Chart.js grafieken, stat cards, severity dots, cross-file analyse — ToolCase signature stijl.",
+      "command": "python rsi_report_html.py [--input <json>] [--output <html>] [--open]",
+      "read_only": true,
+      "needs_approval": false
+    },
+    {
+      "id": 57,
+      "name": "rsi_apply_docs.py",
+      "type": "Modify",
+      "risk": "Medium",
+      "tags": [
+        "Docs",
+        "Automation",
+        "LLM",
+        "Needs Approval"
+      ],
+      "description": "Batch docstring applicator: leest RSI queue, voegt ontbrekende docstrings toe aan Python functies via AST, valideert syntax, markeert resultaten in bridge.",
+      "command": "python rsi_apply_docs.py [--dry-run] [--id <request_id>]",
+      "read_only": false,
+      "needs_approval": true
     }
   ],
   "ignored_dirs": [

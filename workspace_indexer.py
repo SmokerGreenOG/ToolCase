@@ -308,6 +308,8 @@ def print_report(index: dict, show_tree: bool = False,
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="workspace_indexer.py — Index and analyze project workspace",
         formatter_class=argparse.RawDescriptionHelpFormatter,

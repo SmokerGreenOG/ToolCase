@@ -656,6 +656,14 @@ def _print_human(report: dict[str, Any]) -> None:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse args.
+    
+        Args:
+            argv: Description.
+    
+        Returns:
+            Description.
+        """
     parser = argparse.ArgumentParser(
         description="Check whether README/docs match the actual code.",
         epilog=(
@@ -682,6 +690,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """main.
+    
+        Args:
+            argv: Description.
+    
+        Returns:
+            Description.
+        """
     args = parse_args(argv)
 
     root = Path(args.path).resolve()

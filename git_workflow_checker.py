@@ -36,6 +36,14 @@ BRANCH_PATTERNS = {
 
 
 def run_git(cmd: list[str]) -> tuple[str, str, int]:
+    """Run git.
+    
+        Args:
+            cmd: Description.
+    
+        Returns:
+            Description.
+        """
     r = subprocess.run(
         ["git"] + cmd,
         capture_output=True, text=True, cwd=str(ROOT)
@@ -44,6 +52,8 @@ def run_git(cmd: list[str]) -> tuple[str, str, int]:
 
 
 def check() -> dict:
+    """check.
+        """
     errors, warnings, ok = [], [], []
 
     # Check if git repo
@@ -97,6 +107,8 @@ def check() -> dict:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(description="Git Workflow Checker")
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()

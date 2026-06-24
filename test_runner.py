@@ -375,6 +375,8 @@ def print_test_report(test_info: list[dict], results: dict = None,
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="test_runner.py — Discover and run tests in the project",
         formatter_class=argparse.RawDescriptionHelpFormatter,

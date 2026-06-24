@@ -66,6 +66,15 @@ def _make_fix(*steps: str) -> list[str]:
 
 
 def _explain_modulenotfound(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain modulenotfound.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     mod = m.group(1)
     return {
         "problem": f"Python cannot find the module '{mod}' — it is not installed or not on the import path.",
@@ -81,6 +90,15 @@ def _explain_modulenotfound(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_importerror(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain importerror.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     details = m.group(1) or "could not be imported"
     return {
         "problem": f"An import failed: {details}",
@@ -100,6 +118,15 @@ def _explain_importerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_syntaxerror(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain syntaxerror.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     # Two patterns: one with line number, one without
     line_raw = None
     detail = "invalid syntax"
@@ -129,6 +156,15 @@ def _explain_syntaxerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_typeerror(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain typeerror.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     detail = m.group(1) or "type mismatch"
     return {
         "problem": f"TypeError: {detail.strip()}",
@@ -145,6 +181,15 @@ def _explain_typeerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_valueerror(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain valueerror.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     detail = m.group(1) or "invalid value"
     return {
         "problem": f"ValueError: {detail.strip()}",
@@ -160,6 +205,15 @@ def _explain_valueerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_attributeerror(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain attributeerror.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     detail = m.group(1) or "object has no attribute"
     return {
         "problem": f"AttributeError: {detail.strip()}",
@@ -176,6 +230,15 @@ def _explain_attributeerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_nameerror(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain nameerror.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     name = m.group(1) or "variable"
     return {
         "problem": f"NameError: name '{name}' is not defined",
@@ -191,6 +254,15 @@ def _explain_nameerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_indexerror(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain indexerror.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     return {
         "problem": "IndexError: list index out of range",
         "cause": "Tried to access an element at an index that doesn't exist in the list/tuple.",
@@ -205,6 +277,15 @@ def _explain_indexerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_keyerror(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain keyerror.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     key = m.group(1) or "key"
     return {
         "problem": f"KeyError: '{key}'",
@@ -220,6 +301,15 @@ def _explain_keyerror(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_filenotfound(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain filenotfound.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     fname = m.group(1) or m.group(0)
     return {
         "problem": f"FileNotFoundError: {fname}",
@@ -288,6 +378,15 @@ _ERRNO_KNOWN = {
 
 
 def _explain_npm_install(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain npm install.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     return {
         "problem": "npm install failed — could not resolve or fetch dependencies.",
         "cause": ("Missing package, network issue, registry problem, or version conflict in package.json /"
@@ -304,6 +403,15 @@ def _explain_npm_install(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_npm_errcode(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain npm errcode.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     code = m.group(1) or "unknown"
     return {
         "problem": f"npm error code: {code}",
@@ -324,6 +432,15 @@ def _explain_npm_errcode(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_git_notrepo(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain git notrepo.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     return {
         "problem": "Not a git repository (or any parent up to mount point /).",
         "cause": "You ran a git command in a directory that isn't part of a Git working tree.",
@@ -339,6 +456,15 @@ def _explain_git_notrepo(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_git_mergeconflict(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain git mergeconflict.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     return {
         "problem": "Merge conflict — Git cannot automatically resolve conflicting changes.",
         "cause": ("Two branches modified the same part of the same file, and Git needs your help to choose"
@@ -355,6 +481,15 @@ def _explain_git_mergeconflict(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_git_detached(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain git detached.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     return {
         "problem": "HEAD is in a 'detached' state — not on any branch.",
         "cause": ("You checked out a specific commit, tag, or remote branch without a local tracking"
@@ -371,6 +506,15 @@ def _explain_git_detached(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_git_pushrejected(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain git pushrejected.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     return {
         "problem": "Git push was rejected — remote has commits you don't have locally.",
         "cause": ("Another developer pushed to the same branch, or"
@@ -462,6 +606,15 @@ _TS_KNOWN_ERRORS: dict[str, dict[str, Any]] = {
 
 
 def _explain_ts_error(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain ts error.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     code = m.group(1)
     if code in _TS_KNOWN_ERRORS:
         return dict(_TS_KNOWN_ERRORS[code])
@@ -481,6 +634,15 @@ def _explain_ts_error(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_rust_panic(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain rust panic.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     msg = m.group(1) or "(no message)"
     return {
         "problem": f"Rust panicked: {msg.strip()}",
@@ -498,6 +660,15 @@ def _explain_rust_panic(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_rust_compile(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain rust compile.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     return {
         "problem": ("Rust compilation error — the code does not satisfy the borrow checker or type"
                "system."),
@@ -520,6 +691,15 @@ def _explain_rust_compile(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_json_parse(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain json parse.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     detail = m.group(1) or "invalid JSON"
     return {
         "problem": f"JSON parse error: {detail.strip()}",
@@ -537,6 +717,15 @@ def _explain_json_parse(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_yaml_parse(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain yaml parse.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     detail = m.group(1) or "invalid YAML"
     return {
         "problem": f"YAML parse error: {detail.strip()}",
@@ -619,6 +808,15 @@ _NETWORK_KNOWN: dict[str, dict[str, Any]] = {
 
 
 def _explain_docker_daemon(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain docker daemon.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     return {
         "problem": "Cannot connect to the Docker daemon.",
         "cause": ("The Docker daemon (dockerd) is not running, or the current"
@@ -635,6 +833,15 @@ def _explain_docker_daemon(text: str, m: re.Match) -> dict[str, Any]:
 
 
 def _explain_docker_conflict(text: str, m: re.Match) -> dict[str, Any]:
+    """ explain docker conflict.
+    
+        Args:
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     name = m.group(1) or "container"
     return {
         "problem": f"Docker container/port conflict for '{name}'.",
@@ -891,6 +1098,8 @@ def explain_error(text: str) -> dict[str, Any]:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """ build parser.
+        """
     parser = argparse.ArgumentParser(
         description="Translate error messages into plain explanations and fix suggestions.",
         epilog=(
@@ -916,6 +1125,8 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    """main.
+        """
     parser = _build_parser()
     args = parser.parse_args()
 

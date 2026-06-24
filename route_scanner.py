@@ -316,6 +316,14 @@ def generate_graph(all_routes: list[dict]) -> str:
 
     # Sort routes by depth
     def route_depth(route: str) -> int:
+        """route depth.
+        
+            Args:
+                route: Description.
+        
+            Returns:
+                Description.
+            """
         return len([p for p in route.split("/") if p])
 
     sorted_routes = sorted(by_route.keys(), key=lambda r: (route_depth(r), r))
@@ -424,6 +432,8 @@ def print_report(all_routes: list[dict], show_unused: bool = False,
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="route_scanner.py — Scan frontend routes in React/TS projects",
         formatter_class=argparse.RawDescriptionHelpFormatter,

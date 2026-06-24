@@ -147,6 +147,8 @@ def run_pest(root: Path, filter_test: str = None) -> dict:
 
 
 def main():
+    """main.
+        """
     parser = argparse.ArgumentParser(description="php_test_runner.py - PHP test discovery & runner")
     parser.add_argument("path", help="PHP project directory")
     parser.add_argument("--filter", metavar="TEST", help="Filter tests by name")

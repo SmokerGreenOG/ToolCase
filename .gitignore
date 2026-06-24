@@ -41,6 +41,7 @@ release/
 .self_improve_reports/
 .rsi_reports/
 .rsi_backups/
+.rsi_fix_queue/
 .rsi_memory.json
 
 # Test fixtures (intentionally vulnerable code)

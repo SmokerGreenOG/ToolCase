@@ -603,6 +603,8 @@ def print_json(results: list, max_line: int) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="php_checker.py - PHP code quality & security checker",
         formatter_class=argparse.RawDescriptionHelpFormatter,

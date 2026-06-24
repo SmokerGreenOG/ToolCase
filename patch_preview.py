@@ -265,6 +265,8 @@ def print_report(fixes: list[dict], diff: str, filepath: str,
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="patch_preview.py — Preview what a patch would do before applying",
         formatter_class=argparse.RawDescriptionHelpFormatter,

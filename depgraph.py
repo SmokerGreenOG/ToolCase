@@ -418,6 +418,14 @@ def find_cycles(graph: dict, show_external: bool = False) -> list:
     parent = {}
 
     def dfs(u: str) -> None:
+        """dfs.
+        
+            Args:
+                u: Description.
+        
+            Returns:
+                Description.
+            """
         color[u] = GRAY
         for v in adj[u]:
             if color.get(v) == GRAY:
@@ -474,6 +482,8 @@ def compute_stats(graph: dict, show_external: bool = False) -> dict:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="Import/export dependency graph for JS/TS/Python/Rust."
     )

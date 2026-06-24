@@ -29,6 +29,14 @@ COMPOSER = shutil.which("composer") or shutil.which("composer.phar")
 
 
 def find_composer_files(root: Path) -> dict:
+    """Find composer files.
+    
+        Args:
+            root: Description.
+    
+        Returns:
+            Description.
+        """
     result = {
         "composer_json": None,
         "composer_lock": None,
@@ -235,6 +243,8 @@ def print_json_output(json_info: dict, lock_info: dict, audit: dict, outdated: d
 
 
 def main():
+    """main.
+        """
     parser = argparse.ArgumentParser(description="php_dep_audit.py - Composer dependency auditor")
     parser.add_argument("path", help="PHP project directory with composer.json")
     parser.add_argument("--json", "-j", action="store_true", help="JSON output")

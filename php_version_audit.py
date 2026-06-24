@@ -168,6 +168,14 @@ VERSION_ORDER = ["7.0", "7.1", "7.2", "7.3", "7.4", "8.0", "8.1", "8.2", "8.3"]
 
 
 def discover_php_files(root: Path) -> list[Path]:
+    """discover php files.
+    
+        Args:
+            root: Description.
+    
+        Returns:
+            Description.
+        """
     files = []
     for f in root.rglob("*.php"):
         try:
@@ -181,6 +189,15 @@ def discover_php_files(root: Path) -> list[Path]:
 
 
 def audit_file(filepath: Path, target_version: str) -> dict:
+    """audit file.
+    
+        Args:
+            filepath: Description.
+            target_version: Description.
+    
+        Returns:
+            Description.
+        """
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except:
@@ -227,6 +244,15 @@ def audit_file(filepath: Path, target_version: str) -> dict:
 
 
 def print_report(results: list[dict], target_version: str) -> None:
+    """Print report.
+    
+        Args:
+            results: Description.
+            target_version: Description.
+    
+        Returns:
+            Description.
+        """
     all_findings = []
     for r in results:
         all_findings.extend(r["findings"])
@@ -264,6 +290,15 @@ def print_report(results: list[dict], target_version: str) -> None:
 
 
 def print_json(results: list[dict], target_version: str) -> None:
+    """Print json.
+    
+        Args:
+            results: Description.
+            target_version: Description.
+    
+        Returns:
+            Description.
+        """
     all_findings = []
     for r in results:
         all_findings.extend(r["findings"])
@@ -281,6 +316,8 @@ def print_json(results: list[dict], target_version: str) -> None:
 
 
 def main():
+    """main.
+        """
     parser = argparse.ArgumentParser(description="php_version_audit.py - PHP version compatibility")
     parser.add_argument("path", help="PHP file or directory")
     parser.add_argument("--recursive", "-r", action="store_true")

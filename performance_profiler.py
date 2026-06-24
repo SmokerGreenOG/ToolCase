@@ -48,6 +48,14 @@ PATTERNS = {
 
 
 def analyze_file(filepath: Path) -> list[dict]:
+    """analyze file.
+    
+        Args:
+            filepath: Description.
+    
+        Returns:
+            Description.
+        """
     findings = []
     try:
         tree = ast.parse(filepath.read_text(encoding="utf-8", errors="replace"))
@@ -89,6 +97,14 @@ def analyze_file(filepath: Path) -> list[dict]:
 
 
 def scan_workspace(workspace: Path) -> list[dict]:
+    """Scan workspace.
+    
+        Args:
+            workspace: Description.
+    
+        Returns:
+            Description.
+        """
     all_findings = []
     for fp in sorted(workspace.glob("*.py")):
         if fp.name.startswith("_") or fp.name.startswith("test_"):
@@ -98,6 +114,8 @@ def scan_workspace(workspace: Path) -> list[dict]:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(description="Performance Profiler")
     parser.add_argument("path", nargs="?", default=".", help="Workspace")
     parser.add_argument("--json", "-j", action="store_true")

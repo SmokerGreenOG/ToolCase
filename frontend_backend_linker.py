@@ -444,6 +444,8 @@ def print_report(stats: dict, api_prefix: str) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="frontend_backend_linker.py — Cross-ref frontend/backend API endpoints",
         formatter_class=argparse.RawDescriptionHelpFormatter,

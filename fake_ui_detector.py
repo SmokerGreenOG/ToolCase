@@ -584,6 +584,8 @@ def print_report(result: dict, root: Path, verbose: bool = False) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="fake_ui_detector.py — Detect fake/demo UIs with no real backend",
         formatter_class=argparse.RawDescriptionHelpFormatter,

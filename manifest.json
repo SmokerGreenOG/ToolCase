@@ -1,6 +1,6 @@
 {
   "name": "toolcase-self-improve",
-  "version": "5.3.0",
+  "version": "5.4.0",
   "author": "SmokerGreenOG",
   "description": "ToolCase v5.2 — 53 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n",
   "hermes": {
@@ -476,6 +476,30 @@
       "type": "Reverse Engineering",
       "risk": "Low",
       "desc": "Android APK reverse engineering: manifest parsing, DEX→Java decompilation (jadx), component analysis, permissions audit"
+    },
+    {
+      "id": 55,
+      "name": "rsi_llm_bridge",
+      "script": "rsi_llm_bridge.py",
+      "type": "Bridge",
+      "risk": "Low",
+      "desc": "RSI↔Hermes LLM bridge: fix-request queue voor intelligente code verbeteringen zonder API keys"
+    },
+    {
+      "id": 56,
+      "name": "rsi_report_html",
+      "script": "rsi_report_html.py",
+      "type": "Report",
+      "risk": "Low",
+      "desc": "Dark-themed HTML dashboard van RSI resultaten met Chart.js grafieken"
+    },
+    {
+      "id": 57,
+      "name": "rsi_apply_docs",
+      "script": "rsi_apply_docs.py",
+      "type": "Modify",
+      "risk": "Medium",
+      "desc": "Batch docstring applicator: voegt ontbrekende docstrings toe via AST, valideert syntax"
     }
   ],
   "categories": [
@@ -591,7 +615,10 @@
         50,
         51,
         52,
-        53
+        53,
+        55,
+        56,
+        57
       ]
     }
   ]

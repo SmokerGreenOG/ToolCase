@@ -48,6 +48,14 @@ EMPTY_FUNC = re.compile(
 
 
 def discover_php_files(root: Path) -> list[Path]:
+    """discover php files.
+    
+        Args:
+            root: Description.
+    
+        Returns:
+            Description.
+        """
     files = []
     for f in root.rglob("*.php"):
         try:
@@ -61,6 +69,14 @@ def discover_php_files(root: Path) -> list[Path]:
 
 
 def analyze_file(filepath: Path) -> dict:
+    """analyze file.
+    
+        Args:
+            filepath: Description.
+    
+        Returns:
+            Description.
+        """
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except:
@@ -124,6 +140,15 @@ def find_unused(project_results: list[dict]) -> dict:
 
 
 def print_report(results: list[dict], unused: dict) -> None:
+    """Print report.
+    
+        Args:
+            results: Description.
+            unused: Description.
+    
+        Returns:
+            Description.
+        """
     total_funcs = sum(len(r["functions"]) for r in results)
     total_classes = sum(len(r["classes"]) for r in results)
     total_commented = sum(r["commented_blocks"] for r in results)
@@ -164,6 +189,15 @@ def print_report(results: list[dict], unused: dict) -> None:
 
 
 def print_json(results: list[dict], unused: dict) -> None:
+    """Print json.
+    
+        Args:
+            results: Description.
+            unused: Description.
+    
+        Returns:
+            Description.
+        """
     output = {
         "summary": {
             "total_files": len(results),
@@ -180,6 +214,8 @@ def print_json(results: list[dict], unused: dict) -> None:
 
 
 def main():
+    """main.
+        """
     parser = argparse.ArgumentParser(description="php_dead_code.py - PHP dead code finder")
     parser.add_argument("path", help="PHP file or directory")
     parser.add_argument("--recursive", "-r", action="store_true")

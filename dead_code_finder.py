@@ -382,6 +382,8 @@ def print_report(all_issues: list[dict]) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="dead_code_finder.py — Find unused imports, functions, and dead code",
         formatter_class=argparse.RawDescriptionHelpFormatter,

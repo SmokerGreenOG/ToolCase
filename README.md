@@ -1,15 +1,15 @@
-# ⚡ ToolCase v5.2 — AI Agent Code Toolkit
+# ⚡ ToolCase v5.4 — AI Agent Code Toolkit
 
-[![Version](https://img.shields.io/badge/version-5.3.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.3.0)
+[![Version](https://img.shields.io/badge/version-5.4.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.4.0)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
 [![Tests](https://img.shields.io/badge/tests-70%2F70-success?style=flat-square)]()
-[![Audit](https://img.shields.io/badge/self--audit-perfect_1.0-brightgreen?style=flat-square)]()
+[![Audit](https://img.shields.io/badge/self--audit-0.999-brightgreen?style=flat-square)]()
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **54 tools · 10 categories · 10 safety rules · reproducible self-audit**
+> **57 tools · 10 categories · 10 safety rules · RSI v2.0 LLM Bridge · reproducible self-audit**
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -19,7 +19,9 @@
 
 **ToolCase** is a portable, production-ready code improvement toolkit designed for **AI agents** (Hermes, Claude Code, Codex) and **developers**.
 
-It gives you **54 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, recursive self-improvement, and AI prompt optimization.
+It gives you **57 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, **RSI v2.0 recursive self-improvement with LLM Bridge**, and AI prompt optimization.
+
+**🆕 RSI v2.0**: Recursive Self-Improvement nu met Hermes LLM integratie — de RSI analyseert, Hermes fixt, de RSI leert. Geen API keys nodig.
 
 **Zero external dependencies. Python 3.11+ only.** Runs on Windows, macOS, and Linux.
 

@@ -273,6 +273,16 @@ def find_functions_rs(lines: list[str]) -> list[dict]:
 
 
 def _make_rs_func(lines: list[str], text: str, m: re.Match) -> dict | None:
+    """ make rs func.
+    
+        Args:
+            lines: Description.
+            text: Description.
+            m: Description.
+    
+        Returns:
+            Description.
+        """
     name = m.group(2)
     if not name:
         return None
@@ -764,6 +774,8 @@ def scan_recursive(path: str, threshold: int = 0, json_output: bool = False) -> 
 
 
 def main():
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="Complexity meter — cyclomatische complexiteit & cognitieve load",
         formatter_class=argparse.RawDescriptionHelpFormatter,

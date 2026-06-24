@@ -562,6 +562,8 @@ def do_prune(base: Path, keep: int, *, json_out: bool) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build parser.
+        """
     parser = argparse.ArgumentParser(
         description="Create, list, diff, restore, and prune timestamped snapshots.",
     )
@@ -609,6 +611,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    """main.
+        """
     parser = build_parser()
     args = parser.parse_args()
 

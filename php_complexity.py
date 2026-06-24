@@ -326,6 +326,8 @@ def print_json(results: list[dict], threshold: int) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="php_complexity.py - PHP cyclomatic complexity analyzer",
         formatter_class=argparse.RawDescriptionHelpFormatter,

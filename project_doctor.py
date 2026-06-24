@@ -422,6 +422,8 @@ def print_report(all_issues: list[dict], fixed: list[dict] = None) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="project_doctor.py — Diagnose project health and structure",
         formatter_class=argparse.RawDescriptionHelpFormatter,

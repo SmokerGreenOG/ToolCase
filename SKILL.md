@@ -1,28 +1,35 @@
 ---
 name: toolcase-self-improve
-description: "ToolCase v5.2 — 53 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow."
-version: 5.2.0
+description: "ToolCase v5.4 — 57 tools, RSI 2.0 met LLM Bridge (Hermes-integratie), recursive self-improvement, 10 safety rules, EN/NL/DE i18n. Full autonomous code health workflow met dark-themed dashboard."
+version: 5.4.0
 author: SmokerGreenOG
 metadata:
   hermes:
     tags: [toolcase, self-improvement, code-quality, automation, safety-first, code-audit, rsi, recursive]
 ---
 
-# ToolCase v5.2 — Self-Improvement Skill
+# ToolCase v5.4 — Self-Improvement Skill
 
 ## Overview
 
-ToolCase is a **53-tool code analysis and improvement toolkit**.
+ToolCase is a **57-tool code analysis and improvement toolkit**.
 Use this skill when the user wants to **audit, improve, or self-heal** their codebase.
+
+**🆕 RSI v2.0**: De recursive self-improvement is nu gekoppeld aan Hermes via een LLM Bridge — 
+intelligente fixes (docs, types, refactors, security) zonder API keys. 
+De RSI analyseert, Hermes fixt, de RSI leert.
 
 **Key files:**
 | File | Purpose |
 |------|---------|
-| `recursive_self_improve.py` | **RSI** — recursive self-improvement with learning memory |
+| `recursive_self_improve.py` | **RSI v2.0** — recursive self-improvement met LLM Bridge |
+| `rsi_llm_bridge.py` | **LLM Bridge** — fix-request queue tussen RSI en Hermes |
+| `rsi_report_html.py` | **Dashboard** — dark-themed HTML rapporten met Chart.js |
+| `rsi_apply_docs.py` | **Batch fixer** — automatisch docstrings toevoegen via AST |
 | `self_improve_loop.py` | 13-step autonomous improvement loop |
-| `improve.py` | Main orchestrator — dispatches 53 registered tools |
+| `improve.py` | Main orchestrator — dispatches 57 registered tools |
 | `i18n.py` | Translations (EN/NL/DE) |
-| `tools_config.json` | Central config — 53 tools, 10 categories, 10 rules |
+| `tools_config.json` | Central config — 57 tools, 10 categories, 10 rules |
 | `dashboard.html` | Web dashboard |
 | `_protect.py` | Maker attribution verification (SHA256) |
 | `manifest.json` | Hermes skill manifest |

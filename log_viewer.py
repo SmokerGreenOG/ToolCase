@@ -618,6 +618,8 @@ def print_report(stats: dict, root: Path) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="log_viewer.py — Scan and summarize errors in project log files",
         formatter_class=argparse.RawDescriptionHelpFormatter,

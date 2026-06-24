@@ -20,6 +20,14 @@ EXPECTED_MAKER = "SmokerGreenOG"
 
 
 def check_file(fp: Path) -> dict:
+    """Check file.
+    
+        Args:
+            fp: Description.
+    
+        Returns:
+            Description.
+        """
     try:
         content = fp.read_text(encoding="utf-8", errors="replace")
     except Exception:
@@ -54,6 +62,8 @@ def check_file(fp: Path) -> dict:
 
 
 def check_all() -> list[dict]:
+    """Check all.
+        """
     results = []
     for fp in sorted(ROOT.glob("*.py")):
         results.append(check_file(fp))
@@ -67,6 +77,8 @@ def check_all() -> list[dict]:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(description="License Checker")
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()

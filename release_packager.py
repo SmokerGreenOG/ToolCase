@@ -1016,6 +1016,8 @@ Examples:
 
 
 def main() -> None:
+    """main.
+        """
     parser = build_arg_parser()
     args = parser.parse_args()
 

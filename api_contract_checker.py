@@ -902,6 +902,8 @@ def print_report(result: dict) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="api_contract_checker.py — Detect frontend-backend API contract mismatches",
         formatter_class=argparse.RawDescriptionHelpFormatter,

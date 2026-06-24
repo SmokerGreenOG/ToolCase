@@ -336,6 +336,8 @@ def resolve_languages(lang_arg: Optional[str]) -> set[str]:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="multiscan.py — Multi-taal code quality scanner",
         formatter_class=argparse.RawDescriptionHelpFormatter,

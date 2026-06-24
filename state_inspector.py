@@ -819,6 +819,8 @@ def print_report(all_issues: list[dict]) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description=("state_inspector.py — Analyze React/Vue/Svelte state usage and detect"
                "anti-patterns"),

@@ -34,6 +34,14 @@ CLASS_PATTERN = re.compile(r'^\s*(?:abstract\s+)?(?:final\s+)?class\s+(\w+)', re
 
 
 def discover_php_files(root: Path) -> list[Path]:
+    """discover php files.
+    
+        Args:
+            root: Description.
+    
+        Returns:
+            Description.
+        """
     files = []
     for f in root.rglob("*.php"):
         try:
@@ -168,6 +176,8 @@ def print_json(results: list[dict], cycles: list[list[str]]) -> None:
 
 
 def main():
+    """main.
+        """
     parser = argparse.ArgumentParser(description="php_depgraph.py - PHP dependency graph")
     parser.add_argument("path", help="PHP file or directory")
     parser.add_argument("--recursive", "-r", action="store_true", help="Recursive scan")

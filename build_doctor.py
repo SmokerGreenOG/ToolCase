@@ -1320,6 +1320,8 @@ def build_json_output(all_issues: list[dict]) -> dict:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="build_doctor.py — Diagnose build and compilation problems",
         formatter_class=argparse.RawDescriptionHelpFormatter,

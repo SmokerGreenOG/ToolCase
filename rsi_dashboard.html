@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSI v2.0 — Dashboard | ToolCase</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #120720;
+  --bg-card: rgba(255,255,255,0.03);
+  --bg-card-hover: rgba(255,255,255,0.05);
+  --border: rgba(255,255,255,0.06);
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --purple: #A855F7;
+  --pink: #EC4899;
+  --blue: #3B82F6;
+  --cyan: #06B6D4;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --orange: #f97316;
+  --gradient-1: linear-gradient(135deg, #A855F7, #EC4899);
+  --gradient-2: linear-gradient(135deg, #3B82F6, #06B6D4);
+  --gradient-3: linear-gradient(135deg, #22c55e, #06B6D4);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Subtle grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(168,85,247,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(20px);
+}
+
+.header-left h1 {
+  font-size: 28px;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.header-left .subtitle {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-active { background: rgba(34,197,94,0.15); color: var(--green); }
+.badge-pending { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.badge-failed { background: rgba(239,68,68,0.15); color: var(--red); }
+
+/* Stat Cards Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: all 0.2s;
+  backdrop-filter: blur(20px);
+}
+
+.stat-card:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.stat-card .icon { font-size: 28px; margin-bottom: 8px; }
+.stat-card .value {
+  font-size: 32px;
+  font-weight: 700;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-card .value.green { background: var(--gradient-3); -webkit-background-clip: text; background-clip: text; }
+.stat-card .value.blue { background: var(--gradient-2); -webkit-background-clip: text; background-clip: text; }
+
+.stat-card .label {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.stat-card .delta {
+  font-size: 12px;
+  margin-top: 6px;
+}
+.stat-card .delta.up { color: var(--green); }
+.stat-card .delta.down { color: var(--red); }
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 900px) {
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  backdrop-filter: blur(20px);
+}
+
+.chart-card h3 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+}
+
+/* Tables */
+.table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+  backdrop-filter: blur(20px);
+}
+
+.table-card h3 {
+  font-size: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  padding: 10px 20px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 12px 20px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* Severity dots */
+.sev-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.sev-critical { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+.sev-high { background: var(--orange); box-shadow: 0 0 6px rgba(249,115,22,0.4); }
+.sev-medium { background: var(--yellow); }
+.sev-low { background: var(--blue); }
+.sev-info { background: var(--cyan); }
+
+/* Pattern bars */
+.pattern-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.pattern-bar .bar-fill {
+  height: 8px;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+.pattern-bar .bar-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  min-width: 80px;
+}
+.pattern-bar .bar-value {
+  font-size: 12px;
+  color: var(--text);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Section titles */
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 32px 0 16px;
+  color: var(--text);
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-dim);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+
+.footer .gradient-text {
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Focus badges */
+.focus-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.focus-all { background: rgba(168,85,247,0.2); color: var(--purple); }
+.focus-docs { background: rgba(59,130,246,0.2); color: var(--blue); }
+.focus-types { background: rgba(6,182,212,0.2); color: var(--cyan); }
+.focus-security { background: rgba(239,68,68,0.2); color: var(--red); }
+.focus-tests { background: rgba(34,197,94,0.2); color: var(--green); }
+
+/* Status indicators */
+.status-ok { color: var(--green); }
+.status-warn { color: var(--yellow); }
+.status-err { color: var(--red); }
+
+/* Glow effects */
+.glow-purple { box-shadow: 0 0 20px rgba(168,85,247,0.15); }
+.glow-pink { box-shadow: 0 0 20px rgba(236,72,153,0.15); }
+.glow-blue { box-shadow: 0 0 20px rgba(59,130,246,0.15); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.pulse { animation: pulse 2s infinite; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- Header -->
+<div class="header glow-purple">
+  <div class="header-left">
+    <h1>⚡ RSI v2.0 — Recursive Self-Improvement</h1>
+    <div class="subtitle">ToolCase · SmokerGreenOG · 2026-06-24 10:49</div>
+  </div>
+  <div class="header-right">
+    <span class="badge badge-active">v2.0</span>
+    <span class="badge badge-active">1 cycli</span>
+    <span class="badge badge-active">COMPLETED</span>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card glow-purple">
+    <div class="icon">📊</div>
+    <div class="value">0.9990</div>
+    <div class="label">Kwaliteitsscore</div>
+    <div class="delta down">+0.0000</div>
+  </div>
+  <div class="stat-card glow-blue">
+    <div class="icon">📁</div>
+    <div class="value blue">73</div>
+    <div class="label">Bestanden geanalyseerd</div>
+  </div>
+  <div class="stat-card glow-pink">
+    <div class="icon">🔧</div>
+    <div class="value">0</div>
+    <div class="label">Auto-fixes toegepast</div>
+    <div class="delta up">RSI direct</div>
+  </div>
+  <div class="stat-card glow-purple">
+    <div class="icon">🤖</div>
+    <div class="value">0</div>
+    <div class="label">LLM fixes queued</div>
+    <div class="delta up">Hermes</div>
+  </div>
+  <div class="stat-card">
+    <div class="icon">🔄</div>
+    <div class="value">21</div>
+    <div class="label">Cross-file issues</div>
+  </div>
+  <div class="stat-card">
+    <div class="icon">🧠</div>
+    <div class="value">8</div>
+    <div class="label">Geleerde patronen</div>
+    <div class="delta up">73 LLM fixes totaal</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+  <div class="chart-card glow-purple">
+    <h3>📈 Kwaliteit per Cyclus</h3>
+    <div class="chart-container">
+      <canvas id="qualityChart"></canvas>
+    </div>
+  </div>
+  <div class="chart-card glow-pink">
+    <h3>🎯 Fix Verdeling</h3>
+    <div class="chart-container">
+      <canvas id="fixChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Weight Chart -->
+<div class="chart-card glow-blue" style="margin-bottom: 32px;">
+  <h3>⚖️ Prioriteitsgewichten (Adaptief)</h3>
+  <div class="chart-container" style="height: 250px;">
+    <canvas id="weightChart"></canvas>
+  </div>
+</div>
+
+<!-- Cycle Details Table -->
+<div class="table-card">
+  <h3>📋 Cyclus Details</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Focus</th>
+        <th>Kwaliteit Voor</th>
+        <th>Kwaliteit Na</th>
+        <th>Δ</th>
+        <th>Auto</th>
+        <th>LLM</th>
+        <th>Cross-file</th>
+        <th>Tijd</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>#1</strong></td>
+        <td><span class="focus-badge focus-all">all</span></td>
+        <td>0.9990</td>
+        <td>0.9990</td>
+        <td class="">+0.0000</td>
+        <td>0</td>
+        <td>0</td>
+        <td>21</td>
+        <td>1.9s</td>
+        <td class="status-ok">● COMPLETED</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Top Patterns -->
+<div class="table-card">
+  <h3>🧠 Top Geleerde Patronen</h3>
+  <table>
+    <thead>
+      <tr><th>Patroon</th><th>Categorie</th><th>Success Rate</th><th>Verbetering</th><th>Keren Geprobeerd</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>LLM fix: 2 docstrings toegevoegd</td>
+        <td><span class="focus-badge focus-docs">docs</span></td>
+        <td style="color: var(--red)">0%</td>
+        <td>+0.000</td>
+        <td>12x</td>
+      </tr>
+      <tr>
+        <td>LLM fix: 1 docstrings toegevoegd</td>
+        <td><span class="focus-badge focus-docs">docs</span></td>
+        <td style="color: var(--red)">0%</td>
+        <td>+0.000</td>
+        <td>38x</td>
+      </tr>
+      <tr>
+        <td>E302: 5 ontbrekende blank lines</td>
+        <td><span class="focus-badge focus-code-quali">code-quality</span></td>
+        <td style="color: var(--red)">0%</td>
+        <td>+0.000</td>
+        <td>1x</td>
+      </tr>
+      <tr>
+        <td>E302: 11 ontbrekende blank lines</td>
+        <td><span class="focus-badge focus-code-quali">code-quality</span></td>
+        <td style="color: var(--red)">0%</td>
+        <td>+0.000</td>
+        <td>1x</td>
+      </tr>
+      <tr>
+        <td>LLM fix: Terechte observatie maar vereist handmatige code-review per bestand. Ge</td>
+        <td><span class="focus-badge focus-docs">docs</span></td>
+        <td style="color: var(--red)">0%</td>
+        <td>+0.000</td>
+        <td>12x</td>
+      </tr>
+      <tr>
+        <td>LLM fix: Tests hebben geen type hints nodig (standaard Python testpraktijk). Gee</td>
+        <td><span class="focus-badge focus-docs">docs</span></td>
+        <td style="color: var(--red)">0%</td>
+        <td>+0.000</td>
+        <td>8x</td>
+      </tr>
+      <tr>
+        <td>LLM fix: False positive: main() per tool is legitiem (CLI entry point). Geen act</td>
+        <td><span class="focus-badge focus-docs">docs</span></td>
+        <td style="color: var(--red)">0%</td>
+        <td>+0.000</td>
+        <td>2x</td>
+      </tr>
+      <tr>
+        <td>LLM fix: False positive: setUp/tearDown zijn unittest API conventies. Geen actie</td>
+        <td><span class="focus-badge focus-docs">docs</span></td>
+        <td style="color: var(--red)">0%</td>
+        <td>+0.000</td>
+        <td>1x</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div class="table-card">
+  <h3>⚖️ Gewichtsdistributie</h3>
+  <div style="padding: 20px;">
+    <div class="pattern-bar">
+      <span class="bar-label">syntax_errors</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 1%; background: var(--purple);"></div>
+      </div>
+      <span class="bar-value">6.9</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">type_coverage</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 0%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">2.1</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">docstring_coverage</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 100%; background: var(--purple);"></div>
+      </div>
+      <span class="bar-value">488.7</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">e501_long_lines</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 0%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">1.4</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">e302_blank_lines</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 0%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">0.7</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">test_coverage</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 1%; background: var(--blue);"></div>
+      </div>
+      <span class="bar-value">3.5</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">complexity</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 0%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">1.7</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">dead_code</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 1%; background: var(--blue);"></div>
+      </div>
+      <span class="bar-value">3.5</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">security_issues</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 1%; background: var(--purple);"></div>
+      </div>
+      <span class="bar-value">5.5</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">todo_markers</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 0%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">1.0</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">cross_file_duplication</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 1%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">2.8</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">import_hygiene</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 0%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">2.1</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">error_handling</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 1%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">2.8</span>
+    </div>
+    <div class="pattern-bar">
+      <span class="bar-label">naming_conventions</span>
+      <div style="flex:1; background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px;">
+        <div class="bar-fill" style="width: 0%; background: var(--cyan);"></div>
+      </div>
+      <span class="bar-value">1.4</span>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  <p><span class="gradient-text">⚡ ToolCase RSI v2.0</span> — Recursive Self-Improvement</p>
+  <p style="margin-top: 4px;">SmokerGreenOG · 2026 · 1 cycli · 8 geleerde patronen</p>
+</div>
+
+</div>
+
+<!-- Chart.js -->
+<script>
+// Color palette
+const purple = '#A855F7';
+const pink = '#EC4899';
+const blue = '#3B82F6';
+const cyan = '#06B6D4';
+const green = '#22c55e';
+const yellow = '#eab308';
+const red = '#ef4444';
+
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+// Quality Chart
+new Chart(document.getElementById('qualityChart'), {
+  type: 'line',
+  data: {
+    labels: ["Cycle 1"],
+    datasets: [{
+      label: 'Kwaliteit Voor',
+      data: [0.999],
+      borderColor: blue,
+      backgroundColor: 'rgba(59,130,246,0.1)',
+      fill: true,
+      tension: 0.3,
+      borderWidth: 2,
+      pointBackgroundColor: blue,
+      pointRadius: 5,
+    }, {
+      label: 'Kwaliteit Na',
+      data: [0.999],
+      borderColor: purple,
+      backgroundColor: 'rgba(168,85,247,0.1)',
+      fill: true,
+      tension: 0.3,
+      borderWidth: 2,
+      pointBackgroundColor: purple,
+      pointRadius: 5,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
+      tooltip: { mode: 'index', intersect: false }
+    },
+    scales: {
+      y: { min: 0, max: 1, ticks: { callback: v => v.toFixed(3) } }
+    }
+  }
+});
+
+// Fix Distribution Chart
+new Chart(document.getElementById('fixChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Auto-fixes (0)', 'LLM-queued (0)', 'Failed (0)'],
+    datasets: [{
+      data: [0, 0, 0],
+      backgroundColor: [purple, cyan, red + '44'],
+      borderColor: [purple, cyan, red],
+      borderWidth: 1,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } }
+    }
+  }
+});
+
+// Weight Chart
+new Chart(document.getElementById('weightChart'), {
+  type: 'bar',
+  data: {
+    labels: ["syntax_errors", "type_coverage", "docstring_coverage", "e501_long_lines", "e302_blank_lines", "test_coverage", "complexity", "dead_code", "security_issues", "todo_markers", "cross_file_duplication", "import_hygiene", "error_handling", "naming_conventions"],
+    datasets: [{
+      label: 'Prioriteitsgewicht',
+      data: [6.935613678313171, 2.0806841034939523, 488.74667445087965, 1.387122735662635, 0.6935613678313175, 3.4678068391565855, 1.7339034195782927, 3.4678068391565855, 5.54849094265054, 1.0403420517469761, 2.77424547132527, 2.0806841034939523, 2.77424547132527, 1.387122735662635],
+      backgroundColor: weight_values.map(v => v > 5 ? purple : v > 3 ? blue : cyan),
+      borderRadius: 6,
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      x: { grid: { display: false } }
+    }
+  }
+});
+</script>
+
+</body>
+</html>

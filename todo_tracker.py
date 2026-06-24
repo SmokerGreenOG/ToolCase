@@ -265,6 +265,8 @@ def print_report(all_todos: list[dict], show_assignees: bool = False,
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="todo_tracker.py — Scan project for TODO/FIXME/HACK markers",
         formatter_class=argparse.RawDescriptionHelpFormatter,

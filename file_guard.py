@@ -986,6 +986,8 @@ def action_status(path: Optional[str] = None, json_mode: bool = False) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build parser.
+        """
     parser = argparse.ArgumentParser(
         prog="file_guard",
         description="Protect important files from accidental overwrite, deletion, or rename.",

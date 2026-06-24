@@ -426,6 +426,8 @@ def print_results(env_issues: list[dict], file_issues: list[dict],
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="env_check.py — Check environment variables and config files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
