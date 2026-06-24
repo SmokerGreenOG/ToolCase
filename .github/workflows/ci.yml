@@ -52,24 +52,10 @@ jobs:
       - name: Dry-run self-improve
         run: |
           set +e
-          python3 self_improve_loop.py . --cycles 1 --dry-run --json --no-report > /tmp/si_output.txt 2>&1
+          python3 self_improve_loop.py . --cycles 1 --dry-run --json --no-report > /tmp/si_output.json
           EXIT=$?
           set -e
-          # Parse status from JSON in output (JSON may appear after terminal text)
-          STATUS=$(python3 -c "
-          import sys, json, re
-          text = open('/tmp/si_output.txt').read()
-          # Find JSON object in output
-          m = re.search(r'\{[^{}]*\"status\"[^{}]*\}', text, re.DOTALL)
-          if m:
-              try:
-                  d = json.loads(m.group())
-                  print(d.get('status', 'unknown'))
-              except:
-                  print('parse_error')
-          else:
-              print('no_json')
-          " 2>/dev/null || echo "no_status")
+          STATUS=$(python3 -c "import json; print(json.load(open('/tmp/si_output.json')).get('status','unknown'))" 2>/dev/null || echo "unknown")
           echo "Self-improve status: $STATUS (exit $EXIT)"
           if [ "$STATUS" = "failed" ] || [ "$STATUS" = "blocked" ] || [ "$STATUS" = "rolled_back" ]; then
             echo "FAIL: self-improve reported $STATUS"

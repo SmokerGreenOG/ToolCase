@@ -98,6 +98,7 @@ include = ["demo", "demo.*", "docs", "docs.*", "scripts", "scripts.*"]
 
 [tool.setuptools.data-files]
 "share/toolcase" = [
+    "README.md",
     "tools_config.json",
     "manifest.json",
     "SKILL.md",

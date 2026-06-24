@@ -1069,19 +1069,19 @@ def run_one_cycle(
     """Run one self-improvement cycle."""
     report = CycleReport(cycle=cycle, mode=mode, focus=focus)
 
-    print(f"\n{'─'*60}")
-    print(f"  Cycle {cycle}/{total_cycles} — Mode: {mode}  Focus: {focus}")
-    print(f"{'─'*60}")
+    print(f"\n{'─'*60}", file=sys.stderr)
+    print(f"  Cycle {cycle}/{total_cycles} — Mode: {mode}  Focus: {focus}", file=sys.stderr)
+    print(f"{'─'*60}", file=sys.stderr)
 
     # Step 1-5: Scan
-    print("\n  🔍 Scanning...")
+    print("\n  🔍 Scanning...", file=sys.stderr)
     scanner = CodeScanner(workspace, focus)
     findings = scanner.scan_all()
     report.findings = findings
-    print(f"     {len(findings)} finding(s)")
+    print(f"     {len(findings)} finding(s)", file=sys.stderr)
 
     # Step 6: Plan
-    print("\n  📋 Planning...")
+    print("\n  📋 Planning...", file=sys.stderr)
     planner = ImprovementPlanner(safety, mode)
     changes = planner.plan(findings)
     report.planned_improvements = changes
@@ -1089,18 +1089,18 @@ def run_one_cycle(
     safe_count = sum(1 for c in changes if c.category == "safe")
     approval_count = sum(1 for c in changes if c.category == "needs_approval")
     forbidden_count = sum(1 for c in changes if c.category == "forbidden")
-    print(f"     {safe_count} safe, {approval_count} need approval, {forbidden_count} forbidden")
+    print(f"     {safe_count} safe, {approval_count} need approval, {forbidden_count} forbidden", file=sys.stderr)
 
     # Report findings by severity (don't downgrade blocked/failed)
     critical = [f for f in findings if f.severity == "critical"]
     high = [f for f in findings if f.severity == "high"]
     if critical and report.status not in ("blocked",):
         report.status = "failed"
-        print("     🔴 Critical issues found — will not apply changes")
+        print("     🔴 Critical issues found — will not apply changes", file=sys.stderr)
     elif high and report.status not in ("blocked", "failed"):
         if mode == "safe-only":
             report.status = "warning"
-        print("     🟠 High severity issues found")
+        print("     🟠 High severity issues found", file=sys.stderr)
     elif findings and report.status not in ("blocked", "failed", "rolled_back"):
         report.status = "warning" if any(f.severity == "medium" for f in findings) else "passed"
 
@@ -1119,11 +1119,11 @@ def run_one_cycle(
         for c in changes:
             if c.category == "safe":
                 report.skipped_changes.append(c)
-        print(f"     🏁 Dry-run — no changes applied")
+        print(f"     🏁 Dry-run — no changes applied", file=sys.stderr)
         return report
 
     if report.status in ("failed", "blocked"):
-        print(f"     ⏹  Stopping — no changes applied")
+        print(f"     ⏹  Stopping — no changes applied", file=sys.stderr)
         return report
 
     if mode in ("safe-only", "apply"):
@@ -1138,24 +1138,24 @@ def run_one_cycle(
 
         report.applied_changes = executor.applied
         report.backup_paths = executor.backup_paths
-        print(f"     Applied: {len(executor.applied)}, Skipped: {len(executor.skipped)}")
+        print(f"     Applied: {len(executor.applied)}, Skipped: {len(executor.skipped)}", file=sys.stderr)
 
     # Step 10: Test
     if mode in ("safe-only", "apply"):
-        print("\n  🧪 Testing...")
+        print("\n  🧪 Testing...", file=sys.stderr)
         tester = TestRunner(workspace)
         test_result = tester.run(focus)
         report.tests = test_result
-        print(f"     Status: {test_result['status']}")
+        print(f"     Status: {test_result['status']}", file=sys.stderr)
 
         # Rule 9: Halt on regression
         if test_result["status"] == "failed":
-            print("     ⛔ RULE 9: Tests/build got worse!")
+            print("     ⛔ RULE 9: Tests/build got worse!", file=sys.stderr)
             rolled = executor.rollback_all()
             report.rollback = {"executed": True, "reason": f"Tests failed after changes"}
             report.status = "rolled_back"
             for f in rolled:
-                print(f"     ↩  Rolled back: {f}")
+                print(f"     ↩  Rolled back: {f}", file=sys.stderr)
             return report
 
         # Rule 10: Validate
@@ -1224,12 +1224,12 @@ def main():
     # ── Cycles limit ──
     cycles = min(args.cycles, MAX_CYCLES_LIMIT)
     if args.cycles > MAX_CYCLES_LIMIT:
-        print(f"⚠  Cycles capped at {MAX_CYCLES_LIMIT} (was {args.cycles})")
+        print(f"⚠  Cycles capped at {MAX_CYCLES_LIMIT} (was {args.cycles})", file=sys.stderr)
 
     # ── Resolve workspace ──
     workspace = Path(args.target).resolve()
     if not workspace.exists():
-        print(f"❌ Target does not exist: {workspace}")
+        print(f"❌ Target does not exist: {workspace}", file=sys.stderr)
         sys.exit(2)
     if not workspace.is_dir():
         workspace = workspace.parent
@@ -1239,13 +1239,14 @@ def main():
     reports: list[CycleReport] = []
     final_exit = 0
 
-    print(f"\n{'='*60}")
-    print(f" ♻️  ToolCase Self-Improve Loop")
-    print(f"{'='*60}")
-    print(f" Workspace: {workspace}")
-    print(f" Mode:      {mode}")
-    print(f" Focus:     {args.focus}")
-    print(f" Cycles:    {cycles}")
+    if not args.json:
+        print(f"\n{'='*60}")
+        print(f" ♻️  ToolCase Self-Improve Loop")
+        print(f"{'='*60}")
+        print(f" Workspace: {workspace}")
+        print(f" Mode:      {mode}")
+        print(f" Focus:     {args.focus}")
+        print(f" Cycles:    {cycles}")
 
     # ── Run cycles ──
     try:
