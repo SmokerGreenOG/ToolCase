@@ -240,7 +240,16 @@ def process_queue(dry_run: bool = False) -> dict:
     processed = 0
 
     for req in doc_requests:
-        filepath = Path(req.file_path)
+        filepath = Path(req.file_path).resolve()
+        
+        # ── Workspace containment ──
+        try:
+            filepath.relative_to(bridge.workspace.resolve())
+        except ValueError:
+            print(f"  🚫 {filepath.name}: Buiten workspace — overgeslagen")
+            total_failed += 1
+            continue
+            
         if not filepath.exists():
             print(f"  ⚠ {filepath.name}: Bestand niet gevonden")
             total_failed += 1

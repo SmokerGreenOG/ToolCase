@@ -1020,7 +1020,14 @@ class ImprovementExecutor:
         if not self.bridge:
             return None
 
-        filepath = Path(attempt.file)
+        filepath = Path(attempt.file).resolve()
+        
+        # ── Workspace containment: refuse files outside workspace ──
+        try:
+            filepath.relative_to(self.workspace.resolve())
+        except ValueError:
+            return None  # Silently refuse — file outside workspace
+
         context = {
             "file_path": str(filepath),
             "category": attempt.category,

@@ -612,9 +612,29 @@ def install_skill(source: str, force: bool = False,
 
     skill_name = metadata.get("name", src_path.name)
 
-    # Install: copy/link to registry
-    registry = _ensure_registry()
-    target_dir = registry / skill_name
+    # ── CRITICAL: validate skill_name before ANY filesystem operations ──
+    # Skill names must be simple identifiers, not paths
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", skill_name):
+        result["messages"].append(
+            f"❌ Invalid skill name: '{skill_name}'. "
+            f"Must be 1-64 chars, alphanumeric with . _ - only."
+        )
+        result["success"] = False
+        return result
+
+    # Resolve registry and target BEFORE any destructive operations
+    registry = _ensure_registry().resolve()
+    target_dir = (registry / skill_name).resolve()
+
+    # Verify target is within registry (path traversal protection)
+    try:
+        target_dir.relative_to(registry)
+    except ValueError:
+        result["messages"].append(
+            f"❌ Path traversal blocked: '{skill_name}' resolves outside registry"
+        )
+        result["success"] = False
+        return result
 
     if target_dir.exists():
         if force:

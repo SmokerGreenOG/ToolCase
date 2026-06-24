@@ -85,25 +85,41 @@ EXIT_ERROR = 3
 
 LOG_FILE = Path(__file__).parent / ".safe_run.log"
 
+_log: logging.Logger | None = None  # Lazy init — no file write on import
 
-def _init_logging() -> logging.Logger:
-    """Initialize execution audit log."""
+
+def _get_log() -> logging.Logger:
+    """Lazy-init the audit log. No file writes until first safe_run() call."""
+    global _log
+    if _log is not None:
+        return _log
+    
+    # Use a user-writable location, not site-packages
+    log_dir = Path.home() / ".toolcase" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    
     logger = logging.getLogger("safe_run")
     logger.setLevel(logging.INFO)
-
-    if not logger.handlers:
-        handler = logging.FileHandler(str(LOG_FILE), encoding="utf-8")
-        handler.setFormatter(logging.Formatter(
-            "%(asctime)s | %(levelname)s | %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        ))
-        logger.addHandler(handler)
-        logger.propagate = False
-
+    
+    handler = logging.FileHandler(str(log_dir / "safe_run.log"), encoding="utf-8")
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    ))
+    logger.addHandler(handler)
+    logger.propagate = False
+    
+    _log = logger
     return logger
 
 
-_log = _init_logging()
+def _mask_secrets(cmd_str: str) -> str:
+    """Mask potential secrets in command strings before logging."""
+    # Mask --token, --password, --api-key style args
+    masked = re.sub(r'(--\w*(?:token|password|secret|key|auth)\w*)\s+\S+', r'\1 ***', cmd_str, flags=re.IGNORECASE)
+    # Mask KEY=VALUE style
+    masked = re.sub(r'(\w*(?:TOKEN|PASSWORD|SECRET|KEY|AUTH)\w*)=\S+', r'\1=***', masked, flags=re.IGNORECASE)
+    return masked
 
 # Well-known system executables exempt from workspace containment
 _SYSTEM_EXECUTABLES: frozenset[str] = frozenset({
@@ -707,7 +723,7 @@ def safe_run(
         if cwd is not None:
             cwd_resolved = Path(cwd).resolve()
             if not is_within_workspace(cwd_resolved, ws):
-                _log.warning("CWD VIOLATION: cwd=%s outside workspace=%s", cwd, ws)
+                _get_log().warning("CWD VIOLATION: cwd=%s outside workspace=%s", cwd, ws)
                 return SafeRunResult(
                     returncode=-1,
                     blocked=True,
@@ -728,7 +744,7 @@ def safe_run(
             resolved_paths.append(str(resolved))
         for p in resolved_paths:
             if not is_within_workspace(p, ws):
-                _log.warning("WORKSPACE VIOLATION: %s (path=%s)", cmd_str, p)
+                _get_log().warning("WORKSPACE VIOLATION: %s (path=%s)", _mask_secrets(cmd_str), p)
                 return SafeRunResult(
                     returncode=-1,
                     blocked=True,
@@ -760,7 +776,7 @@ def safe_run(
 
     # ── Block checks ──────────────────────────────────────
     if classification.blocked:
-        _log.warning("BLOCKED: %s — %s", classification.command, classification.reason)
+        _get_log().warning("BLOCKED: %s — %s", _mask_secrets(classification.command), classification.reason)
         return SafeRunResult(
             returncode=-1,
             classification=classification,
@@ -769,7 +785,7 @@ def safe_run(
         )
 
     if classification.risk == Risk.BLOCKED:
-        _log.warning("BLOCKED: %s — %s", classification.command, classification.reason)
+        _get_log().warning("BLOCKED: %s — %s", _mask_secrets(classification.command), classification.reason)
         return SafeRunResult(
             returncode=-1,
             classification=classification,
@@ -781,7 +797,7 @@ def safe_run(
     if not allow_shell_interpreters:
         for p in SHELL_INTERPRETER_PATTERNS:
             if p.regex.search(classification.command):
-                _log.warning("BLOCKED (shell interpreter): %s", classification.command)
+                _get_log().warning("BLOCKED (shell interpreter): %s", classification.command)
                 return SafeRunResult(
                     returncode=-1,
                     classification=classification,
@@ -793,7 +809,7 @@ def safe_run(
     if not allow_encoded_commands:
         for p in ENCODED_COMMAND_PATTERNS:
             if p.regex.search(classification.command):
-                _log.warning("BLOCKED (encoded): %s", classification.command)
+                _get_log().warning("BLOCKED (encoded): %s", classification.command)
                 return SafeRunResult(
                     returncode=-1,
                     classification=classification,
@@ -803,7 +819,7 @@ def safe_run(
 
     # ── Risk level check ──────────────────────────────────
     if classification.risk > max_risk:
-        _log.warning(
+        _get_log().warning(
             "RISK EXCEEDED: %s (risk=%s, max=%s)",
             classification.command,
             classification.risk_label,
@@ -826,7 +842,7 @@ def safe_run(
         approval_required = classification.risk >= Risk.MEDIUM
 
     if approval_required and classification.risk >= Risk.MEDIUM:
-        _log.info(
+        _get_log().info(
             "APPROVAL REQUIRED: %s (risk=%s)",
             classification.command,
             classification.risk_label,
@@ -844,7 +860,7 @@ def safe_run(
 
     # ── Execute ───────────────────────────────────────────
 
-    _log.info(
+    _get_log().info(
         "EXECUTE: %s (risk=%s, workspace=%s)",
         cmd_str,
         classification.risk_label,
@@ -861,7 +877,7 @@ def safe_run(
             env=env,
             **safe_kwargs,
         )
-        _log.info(
+        _get_log().info(
             "COMPLETED: %s (exit=%d)",
             cmd_str,
             result.returncode,
@@ -874,7 +890,7 @@ def safe_run(
             approved=True,
         )
     except subprocess.TimeoutExpired as e:
-        _log.error("TIMEOUT: %s (%ds)", cmd_str, timeout or 0)
+        _get_log().error("TIMEOUT: %s (%ds)", _mask_secrets(cmd_str), timeout or 0)
         return SafeRunResult(
             returncode=-1,
             stderr=f"Command timed out after {timeout}s: {e}",
@@ -884,7 +900,7 @@ def safe_run(
             block_reason=f"Timeout after {timeout}s",
         )
     except FileNotFoundError as e:
-        _log.error("NOT FOUND: %s — %s", cmd_str, e)
+        _get_log().error("NOT FOUND: %s — %s", _mask_secrets(cmd_str), e)
         return SafeRunResult(
             returncode=-1,
             stderr=f"Command not found: {cmd_list[0] if cmd_list else cmd_str}",
@@ -894,7 +910,7 @@ def safe_run(
             block_reason=str(e),
         )
     except Exception as e:
-        _log.error("ERROR: %s — %s", cmd_str, e)
+        _get_log().error("ERROR: %s — %s", _mask_secrets(cmd_str), e)
         return SafeRunResult(
             returncode=-1,
             stderr=str(e),
