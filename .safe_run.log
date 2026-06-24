@@ -33,3 +33,11 @@
 2026-06-24 15:48:08 | INFO | EXECUTE: echo ok (risk=safe, workspace=D:\Temp\tmpnv_nli1f)
 2026-06-24 15:48:08 | INFO | COMPLETED: echo ok (exit=0)
 2026-06-24 15:48:08 | WARNING | WORKSPACE VIOLATION: ls 'D:\Temp\outside.txt' (path=D:\Temp\outside.txt, workspace=D:\Temp\tmpspwls955)
+2026-06-24 15:49:20 | WARNING | BLOCKED: powershell -EncodedCommand SGVsbG8= — PowerShell encoded command — obfuscated command that bypasses inspection.
+2026-06-24 15:49:20 | WARNING | RISK EXCEEDED: git clean -fdx (risk=high, max=safe)
+2026-06-24 15:49:20 | INFO | EXECUTE: echo hello_test (risk=safe, workspace=none)
+2026-06-24 15:49:20 | INFO | COMPLETED: echo hello_test (exit=0)
+2026-06-24 15:49:20 | WARNING | BLOCKED (shell interpreter): python -c 'print(1+1)'
+2026-06-24 15:49:20 | INFO | EXECUTE: echo ok (risk=safe, workspace=D:\Temp\tmpjndnly74)
+2026-06-24 15:49:20 | INFO | COMPLETED: echo ok (exit=0)
+2026-06-24 15:49:20 | WARNING | WORKSPACE VIOLATION: ls 'D:\Temp\outside.txt' (path=D:\Temp\outside.txt, workspace=D:\Temp\tmp81d3728n)

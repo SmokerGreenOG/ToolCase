@@ -524,6 +524,22 @@
       "type": "Export",
       "risk": "Low",
       "desc": "Export ToolCase findings als SARIF v2.1.0 voor GitHub Code Scanning integratie"
+    },
+    {
+      "id": 61,
+      "name": "safe_run",
+      "script": "safe_run.py",
+      "type": "Guard",
+      "risk": "High",
+      "desc": "Centrale veilige subprocess executor — workspace containment, shell-interpreter blocking, encoded command detection, risico-gebaseerde approval"
+    },
+    {
+      "id": 62,
+      "name": "check_syntax",
+      "script": "scripts/check_syntax.py",
+      "type": "Analyse",
+      "risk": "Low",
+      "desc": "Syntax checker — ast.parse() + compile() voor volledige validatie, vangt from __future__ placement errors"
     }
   ],
   "categories": [
