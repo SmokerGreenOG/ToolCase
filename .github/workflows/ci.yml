@@ -26,7 +26,7 @@ jobs:
 
       # ── P0: Compile all Python files ──
       - name: Compile all Python files (py_compile — strict)
-        shell: bash
+        shell: pwsh
         run: |
           python -c "
           import py_compile, sys
@@ -58,19 +58,28 @@ jobs:
 
       # ── Dry-run self-improve smoke test ──
       - name: Dry-run self-improve
-        shell: bash
+        shell: pwsh
         run: |
-          set +e
-          python self_improve_loop.py . --cycles 1 --dry-run --json --no-report > /tmp/si_output.json
-          EXIT=$?
-          set -e
-          STATUS=$(python -c "import json; print(json.load(open('/tmp/si_output.json')).get('status','unknown'))" 2>/dev/null || echo "unknown")
-          echo "Self-improve status: $STATUS (exit $EXIT)"
-          if [ "$STATUS" = "failed" ] || [ "$STATUS" = "blocked" ] || [ "$STATUS" = "rolled_back" ]; then
-            echo "FAIL: self-improve reported $STATUS"
+          $outfile = Join-Path $env:TEMP "si_output.json"
+          python self_improve_loop.py . --cycles 1 --dry-run --json --no-report 2>&1 | Out-File -FilePath $outfile -Encoding utf8
+          $EXIT = $LASTEXITCODE
+          if ($EXIT -ne 0) {
+            Write-Host "FAIL: self-improve exited $EXIT"
+            exit $EXIT
+          }
+          try {
+            $json = Get-Content $outfile -Raw | ConvertFrom-Json
+            $STATUS = $json.status
+          } catch {
+            Write-Host "FAIL: self-improve produced invalid JSON or crashed"
             exit 1
-          fi
-          echo "OK: self-improve smoke test passed"
+          }
+          Write-Host "Self-improve status: $STATUS (exit $EXIT)"
+          if ($STATUS -eq "failed" -or $STATUS -eq "blocked" -or $STATUS -eq "rolled_back" -or $STATUS -eq "unknown") {
+            Write-Host "FAIL: self-improve reported $STATUS"
+            exit 1
+          }
+          Write-Host "OK: self-improve smoke test passed"
 
       # ── Install test deps + coverage ──
       - name: Install test dependencies
@@ -78,11 +87,7 @@ jobs:
 
       # ── Run tests with coverage ──
       - name: Run tests with coverage
-        run: |
-          python -m pytest tests/ -v --tb=short \
-            --cov=. --cov-branch --cov-report=term-missing \
-            --cov-fail-under=70 \
-            --ignore=tests/fixtures
+        run: python -m pytest tests/ -v --tb=short --cov=. --cov-branch --cov-report=term-missing --cov-fail-under=70 --ignore=tests/fixtures
 
       # ── Build wheel + sdist ──
       - name: Install build deps
@@ -92,24 +97,25 @@ jobs:
       - name: Check distribution with twine
         run: python -m twine check dist/*
 
-      # ── Install wheel in clean venv and verify ──
+      # ── Install wheel in clean venv and verify (cross-platform) ──
       - name: Install wheel in clean venv
-        shell: bash
         run: |
-          python -m venv /tmp/test_toolcase
-          /tmp/test_toolcase/bin/pip install dist/toolcase-*.whl
+          python -m venv test_venv
+          .	est_venv\Scripts\Activate.ps1
+          pip install dist/toolcase-*.whl
+        shell: pwsh
       - name: Verify CLI (--version)
-        shell: bash
-        run: /tmp/test_toolcase/bin/toolcase --version
+        run: .	est_venv\Scripts	oolcase.exe --version
+        shell: pwsh
       - name: Verify CLI (--list-tools)
-        shell: bash
-        run: /tmp/test_toolcase/bin/toolcase --list-tools
+        run: .	est_venv\Scripts	oolcase.exe --list-tools
+        shell: pwsh
       - name: Verify CLI (--verify-install)
-        shell: bash
-        run: /tmp/test_toolcase/bin/toolcase --verify-install
+        run: .	est_venv\Scripts	oolcase.exe --verify-install
+        shell: pwsh
       - name: Verify pip check
-        shell: bash
-        run: /tmp/test_toolcase/bin/pip check
+        run: .	est_venv\Scripts\pip.exe check
+        shell: pwsh
       - name: Verify wheel has data files
         run: |
           python -c "

@@ -467,7 +467,7 @@ Voorbeelden:
     parser.add_argument("--recursive", "-r", action="store_true",
                         help="Recursief door directories")
     parser.add_argument("--verbose", "-v", action="store_true", help="Uitgebreide uitvoer")
-    parser.add_argument("--version", action="version", version="improve.py v5.4.1")
+    parser.add_argument("--version", action="version", version="improve.py v5.4.2")
     parser.add_argument("--list-tools", action="store_true",
                         help="Toon alle beschikbare tools in de ToolCase")
     parser.add_argument("--json-config", action="store_true",

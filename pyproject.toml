@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "toolcase"
-version = "5.4.1"
+version = "5.4.2"
 description = "AI Agent Code Toolkit — 62 tools for code analysis, security, APK reverse engineering, and recursive self-improvement"
 readme = "README.md"
 license = "LicenseRef-ToolCase-1.0"

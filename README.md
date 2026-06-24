@@ -1,6 +1,6 @@
 # ⚡ ToolCase v5.4 — AI Agent Code Toolkit
 
-[![Version](https://img.shields.io/badge/version-5.4.1-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.4.1)
+[![Version](https://img.shields.io/badge/version-5.4.2-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.4.2)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-ToolCase%201.0-7C3AED?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
@@ -120,13 +120,18 @@ toolcase --verify-install
 ```
 
 **Option C: Hermes skill only (for Hermes Agent users)**
-After installing with pip, copy the skill files including scripts:
+After installing with pip, copy the skill files including root scripts:
 ```bash
-mkdir -p ~/.hermes/skills/toolcase-self-improve
-cp SKILL.md manifest.json ~/.hermes/skills/toolcase-self-improve/
-cp -r scripts/ references/ ~/.hermes/skills/toolcase-self-improve/
+mkdir -p ~/.hermes/skills/toolcase-self-improve/{scripts,references}
+cp SKILL.md manifest.json improve.py self_improve_loop.py security_scan.py \
+   project_doctor.py multiscan.py complexity.py depgraph.py \
+   dead_code_finder.py todo_tracker.py dependency_audit.py \
+   license_checker.py env_check.py safe_run.py command_guard.py \
+   ~/.hermes/skills/toolcase-self-improve/
+cp scripts/*.py ~/.hermes/skills/toolcase-self-improve/scripts/
+cp references/*.md ~/.hermes/skills/toolcase-self-improve/references/ 2>/dev/null
 ```
-Or use the installer which does this automatically.
+Or use `install_toolcase.bat` which does all of this automatically.
 
 ---
 
@@ -312,7 +317,7 @@ ToolCase v5.4/
 │   ├── check_syntax.py          # AST syntax checker
 │   └── check_version_consistency.py  # CI version validator
 ├── tests/
-│   ├── test_*.py              # 109 tests (self-reported via pytest)
+│   ├── test_*.py              # 113 tests (self-reported via pytest)
 │   └── __init__.py
 └── README.md
 ```
@@ -352,7 +357,7 @@ ToolCase v5.4/
 ToolCase License 1.0 — see [LICENSE](LICENSE).
 
 **Maker:** [SmokerGreenOG](https://github.com/SmokerGreenOG)
-**Version:** 5.4.1
+**Version:** 5.4.2
 **Built for:** Hermes Agent · Claude Code · Codex · Every AI Agent
 
 ---

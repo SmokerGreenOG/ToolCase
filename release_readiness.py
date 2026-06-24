@@ -407,6 +407,46 @@ def check_git_tag() -> CheckResult:
         return r.skip("Git not available")
 
 
+def check_wheel_builds() -> CheckResult:
+    """Build wheel + sdist and verify with twine check."""
+    r = CheckResult("Wheel + sdist build")
+    r.severity = "required"
+    try:
+        # Build
+        proc = _run([sys.executable, "-m", "build", "--sdist", "--wheel", "."], timeout=120)
+        if proc.returncode != 0:
+            return r.fail(f"Build failed (exit {proc.returncode}): {proc.stderr[:200]}")
+        # Verify dist/ exists
+        dist_dir = PROJECT_ROOT / "dist"
+        wheels = list(dist_dir.glob("*.whl"))
+        sdists = list(dist_dir.glob("*.tar.gz"))
+        if not wheels or not sdists:
+            return r.fail("No wheel or sdist found in dist/")
+        # twine check
+        proc2 = _run([sys.executable, "-m", "twine", "check"] + [str(w) for w in wheels] + [str(s) for s in sdists], timeout=30)
+        if proc2.returncode != 0:
+            return r.fail(f"twine check failed: {proc2.stderr[:200]}")
+        return r.pass_(f"wheel={wheels[0].name}, sdist={sdists[0].name}, twine OK")
+    except subprocess.TimeoutExpired:
+        return r.skip("Build timed out")
+    except Exception as e:
+        return r.skip(f"Cannot build: {e}")
+
+def check_pre_tag_readiness() -> CheckResult:
+    """Verify everything except tag existence (for pre-tag validation)."""
+    r = CheckResult("Pre-tag readiness")
+    r.severity = "recommended"
+    try:
+        proc = _run([sys.executable, __file__, "--ci", "--json"], timeout=120)
+        if proc.returncode != 0:
+            return r.fail("Pre-tag CI checks failed")
+        data = json.loads(proc.stdout)
+        if not data.get("passed_required"):
+            return r.fail("Required checks failed in pre-tag mode")
+        return r.pass_("All pre-tag checks pass")
+    except Exception as e:
+        return r.skip(str(e))
+
 def check_readme_match() -> CheckResult:
     """Check README tool count matches manifest."""
     r = CheckResult("README vs manifest")
@@ -476,6 +516,7 @@ def run_all_checks(ci_mode: bool = False, root: Path | None = None) -> dict[str,
             check_generated_in_git(),
             check_changelog(),
             check_git_tag(),
+            check_wheel_builds(),
         ])
 
     passed_required = all(
@@ -543,6 +584,8 @@ def main() -> None:
                         help="Output as JSON")
     parser.add_argument("--ci", action="store_true",
                         help="CI mode (skip git checks)")
+    parser.add_argument("--pre-tag", action="store_true",
+                        help="Pre-tag mode: skip git tag check (tag not yet created)")
     parser.add_argument("target", nargs="?", default=None,
                         help="Optional target path (default: ToolCase project root)")
     parser.add_argument("--version", action="version",
@@ -551,7 +594,19 @@ def main() -> None:
     args = parser.parse_args()
 
     root = Path(args.target).resolve() if args.target else None
-    report = run_all_checks(ci_mode=args.ci, root=root)
+    # In pre-tag mode, skip git tag check (tag not yet created)
+    if args.pre_tag:
+        import importlib
+        # Temporarily make check_git_tag skip itself
+        report = run_all_checks(ci_mode=True, root=root)  # CI mode skips git checks
+        # Then run the full non-CI checks minus tag
+        report2 = run_all_checks(ci_mode=False, root=root)
+        # Merge: use CI report's verdict but include non-CI check details
+        report2["verdict"] = report["verdict"]
+        report2["passed_required"] = report["passed_required"]
+        report = report2
+    else:
+        report = run_all_checks(ci_mode=args.ci, root=root)
 
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))

@@ -592,15 +592,15 @@ def clean_temp_files(root: Path) -> int:
                 except Exception:
                     pass
 
-    # Clean common build output directories
-    for build_dir in ["build/", "dist/"]:
-        bd = root / build_dir
-        if bd.exists() and bd.is_dir():
-            try:
-                shutil.rmtree(bd)
-                cleaned += 1
-            except Exception:
-                pass
+    # Clean build/ directory (intermediate build artifacts only).
+    # Do NOT clean dist/ — it contains the built wheel and sdist.
+    build_dir = root / "build"
+    if build_dir.exists() and build_dir.is_dir():
+        try:
+            shutil.rmtree(build_dir)
+            cleaned += 1
+        except Exception:
+            pass
 
     return cleaned
 
@@ -1127,60 +1127,61 @@ def main() -> None:
 
     _print_step(f"Package: {metadata_info['name']} v{metadata_info['version']} ({metadata_info['type']})", "ok")
 
-    # ── Step 4: Run tests ──────────────────────────────────────
-    if skip_tests:
-        _print_step("Tests skipped (--skip-tests)", "skip")
-    else:
-        _print_step("Running tests...")
-        test_issues = run_tests(root)
-        all_issues.extend(test_issues)
-        blocking_tests = [i for i in test_issues if i.get("blocking")]
-        if blocking_tests:
-            if args.json:
-                report = format_report(
-                    preflight, secrets, (metadata_info, metadata_issues),
-                    test_issues, [], 0, None, None, None, None, all_issues, dry_run,
-                )
-                print(json.dumps(report, indent=2, ensure_ascii=False))
-            else:
-                print(f"\n ❌ Tests failed — release aborted")
-                for issue in blocking_tests:
-                    print(f"   • {issue['message']}")
-                    if issue.get("detail"):
-                        print(f"     {issue['detail'][:300]}")
-            sys.exit(EXIT_BLOCKED)
-
-    # ── Step 5: Run build ──────────────────────────────────────
-    if skip_build:
-        _print_step("Build skipped (--skip-build)", "skip")
-    else:
-        _print_step("Running build...")
-        build_issues = run_build(root, version_override)
-        all_issues.extend(build_issues)
-        blocking_build = [i for i in build_issues if i.get("blocking")]
-        if blocking_build:
-            if args.json:
-                report = format_report(
-                    preflight, secrets, (metadata_info, metadata_issues),
-                    [] if skip_tests else test_issues,
-                    build_issues, 0, None, None, None, None, all_issues, dry_run,
-                )
-                print(json.dumps(report, indent=2, ensure_ascii=False))
-            else:
-                print(f"\n ❌ Build failed — release aborted")
-                for issue in blocking_build:
-                    print(f"   • {issue['message']}")
-                    if issue.get("detail"):
-                        print(f"     {issue['detail'][:300]}")
-            sys.exit(EXIT_BLOCKED)
-
-    # ── Steps 6-10: Cleanup + Package (skip entirely if dry-run) ──
+    # ── Steps 4-10: Tests, Build, Cleanup, Package (ALL skipped in dry-run) ──
     if dry_run:
-        _print_step("Dry-run mode — skipping all write/cleanup steps", "skip")
-        # Dry-run MUST NEVER modify source workspace.
-        # No files are deleted, built, or moved in dry-run mode.
+        _print_step("Dry-run mode — skipping all write/cleanup/build steps", "skip")
+        # Dry-run: preflight + secrets + metadata only. Zero writes.
+        test_issues = []
+        build_issues = []
     else:
-        # ── Step 6: Clean temp files ─────────────────────────
+        # ── Step 4: Run tests ────────────────────────────────
+        if skip_tests:
+            _print_step("Tests skipped (--skip-tests)", "skip")
+        else:
+            _print_step("Running tests...")
+            test_issues = run_tests(root)
+            all_issues.extend(test_issues)
+            blocking_tests = [i for i in test_issues if i.get("blocking")]
+            if blocking_tests:
+                if args.json:
+                    report = format_report(
+                        preflight, secrets, (metadata_info, metadata_issues),
+                        test_issues, [], 0, None, None, None, None, all_issues, dry_run,
+                    )
+                    print(json.dumps(report, indent=2, ensure_ascii=False))
+                else:
+                    print(f"\n ❌ Tests failed — release aborted")
+                    for issue in blocking_tests:
+                        print(f"   • {issue['message']}")
+                        if issue.get("detail"):
+                            print(f"     {issue['detail'][:300]}")
+                sys.exit(EXIT_BLOCKED)
+
+        # ── Step 5: Run build ────────────────────────────────
+        if skip_build:
+            _print_step("Build skipped (--skip-build)", "skip")
+        else:
+            _print_step("Running build...")
+            build_issues = run_build(root, version_override)
+            all_issues.extend(build_issues)
+            blocking_build = [i for i in build_issues if i.get("blocking")]
+            if blocking_build:
+                if args.json:
+                    report = format_report(
+                        preflight, secrets, (metadata_info, metadata_issues),
+                        [] if skip_tests else test_issues,
+                        build_issues, 0, None, None, None, None, all_issues, dry_run,
+                    )
+                    print(json.dumps(report, indent=2, ensure_ascii=False))
+                else:
+                    print(f"\n ❌ Build failed — release aborted")
+                    for issue in blocking_build:
+                        print(f"   • {issue['message']}")
+                        if issue.get("detail"):
+                            print(f"     {issue['detail'][:300]}")
+                sys.exit(EXIT_BLOCKED)
+
+        # ── Step 6: Clean temp files (NOT dist/ — that's the built artifact) ──
         if no_clean:
             _print_step("Clean skipped (--no-clean)", "skip")
         else:

@@ -1,6 +1,6 @@
 @echo off
 REM =====================================================================
-REM  install_toolcase.bat — ToolCase v5.4.1 Windows Installer
+REM  install_toolcase.bat — ToolCase v5.4.2 Windows Installer
 REM  pip install, compile check, test run, release readiness.
 REM  HARD FAIL on every check — no warnings tolerated.
 REM  Maker: SmokerGreenOG
@@ -9,57 +9,92 @@ setlocal enabledelayedexpansion
 
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
-echo ║      ToolCase v5.4.1 — Windows Installer                   ║
+echo ║      ToolCase v5.4.2 — Windows Installer                   ║
 echo ║      62 tools · 10 safety rules · RSI v2.0 · safe_run      ║
 echo ║      Maker: SmokerGreenOG                                  ║
 echo ╚══════════════════════════════════════════════════════════════╝
 echo.
 
-REM ── Detect ToolCase directory (the directory containing this script) ──
+REM ── Detect ToolCase directory ──
 set "TC_DIR=%~dp0"
 if "%TC_DIR%"=="" set "TC_DIR=%CD%"
 echo 📍 ToolCase directory: %TC_DIR%
 pushd "%TC_DIR%"
 
-REM ── 1. Python version check (3.11+) ──────────────────────────
+REM ── 1. Python ≥ 3.11 check ────────────────────────────────────
 echo.
-echo [1/7] Checking Python ≥ 3.11...
+echo [1/8] Checking Python ≥ 3.11...
 where python >nul 2>&1
 if %ERRORLEVEL% neq 0 (
     echo ❌ Python not found. Install Python 3.11+ from https://www.python.org/
     popd && pause && exit /b 1
 )
-
-python -c "import sys; v=sys.version_info; assert v >= (3,11), f'Need 3.11+, have {v.major}.{v.minor}'; print(f'✅ Python {v.major}.{v.minor}.{v.micro}')"
+python -c "import sys; v=sys.version_info; assert v>=(3,11),f'Need 3.11+, have {v.major}.{v.minor}'; print(f'✅ Python {v.major}.{v.minor}.{v.micro}')"
 if %ERRORLEVEL% neq 0 (
-    echo ❌ Python 3.11+ required. Current version is too old.
+    echo ❌ Python 3.11+ required.
     popd && pause && exit /b 1
 )
 
-REM ── 2. pip install . ─────────────────────────────────────────
+REM ── 2. pip install .[test] ────────────────────────────────────
 echo.
-echo [2/7] Installing ToolCase via pip...
-python -m pip install . --quiet
+echo [2/8] Installing ToolCase + test dependencies...
+python -m pip install ".[test]" --quiet
 if %ERRORLEVEL% neq 0 (
     echo ❌ pip install failed.
     popd && pause && exit /b 1
 )
 echo ✅ pip install succeeded
 
-REM ── 3. Compile check ALL Python files ─────────────────────────
+REM ── 3. Test installed CLI (not source) ─────────────────────────
 echo.
-echo [3/7] Compile-checking all Python files...
+echo [3/8] Testing installed CLI...
+toolcase --version
+if %ERRORLEVEL% neq 0 (
+    echo ❌ toolcase --version failed
+    popd && pause && exit /b 1
+)
+toolcase --list-tools >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    echo ❌ toolcase --list-tools failed
+    popd && pause && exit /b 1
+)
+toolcase --verify-install
+if %ERRORLEVEL% neq 0 (
+    echo ❌ toolcase --verify-install failed
+    popd && pause && exit /b 1
+)
+python -m pip check
+if %ERRORLEVEL% neq 0 (
+    echo ❌ pip check failed
+    popd && pause && exit /b 1
+)
+echo ✅ Installed CLI verified
+
+REM ── 4. Compile check ALL Python files (no goto — nested if) ───
+echo.
+echo [4/8] Compile-checking all Python files...
 set ERRORS=0
 for /r "%TC_DIR%" %%f in (*.py) do (
-    echo %%~f | findstr /C:"__pycache__" >nul && goto :skip_compile
-    echo %%~f | findstr /C:".rsi_" >nul && goto :skip_compile
-    echo %%~f | findstr /C:".venv" >nul && goto :skip_compile
-    python -m py_compile "%%f" >nul 2>&1
+    echo %%~f | findstr /C:"__pycache__" >nul 2>&1
     if !ERRORLEVEL! neq 0 (
-        echo    ❌ %%~nxf — COMPILE ERROR
-        set /a ERRORS+=1
+        echo %%~f | findstr /C:".rsi_" >nul 2>&1
+        if !ERRORLEVEL! neq 0 (
+            echo %%~f | findstr /C:".venv" >nul 2>&1
+            if !ERRORLEVEL! neq 0 (
+                echo %%~f | findstr /C:"\build\" >nul 2>&1
+                if !ERRORLEVEL! neq 0 (
+                    echo %%~f | findstr /C:"\dist\" >nul 2>&1
+                    if !ERRORLEVEL! neq 0 (
+                        python -m py_compile "%%f" >nul 2>&1
+                        if !ERRORLEVEL! neq 0 (
+                            echo    ❌ %%~nxf — COMPILE ERROR
+                            set /a ERRORS+=1
+                        )
+                    )
+                )
+            )
+        )
     )
-    :skip_compile
 )
 
 if !ERRORS! gtr 0 (
@@ -68,9 +103,9 @@ if !ERRORS! gtr 0 (
 )
 echo ✅ All Python files compile successfully
 
-REM ── 4. Run tests ──────────────────────────────────────────────
+REM ── 5. Run tests ──────────────────────────────────────────────
 echo.
-echo [4/7] Running tests...
+echo [5/8] Running tests...
 python -m pytest tests -q --tb=short
 if %ERRORLEVEL% neq 0 (
     echo ❌ Tests failed.
@@ -78,18 +113,9 @@ if %ERRORLEVEL% neq 0 (
 )
 echo ✅ All tests passed
 
-REM ── 5. Verify install ─────────────────────────────────────────
-echo.
-echo [5/7] Verifying installation...
-python improve.py --verify-install
-if %ERRORLEVEL% neq 0 (
-    echo ❌ verify-install failed.
-    popd && pause && exit /b 1
-)
-
 REM ── 6. Release readiness ─────────────────────────────────────
 echo.
-echo [6/7] Checking release readiness...
+echo [6/8] Checking release readiness...
 python release_readiness.py --ci
 if %ERRORLEVEL% neq 0 (
     echo ❌ Release readiness check failed.
@@ -97,44 +123,56 @@ if %ERRORLEVEL% neq 0 (
 )
 echo ✅ Release readiness: GO
 
-REM ── 7. Hermes skill installation (optional) ──────────────────
+REM ── 7. Security scan ─────────────────────────────────────────
 echo.
-echo [7/7] Installing Hermes skill...
+echo [7/8] Running security scan...
+python security_scan.py . --json >nul 2>&1
+if %ERRORLEVEL% gtr 1 (
+    echo ❌ Security scan found HIGH/MEDIUM issues.
+    popd && pause && exit /b 1
+)
+echo ✅ Security scan clean
+
+REM ── 8. Hermes skill installation (optional) ──────────────────
+echo.
+echo [8/8] Installing Hermes skill...
 if exist "%USERPROFILE%\.hermes\skills\" (
     echo    Hermes skills directory found
     set "SKILL_DIR=%USERPROFILE%\.hermes\skills\toolcase-self-improve"
     if not exist "!SKILL_DIR!" mkdir "!SKILL_DIR!"
 
-    REM Copy skill files: SKILL.md, manifest.json, AND scripts
-    copy /Y "%TC_DIR%SKILL.md" "!SKILL_DIR!\SKILL.md" >nul
-    if %ERRORLEVEL% neq 0 (
+    copy /Y "%TC_DIR%SKILL.md" "!SKILL_DIR!\SKILL.md" >nul || (
         echo ❌ Failed to copy SKILL.md
         popd && pause && exit /b 1
     )
-    copy /Y "%TC_DIR%manifest.json" "!SKILL_DIR!\manifest.json" >nul
-    if %ERRORLEVEL% neq 0 (
+    copy /Y "%TC_DIR%manifest.json" "!SKILL_DIR!\manifest.json" >nul || (
         echo ❌ Failed to copy manifest.json
         popd && pause && exit /b 1
     )
 
-    REM Copy scripts referenced by manifest.json
+    REM Copy root Python scripts (improve.py, self_improve_loop.py, etc.)
+    for %%s in (improve.py self_improve_loop.py security_scan.py project_doctor.py multiscan.py complexity.py depgraph.py dead_code_finder.py todo_tracker.py dependency_audit.py license_checker.py env_check.py safe_run.py command_guard.py) do (
+        if exist "%TC_DIR%%%s" (
+            copy /Y "%TC_DIR%%%s" "!SKILL_DIR!\%%s" >nul
+        )
+    )
+
+    REM Copy scripts/ and references/
     if not exist "!SKILL_DIR!\scripts" mkdir "!SKILL_DIR!\scripts"
-    xcopy /Y /Q "%TC_DIR%scripts\*.py" "!SKILL_DIR!\scripts\" >nul
+    xcopy /Y /Q "%TC_DIR%scripts\*.py" "!SKILL_DIR!\scripts\" >nul 2>&1
     if not exist "!SKILL_DIR!\references" mkdir "!SKILL_DIR!\references"
-    xcopy /Y /Q "%TC_DIR%references\*.md" "!SKILL_DIR!\references\" >nul 2>nul
+    xcopy /Y /Q "%TC_DIR%references\*.md" "!SKILL_DIR!\references\" >nul 2>&1
 
     echo ✅ ToolCase skill installed for Hermes
     echo    Use: hermes -s toolcase-self-improve
 ) else (
     echo    ⚠ Hermes skills directory not found — skipping skill install
-    echo    Install Hermes Agent from https://hermes-agent.nousresearch.com
-    echo    Then re-run this script or manually copy SKILL.md to ~/.hermes/skills/toolcase-self-improve/
 )
 
 REM ── Summary ──────────────────────────────────────────────────
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
-echo ║      ✅ ToolCase v5.4.1 — Installation Complete             ║
+echo ║      ✅ ToolCase v5.4.2 — Installation Complete             ║
 echo ╠══════════════════════════════════════════════════════════════╣
 echo ║  📍 %TC_DIR%
 echo ║  🛠  62 tools · 10 safety rules · RSI v2.0
@@ -142,15 +180,10 @@ echo ║  🔒 safe_run executor · workspace containment
 echo ║  🌐  EN/NL/DE i18n
 echo ║                                                              ║
 echo ║  Quick start:                                                ║
-echo ║    python improve.py --list-tools          (show 62 tools)   ║
-echo ║    python improve.py --core-scan .         (10 read-only)    ║
-echo ║    python self_improve_loop.py . --dry-run (dry run)         ║
-echo ║    python release_readiness.py             (pre-release)     ║
-echo ║                                                              ║
-echo ║  CLI entry point (after pip install):                        ║
 echo ║    toolcase --version                                        ║
 echo ║    toolcase --list-tools                                     ║
-echo ║    toolcase --verify-install                                 ║
+echo ║    toolcase --core-scan .                                    ║
+echo ║    python self_improve_loop.py . --dry-run                   ║
 echo ╚══════════════════════════════════════════════════════════════╝
 echo.
 

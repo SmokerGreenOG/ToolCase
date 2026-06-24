@@ -412,6 +412,23 @@ def _is_shell_interpreter_cmd(cmd_list: list[str]) -> bool:
     """
     if not cmd_list:
         return False
+
+def _is_encoded_command(cmd_list: list[str]) -> bool:
+    """Check for PowerShell encoded commands via argv-token analysis.
+
+    Catches ``powershell.exe -EncodedCommand ...`` and full Windows paths
+    that the regex patterns might miss.
+    """
+    if not cmd_list:
+        return False
+    exe_name = Path(cmd_list[0]).name.lower()
+    if exe_name.endswith(".exe"):
+        exe_name = exe_name[:-4]
+    if exe_name not in ("powershell", "pwsh"):
+        return False
+    # Check for encoded-command flags in remaining args
+    flags = {arg.lower().split("=", 1)[0] for arg in cmd_list[1:]}
+    return bool(flags & {"-encodedcommand", "-enc", "-e"})
     exe_path = cmd_list[0]
     exe_name = Path(exe_path).name.lower()
     # Strip .exe extension for comparison
@@ -440,7 +457,7 @@ def _is_shell_interpreter_cmd(cmd_list: list[str]) -> bool:
 ENCODED_COMMAND_PATTERNS: list[CommandPattern] = [
     CommandPattern(
         re.compile(
-            r'\b(?:powershell|pwsh)\s+.*?(?:-EncodedCommand|-enc|-e)\s+\S',
+            r'\b(?:powershell|pwsh)(?:\.exe)?\s+.*?(?:-EncodedCommand|-enc|-e)\s+\S',
             re.IGNORECASE,
         ),
         Risk.BLOCKED,
@@ -449,7 +466,7 @@ ENCODED_COMMAND_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bcmd\s+/c\s+.*?(?:echo|type).*?\|.*?\b(?:powershell|pwsh)\b',
+            r'\bcmd\s+/c\s+.*?(?:echo|type).*?\|.*?\b(?:powershell|pwsh)(?:\.exe)?\b',
             re.IGNORECASE,
         ),
         Risk.BLOCKED,
@@ -899,17 +916,26 @@ def safe_run(
                 block_reason=f"Shell interpreter execution blocked: {reason}",
             )
 
-    # ── Encoded command check ─────────────────────────────
+    # ── Encoded command check (regex + argv-token based) ──
     if not allow_encoded_commands:
+        blocked_enc = False
+        block_reason_enc = ""
         for p in ENCODED_COMMAND_PATTERNS:
             if p.regex.search(classification.command):
-                _get_log().warning("BLOCKED (encoded): %s", classification.command)
-                return SafeRunResult(
-                    returncode=-1,
-                    classification=classification,
-                    blocked=True,
-                    block_reason=f"Encoded command blocked: {p.reason}",
-                )
+                blocked_enc = True
+                block_reason_enc = p.reason
+                break
+        if not blocked_enc and _is_encoded_command(cmd_list):
+            blocked_enc = True
+            block_reason_enc = "PowerShell encoded command detected via argv analysis"
+        if blocked_enc:
+            _get_log().warning("BLOCKED (encoded): %s", classification.command)
+            return SafeRunResult(
+                returncode=-1,
+                classification=classification,
+                blocked=True,
+                block_reason=f"Encoded command blocked: {block_reason_enc}",
+            )
 
     # ── Risk level check ──────────────────────────────────
     if classification.risk > max_risk:
