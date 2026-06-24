@@ -2,7 +2,7 @@
   "name": "toolcase-self-improve",
   "version": "5.4.0",
   "author": "SmokerGreenOG",
-  "description": "ToolCase v5.4 — 57 tools, recursive self-improvement, 10 safety rules, EN/NL/DE i18n",
+  "description": "ToolCase v5.4.0 — 60 tools, RSI v2.0, 0 vulnerabilities, 10 safety rules, EN/NL/DE i18n",
   "hermes": {
     "skill_type": "workflow",
     "tags": [
@@ -28,7 +28,7 @@
       "improve": {
         "script": "improve.py",
         "command": "python improve.py <file> [--list-tools] [--lang en|nl|de]",
-        "description": "Main orchestrator — 57 registered tools"
+        "description": "Main orchestrator — 60 registered tools"
       }
     },
     "safety_rules": [

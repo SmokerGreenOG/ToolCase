@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "toolcase"
 version = "5.4.0"
-description = "AI Agent Code Toolkit — 57 tools for code analysis, security, APK reverse engineering, and recursive self-improvement"
+description = "AI Agent Code Toolkit — 60 tools for code analysis, security, APK reverse engineering, and recursive self-improvement"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "SmokerGreenOG"}]
