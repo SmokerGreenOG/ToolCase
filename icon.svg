@@ -41,5 +41,5 @@
 
   <!-- Version badge -->
   <rect x="186" y="370" width="140" height="32" rx="16" fill="#c8f03c"/>
-  <text x="256" y="392" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#0b0b0b" text-anchor="middle">v5.1</text>
+  <text x="256" y="392" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#0b0b0b" text-anchor="middle">v5.4.0</text>
 </svg>

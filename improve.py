@@ -133,6 +133,7 @@ def _data_path(filename: str) -> Path:
 
 def _verify_install() -> bool:
     """Validate that the local ToolCase package is internally consistent."""
+    root = Path(__file__).resolve().parent
     required = [
         "README.md",
         "SKILL.md",
@@ -658,24 +659,24 @@ Voorbeelden:
     # Legacy tools
     if args.multiscan:
         if not Path(args.multiscan).exists():
-            print(t("file_not_found", lang=lang, target=args.multiscan)); return
+            print(t("file_not_found", lang=lang, target=args.multiscan)); sys.exit(1)
         print(f"\n{'='*60}\n 🛠  MULTISCAN — {args.multiscan}\n{'='*60}")
         _run_script("multiscan.py", args.multiscan)
-        return
+        sys.exit(_last_exit_code)
 
     if args.complexity:
         if not Path(args.complexity).exists():
-            print(t("file_not_found", lang=lang, target=args.complexity)); return
+            print(t("file_not_found", lang=lang, target=args.complexity)); sys.exit(1)
         print(f"\n{'='*60}\n 📏 COMPLEXITEIT — {args.complexity}\n{'='*60}")
         _run_script("complexity.py", args.complexity)
-        return
+        sys.exit(_last_exit_code)
 
     if args.depgraph:
         if not Path(args.depgraph).exists():
-            print(t("file_not_found", lang=lang, target=args.depgraph)); return
+            print(t("file_not_found", lang=lang, target=args.depgraph)); sys.exit(1)
         print(f"\n{'='*60}\n 🔗 DEPGRAPH — {args.depgraph}\n{'='*60}")
         _run_script("depgraph.py", args.depgraph)
-        return
+        sys.exit(_last_exit_code)
 
     # Bestaande v2 tools
     extra_tools = {
@@ -701,16 +702,16 @@ Voorbeelden:
             target = str(val)
             if not Path(target).exists():
                 print(t("file_not_found", lang=lang, target=target))
-                return
+                sys.exit(1)
             print(f"\n{'='*60}\n 🛠  {script.replace('.py','').upper()} — {target}\n{'='*60}")
             _run_script(script, target)
-            return
+            sys.exit(_last_exit_code)
 
     if args.rollback:
         action, target = args.rollback
         print(f"\n{'='*60}\n 🔄 ROLLBACK {action} — {target}\n{'='*60}")
         _run_script("rollback.py", action, target)
-        return
+        sys.exit(_last_exit_code)
 
     # ToolCase v5.4.0 dispatcher
     new_tools = [
@@ -805,7 +806,7 @@ Voorbeelden:
         target = args.all
         if not Path(target).exists():
             print(t("file_not_found", lang=lang, target=target))
-            return
+            sys.exit(1)
         for tool_name, tool_script in [
             ("MULTISCAN", "multiscan.py"),
             ("COMPLEXITEIT", "complexity.py"),

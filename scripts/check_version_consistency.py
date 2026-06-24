@@ -126,6 +126,20 @@ if security:
     if m and not canonical.startswith(m.group(1)):
         errors.append(f"SECURITY.md: supports {m.group(1)}.x != {canonical}")
 
+# ── icon.svg ──────────────────────────────────────────
+icon_svg = require_file("icon.svg", "icon")
+if icon_svg:
+    m = re.search(r">v(\d+\.\d+\.\d+)<", icon_svg)
+    if m and m.group(1) != canonical:
+        errors.append(f"icon.svg: v{m.group(1)} != v{canonical}")
+
+# ── tests/__init__.py ──────────────────────────────────
+test_init = require_file("tests/__init__.py", "test suite init")
+if test_init:
+    m = re.search(r"ToolCase v(\d+\.\d+\.\d+)", test_init)
+    if m and m.group(1) != canonical:
+        errors.append(f"tests/__init__.py: v{m.group(1)} != v{canonical}")
+
 # ── i18n.py ────────────────────────────────────────────
 i18n = require_file("i18n.py", "i18n translations")
 if i18n:

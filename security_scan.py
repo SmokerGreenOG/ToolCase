@@ -423,35 +423,45 @@ Examples:
         "read_errors": 0,
     }
 
-    print(f"\n🔍 Security Scan v1.1.0 — scanning {len(files)} bestand(en) in {target}")
+    if not args.json:
+        print(f"\n🔍 Security Scan v1.1.0 — scanning {len(files)} bestand(en) in {target}")
 
     all_findings = []
     for fp in files:
-        # Track skipped generated reports
         if _is_generated_report(fp):
             stats["skipped_generated"] += 1
         else:
             stats["scanned"] += 1
     
         findings = scan_file(fp)
-        # Track read errors
         read_errors = [f for f in findings if f.get("pattern") == "read_error"]
         if read_errors:
             stats["read_errors"] += len(read_errors)
         all_findings.extend(findings)
 
-    # Print scan summary
-    if stats["skipped_generated"] > 0:
-        print(f"   ℹ {stats['skipped_generated']} generated report(s) overgeslagen")
-    if stats["read_errors"] > 0:
-        print(f"   ⚠ {stats['read_errors']} bestand(en) niet leesbaar (permissies/encoding)")
-    print(f"   ✅ {stats['scanned']} bestand(en) gescand")
-    print()
+    # Print scan summary (terminal only)
+    if not args.json:
+        if stats["skipped_generated"] > 0:
+            print(f"   ℹ {stats['skipped_generated']} generated report(s) overgeslagen")
+        if stats["read_errors"] > 0:
+            print(f"   ⚠ {stats['read_errors']} bestand(en) niet leesbaar (permissies/encoding)")
+        print(f"   ✅ {stats['scanned']} bestand(en) gescand")
+        print()
 
     if args.json:
         print_json(all_findings, stats)
     else:
         print_report(all_findings, args.patterns_only)
+
+    # Exit with highest severity code
+    severities = {f["risk"] for f in all_findings}
+    if "HIGH" in severities:
+        sys.exit(3)
+    if "MEDIUM" in severities:
+        sys.exit(2)
+    if "LOW" in severities:
+        sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

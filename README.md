@@ -34,7 +34,7 @@ ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase 
 
 **Actieve security-maatregelen:**
 - **Subprocess safety**: Alle externe commando's gebruiken argument lists, nooit `shell=True`
-- **Command guard** (`command_guard.py`): Blokkeert gevaarlijke commando's (`rm -rf`, `curl | sh`, etc.)
+- **Command guard** (`command_guard.py`): Heuristische scanner die gevaarlijke commandopatronen detecteert (`rm -rf`, `curl | sh`, etc.)
 - **File guard** (`file_guard.py`): Beschermt configuratiebestanden tegen overschrijving
 - **Skill installer hardening** (`skill_installer.py`): Symlink-bescherming, path containment verificatie, expliciete `--trust-executables` flag
 - **AST + compile syntax checks**: `check_syntax.py` gebruikt `ast.parse()` + `compile()` voor volledige validatie — zero side-effects
@@ -122,7 +122,7 @@ hermes -s toolcase-self-improve
 | # | Rule |
 |---|------|
 | 1 | No destructive action without a backup |
-| 2 | No terminal command without `command_guard.py` |
+| 2 | Command guard check before subprocess calls |
 | 3 | No changes to .env, package.json, or config without `file_guard.py` |
 | 4 | No patch without `patch_preview.py` first |
 | 5 | No release if `security_scan.py` finds API keys |
@@ -312,7 +312,7 @@ ToolCase v5.4/
 |--------|-------|
 | Tools | 60 |
 | Categories | 10 |
-| Unit tests | 70/70 ✅ |
+| Unit tests | 70 (self-reported) |
 | Self-audit | Passing (compile + syntax) |
 | Syntax errors | 0 |
 | Security HIGH/MEDIUM | 0 |
