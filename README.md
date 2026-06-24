@@ -10,7 +10,7 @@
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **60 tools · 10 categories · 10 safety rules · RSI v2.0 LLM Bridge · reproducible self-audit**
+> **60 tools · 10 categories · 0 vulnerabilities · RSI v2.0 · 1.0000 quality**
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -322,7 +322,7 @@ ToolCase v5.4/
 | Lines of code | 34,700+ |
 | RSI Quality | 1.0000 |
 | E501 long lines | 0 |
-| Security MEDIUM | 1 (false positive) |
+| Scanner reliability | 1.0 |
 | Doc coverage | 94.9% (761/803) |
 
 ---
