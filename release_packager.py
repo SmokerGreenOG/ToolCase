@@ -72,6 +72,8 @@ EXCLUDE_PATTERNS = frozenset({
     "*.log", "*.tmp", "*.temp", "Thumbs.db", ".DS_Store",
 })
 
+SUPPRESSION_MARKER = "toolcase: ignore-security"
+
 # API key / secret patterns (subset of security_scan.py patterns)
 API_KEY_PATTERNS: list[re.Pattern] = [
     re.compile(r'(?i)(?:api[_-]?key|apikey|api[_-]?secret|api_secret)\s*[=:]\s*["\']([^"\'\\s]{8,})["\']'),
@@ -256,6 +258,9 @@ def check_env_and_secrets(root: Path) -> list[dict]:
             continue
         # Skip binary-looking files
         if "\0" in content:
+            continue
+        # Skip files with inline suppression marker
+        if SUPPRESSION_MARKER in content:
             continue
 
         for pattern in API_KEY_PATTERNS:

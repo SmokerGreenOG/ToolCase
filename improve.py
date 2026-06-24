@@ -28,7 +28,8 @@ Gebruik:
     python improve.py --depgraph <path>         # Dependency graph
     python improve.py --all <path>              # Alle tools tegelijk
 
-  ToolCase v5.4.0:
+  ToolCase v5.4.1:
+    python improve.py --safe-run check <cmd>       # Guard: safe subprocess executor
     python improve.py --command-guard <cmd>      # Guard: command checker
     python improve.py --file-guard <path>        # Guard: file protection
     python improve.py --permission-audit         # Audit: agent perms
@@ -47,7 +48,7 @@ Gebruik:
     python improve.py --self-improve --target . --dry-run
 
   Extra:
-    python improve.py --list-tools               # Toon alle 60 tools
+    python improve.py --list-tools               # Toon alle 62 tools
     python improve.py --json-config              # Output tool config als JSON
     python improve.py --verify-install           # Controleer installatie
 
@@ -432,8 +433,14 @@ def process_snippet(snippet: str) -> dict:
     return report
 
 
-def main() -> None:
-    """main.
+# ── Exit codes (machine-readable contract) ────────────
+EXIT_OK = 0       # Success, no issues found
+EXIT_FINDINGS = 1  # Issues/findings detected
+EXIT_ERROR = 2     # Invalid input, syntax error, or internal error
+
+
+def main() -> int:
+    """main — returns exit code: 0=clean, 1=findings, 2=error.
         """
     parser = argparse.ArgumentParser(
         description="Code Improvement Tool — Analyseer en verbeter code",
@@ -456,7 +463,7 @@ Voorbeelden:
     parser.add_argument("--verbose", "-v", action="store_true", help="Uitgebreide uitvoer")
     parser.add_argument("--auto-fix", "-f", action="store_true",
                         help="Probeer automatisch te fixen")
-    parser.add_argument("--version", action="version", version="improve.py v5.4.0")
+    parser.add_argument("--version", action="version", version="improve.py v5.4.1")
     parser.add_argument("--list-tools", action="store_true",
                         help="Toon alle beschikbare tools in de ToolCase")
     parser.add_argument("--json-config", action="store_true",
@@ -506,9 +513,11 @@ Voorbeelden:
     parser.add_argument("--feature-gap", metavar="PATH",
                         help="Feature gap analyzer: vind frontend/backend gaten")
 
-    # ToolCase v5.4.0 tools
+    # ToolCase v5.4.1 tools
     parser.add_argument("--command-guard", metavar="CMD",
                         help="Guard: controleer terminal commands op veiligheid")
+    parser.add_argument("--safe-run", nargs="+", metavar=("CMD", "ARGS"),
+                        help="Guard: veilige subprocess executor met workspace containment")
     parser.add_argument("--file-guard", metavar="FILE",
                         help="Guard: bescherm belangrijke bestanden tegen overschrijven")
     parser.add_argument("--permission-audit", action="store_true",
@@ -585,7 +594,7 @@ Voorbeelden:
     # ── Speciale opties ───────────────────────────────────
     if args.list_tools:
         _show_tool_list(lang)
-        return
+        return EXIT_OK
 
     if args.json_config:
         cfg_path = _data_path("tools_config.json")
@@ -593,7 +602,7 @@ Voorbeelden:
             print(cfg_path.read_text(encoding="utf-8"))
         else:
             print('{"error": "tools_config.json not found"}')
-        return
+        return EXIT_OK
 
     if args.verify_install:
         ok = _verify_install()
@@ -608,6 +617,7 @@ Voorbeelden:
         args.rollback, args.dep_audit, args.workspace_index,
         args.agent_memory, args.ui_consistency, args.feature_gap,
         args.command_guard, args.file_guard, args.permission_audit,
+        args.safe_run,
         args.api_contract, args.fake_ui, args.button_scan,
         args.state_inspect, args.build_doctor, args.log_viewer,
         args.error_explain, args.release_package, args.changelog,
@@ -631,7 +641,7 @@ Voorbeelden:
         print(t("workflow_step3", lang=lang))
         print(f"\n{t('workflow_loop_hint', lang=lang)}")
         print(f"\n{t('workflow_self_hint', lang=lang)}")
-        return
+        return EXIT_ERROR
 
     # ── Tool dispatcher ──────────────────────────────────
     tool_path = Path(__file__).parent
@@ -713,9 +723,10 @@ Voorbeelden:
         _run_script("rollback.py", action, target)
         sys.exit(_last_exit_code)
 
-    # ToolCase v5.4.0 dispatcher
+    # ToolCase v5.4.1 dispatcher
     new_tools = [
         ("command_guard", "command_guard.py", False),
+        ("safe_run", "safe_run.py", False),
         ("file_guard", "file_guard.py", False),
         ("permission_audit", "permission_audit.py", True),
         ("api_contract", "api_contract_checker.py", False),
@@ -745,6 +756,7 @@ Voorbeelden:
         if val:
             icon_map = {
                 "command_guard": "🔒 COMMAND GUARD",
+                "safe_run": "\U0001f6e1\ufe0f SAFE RUN",
                 "file_guard": "📁 FILE GUARD",
                 "permission_audit": "🔐 PERMISSION AUDIT",
                 "api_contract": "🔗 API CONTRACT CHECKER",
@@ -774,6 +786,8 @@ Voorbeelden:
 
             if arg_name == "backup_mgr":
                 _run_script(script_name, val[0], val[1])
+            elif arg_name == "safe_run":
+                _run_script(script_name, *val)
             elif is_flag:
                 _run_script(script_name)
             else:
@@ -826,7 +840,7 @@ Voorbeelden:
     if args.code:
         report = process_snippet(args.code)
         print_report(report, args.verbose, lang)
-        return
+        return EXIT_FINDINGS if report.get("issues") else EXIT_OK
 
     target = args.target
     path = Path(target)
@@ -834,18 +848,21 @@ Voorbeelden:
     if path.is_file():
         if not target.endswith(".py"):
             print(t("not_python_file", lang=lang, target=target))
-            return
+            return EXIT_ERROR
         report = analyze_file(target)
         print_report(report, args.verbose, lang)
 
         if args.auto_fix and not report["syntax_ok"]:
             print(t("auto_fix_mode", lang=lang))
 
+        has_issues = len(report.get("issues", [])) > 0 or not report.get("syntax_ok", True)
+        return EXIT_FINDINGS if has_issues else EXIT_OK
+
     elif path.is_dir():
         files = find_python_files(target, args.recursive)
         if not files:
             print(t("no_python_files", lang=lang, target=target))
-            return
+            return EXIT_ERROR
 
         print(t("files_found", lang=lang, n=len(files), target=target))
         total_issues = 0
@@ -868,9 +885,11 @@ Voorbeelden:
         print(f" ⚠  {t('issues_found', lang=lang, n=total_issues)}")
         if total_issues > 0:
             print(f"\n{t('loop_hint_summary', lang=lang)}")
+        return EXIT_FINDINGS if (total_issues > 0 or not all_ok) else EXIT_OK
     else:
         print(t("file_not_found", lang=lang, target=target))
+        return EXIT_ERROR
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

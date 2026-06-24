@@ -16,6 +16,7 @@
         "multiscan.py",
         "complexity.py",
         "depgraph.py",
+        "check_syntax.py",
         "patch_preview.py",
         "dead_code_finder.py",
         "self_improve_loop.py",
@@ -79,6 +80,7 @@
       "description": "Command guards, file protection, permission audits en backup management",
       "tools": [
         "command_guard.py",
+        "safe_run.py",
         "file_guard.py",
         "permission_audit.py",
         "patch_preview.py",
@@ -450,6 +452,22 @@
       ],
       "description": "Controleert terminal commands voordat de agent ze mag uitvoeren. Detecteert/blokkeert rm -rf, del /s, format, curl|sh, wget|sh, powershell download execute en gevaarlijke chmod/chown",
       "command": "python command_guard.py <command>",
+      "read_only": false,
+      "needs_approval": true
+    },
+    {
+      "id": 61,
+      "name": "safe_run.py",
+      "type": "Guard",
+      "risk": "High",
+      "tags": [
+        "Core",
+        "Security",
+        "Terminal",
+        "Needs Approval"
+      ],
+      "description": "Centrale veilige subprocess executor. Blokkeert python -c, powershell -EncodedCommand, docker prune, rm -rf, curl|sh en shell interpreters. Dwingt workspace containment en approval af.",
+      "command": "python safe_run.py run <command> --workspace <path>",
       "read_only": false,
       "needs_approval": true
     },
@@ -1064,6 +1082,22 @@
       "command": "python sarif_exporter.py --scan security --path . -o toolcase.sarif",
       "read_only": true,
       "needs_approval": false
+    },
+    {
+      "id": 62,
+      "name": "check_syntax.py",
+      "type": "Analyse",
+      "risk": "Low",
+      "tags": [
+        "Core",
+        "Quality",
+        "Syntax",
+        "Read-only"
+      ],
+      "description": "Syntax checker die zowel ast.parse() als compile() gebruikt. compile() vangt from __future__ placement errors die ast.parse() stil accepteert.",
+      "command": "python check_syntax.py [--json] [path]",
+      "read_only": true,
+      "needs_approval": false
     }
   ],
   "ignored_dirs": [
@@ -1085,7 +1119,7 @@
   ],
   "safety_rules": [
     "Geen destructieve actie zonder backup",
-    "Geen terminal command zonder command_guard.py",
+    "Geen terminal command zonder safe_run.py (of command_guard.py als fallback)",
     "Geen wijziging aan .env, package.json of config files zonder file_guard.py",
     "Geen patch toepassen zonder patch_preview.py",
     "Geen release maken als security_scan.py API keys vindt",

@@ -1287,8 +1287,8 @@ def main():
         output = generator.human_report()
         print(output)
 
-    # ── Save report to file unless explicitly disabled ──
-    if not args.no_report:
+    # ── Save report to file unless explicitly disabled or dry-run ──
+    if not args.no_report and not args.dry_run:
         try:
             report_dir = workspace / ".self_improve_reports"
             report_dir.mkdir(parents=True, exist_ok=True)

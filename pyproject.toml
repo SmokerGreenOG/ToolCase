@@ -8,6 +8,7 @@ version = "5.4.0"
 description = "AI Agent Code Toolkit — 60 tools for code analysis, security, APK reverse engineering, and recursive self-improvement"
 readme = "README.md"
 license = "LicenseRef-ToolCase-1.0"
+requires-python = ">=3.11"
 authors = [{name = "SmokerGreenOG"}]
 classifiers = [
     "Development Status :: 4 - Beta",

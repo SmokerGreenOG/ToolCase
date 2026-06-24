@@ -1,4 +1,8 @@
-"""Tests for security_scan.py — Security vulnerability scanner."""
+"""Tests for security_scan.py — Security vulnerability scanner.
+
+All secrets in this file are deliberate test values.
+# toolcase: ignore-security
+"""
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

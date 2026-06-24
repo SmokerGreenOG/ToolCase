@@ -226,12 +226,15 @@ def check_syntax() -> CheckResult:
     errors = 0
     scanned = 0
     skip_dirs = {"__pycache__", ".rsi_backups", ".rsi_reports",
-                 ".self_improve_reports", ".backups", ".venv", "venv"}
+                 ".self_improve_reports", ".backups", ".venv", "venv",
+                 "build", "dist"}
 
     for fp in PROJECT_ROOT.rglob("*.py"):
         if set(fp.parts) & skip_dirs:
             continue
         if any(p.startswith(".rsi_") for p in fp.parts):
+            continue
+        if any(p.endswith(".egg-info") for p in fp.parts):
             continue
         try:
             ast.parse(fp.read_text(encoding="utf-8"), filename=str(fp))
@@ -285,10 +288,7 @@ def check_security_scan() -> CheckResult:
             [sys.executable, "security_scan.py", ".", "--json"],
             timeout=30,
         )
-        if proc.returncode != 0:
-            return r.fail(f"Scanner crashed: {proc.stderr[:200]}")
-
-        # Parse JSON from output (strip banner)
+        # Parse JSON from output (strip banner if any)
         output = proc.stdout
         idx = output.find('{\n  "')
         if idx < 0:
@@ -298,8 +298,15 @@ def check_security_scan() -> CheckResult:
             high = data.get("by_risk", {}).get("high", 0)
             medium = data.get("by_risk", {}).get("medium", 0)
             if high > 0:
-                return r.fail(f"{high} HIGH finding(s)")
+                return r.fail(f"{high} HIGH finding(s), {medium} MEDIUM")
             return r.pass_(f"HIGH={high}, MEDIUM={medium}")
+
+        # If JSON parsing failed, check if scanner crashed vs found issues
+        if proc.returncode != 0:
+            stderr = proc.stderr.strip()
+            if stderr:
+                return r.fail(f"Scanner error (exit {proc.returncode}): {stderr[:200]}")
+            return r.fail(f"Scanner exit {proc.returncode} — findings detected, JSON parse failed")
         return r.skip("Could not parse JSON output")
     except subprocess.TimeoutExpired:
         return r.skip("Scan timed out")

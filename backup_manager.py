@@ -103,8 +103,12 @@ def do_snapshot(base: Path, target: str, *, json_out: bool) -> int:
     try:
         rel = src.relative_to(base)
     except ValueError:
-        # Target is outside base — store by absolute path stem as name
-        rel = Path(src.name)
+        msg = f"error: path is outside workspace: {src}"
+        if json_out:
+            print(json.dumps({"status": "error", "message": msg}))
+        else:
+            print(msg)
+        return EXIT_ERROR
 
     dest_path = dest / rel
 
@@ -203,7 +207,12 @@ def do_list(base: Path, target: str | None, *, json_out: bool) -> int:
         try:
             rel = target_path.relative_to(base)
         except ValueError:
-            rel = Path(target_path.name)
+            msg = f"error: path is outside workspace: {target}"
+            if json_out:
+                print(json.dumps({"status": "error", "message": msg}))
+            else:
+                print(msg)
+            return EXIT_ERROR
 
         entries = []
         for sd in snap_dirs:
@@ -245,6 +254,19 @@ def do_list(base: Path, target: str | None, *, json_out: bool) -> int:
 
 def do_diff(base: Path, snapshot_id: str, file_path: str | None, *, json_out: bool) -> int:
     """Compare a snapshot against the current version."""
+    if file_path:
+        # Check workspace containment FIRST
+        target = Path(file_path).resolve()
+        try:
+            rel = target.relative_to(base)
+        except ValueError:
+            msg = f"error: path is outside workspace: {file_path}"
+            if json_out:
+                print(json.dumps({"status": "error", "message": msg}))
+            else:
+                print(msg)
+            return EXIT_ERROR
+
     sd = snapshot_dir(base, snapshot_id)
 
     if not sd.is_dir():
@@ -256,13 +278,6 @@ def do_diff(base: Path, snapshot_id: str, file_path: str | None, *, json_out: bo
         return EXIT_ERROR
 
     if file_path:
-        # Diff a single file within the snapshot
-        target = Path(file_path).resolve()
-        try:
-            rel = target.relative_to(base)
-        except ValueError:
-            rel = Path(target.name)
-
         snapshot_file = sd / rel
 
         if not snapshot_file.is_file():
@@ -375,8 +390,16 @@ def _compute_diff(current: Path, snapshot: Path) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def do_restore(base: Path, snapshot_id: str, *, json_out: bool) -> int:
+def do_restore(base: Path, snapshot_id: str, *, json_out: bool, force: bool = False) -> int:
     """Restore an entire snapshot, overwriting current files."""
+    if not force:
+        msg = "error: restore requires --force (destructive operation)"
+        if json_out:
+            print(json.dumps({"status": "error", "message": msg}))
+        else:
+            print(msg)
+        return EXIT_ERROR
+
     sd = snapshot_dir(base, snapshot_id)
 
     if not sd.is_dir():
@@ -440,8 +463,28 @@ def do_restore(base: Path, snapshot_id: str, *, json_out: bool) -> int:
 # ---------------------------------------------------------------------------
 
 
-def do_restore_file(base: Path, snapshot_id: str, file_path: str, *, json_out: bool) -> int:
+def do_restore_file(base: Path, snapshot_id: str, file_path: str, *, json_out: bool, force: bool = False) -> int:
     """Restore a single file from a snapshot."""
+    if not force:
+        msg = "error: restore-file requires --force (destructive operation)"
+        if json_out:
+            print(json.dumps({"status": "error", "message": msg}))
+        else:
+            print(msg)
+        return EXIT_ERROR
+
+    # Check workspace containment BEFORE snapshot existence
+    target = Path(file_path).resolve()
+    try:
+        rel = target.relative_to(base)
+    except ValueError:
+        msg = f"error: path is outside workspace: {file_path}"
+        if json_out:
+            print(json.dumps({"status": "error", "message": msg}))
+        else:
+            print(msg)
+        return EXIT_ERROR
+
     sd = snapshot_dir(base, snapshot_id)
 
     if not sd.is_dir():
@@ -451,12 +494,6 @@ def do_restore_file(base: Path, snapshot_id: str, file_path: str, *, json_out: b
         else:
             print(msg)
         return EXIT_ERROR
-
-    target = Path(file_path).resolve()
-    try:
-        rel = target.relative_to(base)
-    except ValueError:
-        rel = Path(target.name)
 
     snapshot_file = sd / rel
 
@@ -504,8 +541,16 @@ def do_restore_file(base: Path, snapshot_id: str, file_path: str, *, json_out: b
 # ---------------------------------------------------------------------------
 
 
-def do_prune(base: Path, keep: int, *, json_out: bool) -> int:
+def do_prune(base: Path, keep: int, *, json_out: bool, force: bool = False) -> int:
     """Remove old snapshots, keeping the N most recent."""
+    if not force:
+        msg = "error: prune requires --force (destructive operation)"
+        if json_out:
+            print(json.dumps({"status": "error", "message": msg}))
+        else:
+            print(msg)
+        return EXIT_ERROR
+
     bdir = backup_root(base)
 
     if not bdir.is_dir():
@@ -592,11 +637,15 @@ def build_parser() -> argparse.ArgumentParser:
     # restore
     res = sub.add_parser("restore", help="Restore entire snapshot.")
     res.add_argument("snapshot_id", help="Snapshot ID (YYYY-MM-DD-HHMMSS).")
+    res.add_argument("--force", action="store_true",
+                     help="Skip confirmation prompt for destructive restore.")
 
     # restore-file
     rf = sub.add_parser("restore-file", help="Restore a single file from snapshot.")
     rf.add_argument("snapshot_id", help="Snapshot ID (YYYY-MM-DD-HHMMSS).")
     rf.add_argument("file", help="File to restore.")
+    rf.add_argument("--force", action="store_true",
+                     help="Skip confirmation prompt for destructive restore.")
 
     # prune
     prn = sub.add_parser("prune", help="Remove old backups, keeping N most recent.")
@@ -606,6 +655,8 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_KEEP,
         help=f"Number of recent snapshots to keep (default: {DEFAULT_KEEP}).",
     )
+    prn.add_argument("--force", action="store_true",
+                     help="Skip confirmation prompt for destructive prune.")
 
     return parser
 
@@ -633,11 +684,14 @@ def main() -> int:
         case "diff":
             return do_diff(base, args.snapshot_id, args.file, json_out=args.json)
         case "restore":
-            return do_restore(base, args.snapshot_id, json_out=args.json)
+            return do_restore(base, args.snapshot_id, json_out=args.json,
+                              force=getattr(args, "force", False))
         case "restore-file":
-            return do_restore_file(base, args.snapshot_id, args.file, json_out=args.json)
+            return do_restore_file(base, args.snapshot_id, args.file, json_out=args.json,
+                                   force=getattr(args, "force", False))
         case "prune":
-            return do_prune(base, args.keep, json_out=args.json)
+            return do_prune(base, args.keep, json_out=args.json,
+                            force=getattr(args, "force", False))
         case _:
             parser.print_help()
             return EXIT_ERROR

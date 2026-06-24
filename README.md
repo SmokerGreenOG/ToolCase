@@ -10,7 +10,7 @@
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **60 tools · 10 categories · RSI v2.0 · Beta-stage toolkit**
+> **62 tools · 10 categories · RSI v2.0 · Beta-stage toolkit**
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -33,16 +33,19 @@ ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase 
 | RSI quality score | **Self-audited** |
 
 **Actieve security-maatregelen:**
-- **Subprocess safety**: Alle externe commando's gebruiken argument lists, nooit `shell=True`
-- **Command guard** (`command_guard.py`): Heuristische scanner die gevaarlijke commandopatronen detecteert (`rm -rf`, `curl | sh`, etc.)
+- **Safe run executor** (`safe_run.py`): Centrale subprocess executor met workspace containment, shell-interpreter detectie, encoded command blocking, en risico-gebaseerde approval
+- **Command guard** (`command_guard.py`): Heuristische scanner die gevaarlijke commandopatronen detecteert en classificeert
 - **File guard** (`file_guard.py`): Beschermt configuratiebestanden tegen overschrijving
+- **Backup manager workspace containment** (`backup_manager.py`): Harde grens — geen writes buiten de workspace
 - **Skill installer hardening** (`skill_installer.py`): Symlink-bescherming, path containment verificatie, expliciete `--trust-executables` flag
 - **AST + compile syntax checks**: `check_syntax.py` gebruikt `ast.parse()` + `compile()` voor volledige validatie — zero side-effects
 - **Maker attribution**: Alle tools bevatten `__maker__` + `_protect.py` voor attributiebewaking
 
-> 💡 ToolCase is een **analyse-toolkit**, geen netwerkdienst. Het draait lokaal, maakt geen
-> externe verbindingen, en voert alleen code uit die je zelf aanroept. De skill installer
-> is de enige component die externe packages verwerkt — en die is expliciet gehard.
+> 💡 ToolCase is een **analyse-toolkit**, geen netwerkdienst. Het draait lokaal en voert
+> alleen code uit die je zelf aanroept. Sommige tools kunnen netwerkverkeer genereren
+> wanneer ze worden aangeroepen (composer audit, package managers, Chart.js CDN in HTML
+> reports). De skill installer is de enige component die externe packages verwerkt —
+> en die is expliciet gehard.
 
 ---
 
@@ -50,7 +53,7 @@ ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase 
 
 **ToolCase** is a portable, beta-stage code improvement toolkit designed for **AI agents** (Hermes, Claude Code, Codex) and **developers**.
 
-It gives you **60 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, **RSI v2.0 recursive self-improvement with LLM Bridge**, and AI prompt optimization.
+It gives you **62 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, **RSI v2.0 recursive self-improvement with LLM Bridge**, and AI prompt optimization.
 
 **🆕 RSI v2.0**: Recursive Self-Improvement nu met Hermes LLM integratie — de RSI analyseert, Hermes fixt, de RSI leert. Geen API keys nodig.
 
@@ -61,7 +64,7 @@ It gives you **60 tools** across 10 categories — from static analysis and secu
 ## 🖥️ Quick Start
 
 ```bash
-# 1. Browse all 60 tools
+# 1. Browse all 62 tools
 python improve.py --list-tools
 
 # 2. Full project audit (all tools)

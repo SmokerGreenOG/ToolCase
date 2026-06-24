@@ -1490,7 +1490,7 @@ class RecursiveSelfImprove:
                 print(_c(f"\n  ⏳ {total_llm} fixes wachten in LLM queue op Hermes!", "yellow"))
                 print(_c(f"  👉 Run: python rsi_llm_bridge.py list-pending", "cyan"))
 
-            if not self.no_report and any(r.status == "completed" or r.status == "pending_llm" for r in self.reports):
+            if not self.no_report and not self.dry_run and any(r.status == "completed" or r.status == "pending_llm" for r in self.reports):
                 report_dir = self.workspace / ".rsi_reports"
                 report_dir.mkdir(parents=True, exist_ok=True)
                 ts = datetime.now().strftime("%Y%m%d_%H%M%S")
