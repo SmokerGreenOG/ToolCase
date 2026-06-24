@@ -1,8 +1,8 @@
 {
   "name": "toolcase-self-improve",
-  "version": "5.4.0",
+  "version": "5.4.1",
   "author": "SmokerGreenOG",
-  "description": "ToolCase v5.4.0 — 60 tools, RSI v2.0, 10 safety rules, EN/NL/DE i18n",
+  "description": "ToolCase v5.4.1 — 62 tools, RSI v2.0, safe_run executor, 10 safety rules, EN/NL/DE i18n",
   "hermes": {
     "skill_type": "workflow",
     "tags": [
@@ -28,7 +28,7 @@
       "improve": {
         "script": "improve.py",
         "command": "python improve.py <file> [--list-tools] [--lang en|nl|de]",
-        "description": "Main orchestrator — 60 registered tools"
+        "description": "Main orchestrator — 62 registered tools"
       }
     },
     "safety_rules": [
@@ -543,7 +543,8 @@
         38,
         39,
         41,
-        54
+        54,
+        62
       ]
     },
     {
@@ -585,7 +586,8 @@
       "tools": [
         20,
         21,
-        22
+        22,
+        61
       ]
     },
     {
@@ -645,7 +647,9 @@
         57,
         58,
         59,
-        60
+        60,
+        61,
+        62
       ]
     }
   ]
