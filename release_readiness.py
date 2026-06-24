@@ -26,7 +26,6 @@ import _protect
 import argparse
 import ast
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -37,6 +36,24 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).parent.resolve()
+
+# Force UTF-8 encoding for subprocess calls (critical on Windows)
+_SUBPROCESS_ENV = {
+    **__import__("os").environ,
+    "PYTHONUTF8": "1",
+    "PYTHONIOENCODING": "utf-8",
+}
+
+
+def _run(cmd: list[str], timeout: int = 60) -> subprocess.CompletedProcess:
+    """Run a subprocess with UTF-8 encoding forced."""
+    return subprocess.run(
+        cmd,
+        capture_output=True, text=True, timeout=timeout,
+        encoding="utf-8", errors="replace",
+        env=_SUBPROCESS_ENV,
+        cwd=str(PROJECT_ROOT),
+    )
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -54,11 +71,7 @@ def _load_toml(path: Path) -> dict[str, Any]:
 
 
 def _git(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        ["git"] + list(args),
-        capture_output=True, text=True, timeout=15,
-        cwd=str(PROJECT_ROOT),
-    )
+    return _run(["git"] + list(args), timeout=15)
 
 
 def _count_tools_in_readme(readme_text: str) -> int:
@@ -192,10 +205,9 @@ def check_unit_tests() -> CheckResult:
     """Run unittest discover."""
     r = CheckResult("Unit tests").pass_()
     try:
-        proc = subprocess.run(
+        proc = _run(
             [sys.executable, "-m", "unittest", "discover", "-s", "tests"],
-            capture_output=True, text=True, timeout=60,
-            cwd=str(PROJECT_ROOT),
+            timeout=60,
         )
         if proc.returncode == 0:
             # Count passed tests
@@ -224,10 +236,9 @@ def check_security_scan() -> CheckResult:
     """Run security scan, expect 0 HIGH findings."""
     r = CheckResult("Security scan").pass_()
     try:
-        proc = subprocess.run(
+        proc = _run(
             [sys.executable, "security_scan.py", ".", "--json"],
-            capture_output=True, text=True, timeout=30,
-            cwd=str(PROJECT_ROOT),
+            timeout=30,
         )
         if proc.returncode != 0:
             return r.fail(f"Scanner crashed: {proc.stderr[:200]}")
@@ -255,10 +266,9 @@ def check_install_verify() -> CheckResult:
     """Run improve.py --verify-install."""
     r = CheckResult("Install verify").pass_()
     try:
-        proc = subprocess.run(
+        proc = _run(
             [sys.executable, "improve.py", "--verify-install"],
-            capture_output=True, text=True, timeout=30,
-            cwd=str(PROJECT_ROOT),
+            timeout=30,
         )
         if proc.returncode != 0:
             return r.fail(proc.stderr[:200] or "Non-zero exit")
@@ -276,11 +286,7 @@ def check_generated_in_git() -> CheckResult:
     r = CheckResult("Generated files in git")
     r.severity = "recommended"
     try:
-        proc = subprocess.run(
-            ["git", "ls-files"],
-            capture_output=True, text=True, timeout=10,
-            cwd=str(PROJECT_ROOT),
-        )
+        proc = _run(["git", "ls-files"], timeout=10)
         if proc.returncode != 0:
             return r.skip("Not a git repo or git not available")
 

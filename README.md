@@ -237,6 +237,9 @@ registry is maintained in `manifest.json` and `tools_config.json`.
 | Tool | Description |
 |------|-------------|
 | `recursive_self_improve.py` | **RSI** — recursive self-improvement with memory |
+| `rsi_llm_bridge.py` | RSI↔Hermes LLM bridge — fix-request queue zonder API keys |
+| `rsi_report_html.py` | Dark-themed HTML dashboard met Chart.js grafieken |
+| `rsi_apply_docs.py` | Batch docstring applicator via AST |
 | `prompt_optimizer.py` | AI prompt analysis + optimization |
 | `dependency_visualizer.py` | Mermaid.js dependency diagrams |
 | `_protect.py` | Maker attribution integrity (SHA256) |

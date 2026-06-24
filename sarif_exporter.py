@@ -33,7 +33,6 @@ import _protect
 import argparse
 import hashlib
 import json
-import os
 import subprocess
 import sys
 import time
@@ -96,9 +95,9 @@ def _get_rule_metadata(pattern: str, fix: str = "") -> dict[str, Any]:
         "aws_key": "AWS access key in source code",
         "private_key": "Private key material in source code",
         "connection_string": "Database connection string with credentials",
-        "eval_exec": "Use of eval() or exec() — arbitrary code execution risk",
+        "eval_exec": "Use of eval() or exec() — arbitrary code execution risk",  # toolcase: ignore-security
         "pickle_usage": "Unsafe pickle deserialization",
-        "shell_injection": "Shell injection via shell=True or os.system",
+        "shell_injection": "Shell injection via shell=True or os.system",  # toolcase: ignore-security
         "sql_injection": "Potential SQL injection via string interpolation",
         "yaml_load": "Unsafe YAML loading (use yaml.safe_load)",
         "assert_used": "Assert in production code (stripped with -O)",
