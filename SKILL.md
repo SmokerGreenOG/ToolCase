@@ -12,7 +12,7 @@ metadata:
 
 ## Overview
 
-ToolCase is a **60-tool code analysis and improvement toolkit**.
+ToolCase is a **62-tool code analysis and improvement toolkit**.
 Use this skill when the user wants to **audit, improve, or self-heal** their codebase.
 
 **🆕 RSI v2.0**: De recursive self-improvement is nu gekoppeld aan Hermes via een LLM Bridge — 
@@ -27,9 +27,9 @@ De RSI analyseert, Hermes fixt, de RSI leert.
 | `rsi_report_html.py` | **Dashboard** — dark-themed HTML rapporten met Chart.js |
 | `rsi_apply_docs.py` | **Batch fixer** — automatisch docstrings toevoegen via AST |
 | `self_improve_loop.py` | 13-step autonomous improvement loop |
-| `improve.py` | Main orchestrator — dispatches 60 registered tools |
+| `improve.py` | Main orchestrator — dispatches 62 registered tools |
 | `i18n.py` | Translations (EN/NL/DE) |
-| `tools_config.json` | Central config — 60 tools, 10 categories, 10 rules |
+| `tools_config.json` | Central config — 62 tools, 10 categories, 10 rules |
 | `dashboard.html` | Web dashboard |
 | `_protect.py` | Maker attribution verification (SHA256) |
 | `manifest.json` | Hermes skill manifest |
@@ -188,7 +188,7 @@ These rules are **enforced in code** — never bypass them:
 ## Core Tool Reference
 
 The tables below cover the original core workflow. The canonical complete
-60-tool registry, including PHP, config and meta tooling, is maintained in
+62-tool registry, including PHP, config and meta tooling, is maintained in
 `manifest.json` and `tools_config.json`.
 
 ### Analyse & Code Quality (7)

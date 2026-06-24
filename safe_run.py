@@ -105,6 +105,16 @@ def _init_logging() -> logging.Logger:
 
 _log = _init_logging()
 
+# Well-known system executables exempt from workspace containment
+_SYSTEM_EXECUTABLES: frozenset[str] = frozenset({
+    "python", "python3", "python3.11", "python3.12", "python3.13",
+    "python.exe", "python3.exe", "pythonw.exe",
+    "git", "git.exe", "docker", "docker.exe",
+    "bash", "sh", "zsh", "node", "node.exe",
+    "npm", "npx", "pip", "pip3", "cargo",
+    "make", "cmake", "gcc", "g++", "clang",
+})
+
 # ---------------------------------------------------------------------------
 # Command pattern database
 # ---------------------------------------------------------------------------
@@ -324,6 +334,24 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
         "Interpreter inline code — runs arbitrary code from command line.",
         "Write to a file, review, then run the interpreter on the file.",
     ),
+    CommandPattern(
+        re.compile(
+            r'\b(?:powershell|pwsh)\s+-(?:Command|c|File)\s+',
+            re.IGNORECASE,
+        ),
+        Risk.HIGH,
+        "PowerShell inline execution — runs arbitrary PowerShell code.",
+        "Write to a .ps1 file, review, then run: powershell -File script.ps1",
+    ),
+    CommandPattern(
+        re.compile(
+            r'\bcmd(?:\.exe)?\s+/c\s+',
+            re.IGNORECASE,
+        ),
+        Risk.HIGH,
+        "cmd.exe inline command — runs arbitrary Windows shell commands.",
+        "Avoid cmd /c; use direct executable calls instead.",
+    ),
 ]
 
 # ── ENCODED COMMANDS: Base64, hex, etc. ───────────────────
@@ -464,7 +492,8 @@ def is_within_workspace(target: str | Path, workspace: str | Path) -> bool:
 def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
     """Extract potential file/directory paths from a command.
 
-    Includes the executable, option values with =, and positional args.
+    Includes the executable, option values with =, positional args,
+    and bare relative filenames (resolved by caller against cwd).
     """
     if isinstance(cmd, str):
         parts = shlex.split(cmd)
@@ -475,12 +504,12 @@ def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
     _CODE_FLAGS = frozenset({"-c", "-e", "-m", "--command", "-Command", "-EncodedCommand", "-enc"})
 
     paths = []
-    # Executable is intentionally NOT checked — system tools
-    # (python, git, docker) live outside project workspaces.
-    # Containment targets command ARGUMENTS (files operated on).
+    # Always include the executable (argv[0]) — must be checked against workspace
+    if parts:
+        paths.append(parts[0])
 
     skip_next = False
-    for part in parts[1:]:  # Skip executable
+    for part in parts[1:]:  # Skip executable, already added
         if skip_next:
             skip_next = False
             continue
@@ -490,7 +519,7 @@ def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
         # Extract paths from --flag=value syntax
         if part.startswith("--") and "=" in part:
             _, value = part.split("=", 1)
-            if value:  # value could be a path
+            if value:
                 paths.append(value)
             continue
         # Skip other flags
@@ -500,7 +529,10 @@ def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
         if "/" in part or "\\" in part or part.startswith("."):
             paths.append(part)
         # Absolute Windows paths
-        if len(part) >= 2 and part[1] == ":":
+        elif len(part) >= 2 and part[1] == ":":
+            paths.append(part)
+        # Bare relative filename: resolve against cwd (caller handles this)
+        elif "." in part or part.endswith(".py") or part.endswith(".sh"):
             paths.append(part)
 
     return paths
@@ -681,10 +713,17 @@ def safe_run(
                     blocked=True,
                     block_reason=f"cwd outside workspace: {cwd}",
                 )
-        # Resolve paths relative to effective cwd
-        effective_cwd = Path(cwd).resolve() if cwd else Path.cwd()
+            effective_cwd = cwd_resolved
+        else:
+            # Default cwd to workspace — prevents bare-filename bypass
+            effective_cwd = ws
         resolved_paths = []
         for p in _extract_paths_from_command(cmd_list):
+            # Known system executables are exempt from workspace containment
+            # (python, git, docker etc. live outside project workspaces)
+            exe_name = Path(p).name.lower()
+            if exe_name in _SYSTEM_EXECUTABLES:
+                continue
             resolved = (effective_cwd / p).resolve()
             resolved_paths.append(str(resolved))
         for p in resolved_paths:

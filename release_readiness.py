@@ -46,14 +46,14 @@ _SUBPROCESS_ENV = {
 }
 
 
-def _run(cmd: list[str], timeout: int = 60) -> subprocess.CompletedProcess:
+def _run(cmd: list[str], timeout: int = 60, cwd: Path | None = None) -> subprocess.CompletedProcess:
     """Run a subprocess with UTF-8 encoding forced."""
     return subprocess.run(
         cmd,
         capture_output=True, text=True, timeout=timeout,
         encoding="utf-8", errors="replace",
         env=_SUBPROCESS_ENV,
-        cwd=str(PROJECT_ROOT),
+        cwd=str(cwd) if cwd else str(PROJECT_ROOT),
     )
 
 
@@ -432,8 +432,16 @@ def check_readme_match() -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
-def run_all_checks(ci_mode: bool = False) -> dict[str, Any]:
-    """Run all release readiness checks and return report."""
+def run_all_checks(ci_mode: bool = False, root: Path | None = None) -> dict[str, Any]:
+    """Run all release readiness checks and return report.
+    
+    If root is given, use it instead of the default PROJECT_ROOT.
+    """
+    global PROJECT_ROOT
+    if root is not None:
+        PROJECT_ROOT = Path(root).resolve()
+        if not PROJECT_ROOT.is_dir():
+            return {"verdict": "ERROR", "error": f"Not a directory: {root}"}
     checks = [
         check_version_consistency(),
         check_tool_counts(),
@@ -518,7 +526,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    report = run_all_checks(ci_mode=args.ci)
+    root = Path(args.target).resolve() if args.target else None
+    report = run_all_checks(ci_mode=args.ci, root=root)
 
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))

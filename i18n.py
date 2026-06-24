@@ -139,8 +139,8 @@ TRANS = {
                "korrigieren)"),
     },
     "workflow_step3": {
-        "en": "  3. List tools: python improve.py --list-tools  (show all 60 tools)",
-        "nl": "  3. python improve.py --list-tools              (toon alle 60 tools)",
+        "en": "  3. List tools: python improve.py --list-tools  (show all 62 tools)",
+        "nl": "  3. python improve.py --list-tools              (toon alle 62 tools)",
         "de": "  3. python improve.py --list-tools              (alle 60 Werkzeuge anzeigen)",
     },
     "workflow_loop_hint": {

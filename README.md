@@ -29,7 +29,7 @@ is self-reported — geen externe audit.
 | `eval()` / `exec()` in productiecode | **0** |
 | `shell=True` in subprocess | **0** |
 | `os.system()` calls | **0** |
-| License compliance | **61/61** |
+| License compliance | **62/62** |
 | RSI quality score | **Self-audited** |
 
 **Actieve security-maatregelen:**

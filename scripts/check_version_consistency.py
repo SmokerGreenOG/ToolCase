@@ -165,19 +165,39 @@ if i18n:
 
 # ── Manifest/tools_config cross-check ──────────────────
 try:
-    with open(ROOT / "manifest.json") as f:
-        manifest_tools = set(json.load(f).get("tools", []))
-    with open(ROOT / "tools_config.json") as f:
-        config_tools = set(t["script"] for t in json.load(f)["tools"].values())
-    if manifest_tools != config_tools:
-        only_manifest = manifest_tools - config_tools
-        only_config = config_tools - manifest_tools
-        if only_manifest:
-            errors.append(f"Tools in manifest not in config: {only_manifest}")
-        if only_config:
-            errors.append(f"Tools in config not in manifest: {only_config}")
-except Exception:
-    pass  # Already checked above
+    with open(ROOT / "manifest.json", encoding="utf-8") as f:
+        mf = json.load(f)
+    with open(ROOT / "tools_config.json", encoding="utf-8") as f:
+        tc = json.load(f)
+
+    # Extract script names from manifest (list of dicts with "script" key)
+    manifest_scripts = {t.get("script", "") for t in mf.get("tools", []) if isinstance(t, dict)}
+    # Extract script names from tools_config (list of dicts with "name" key)
+    config_scripts = {t.get("name", "") for t in tc.get("tools", []) if isinstance(t, dict)}
+
+    # Cross-check
+    only_manifest = manifest_scripts - config_scripts
+    only_config = config_scripts - manifest_scripts
+    if only_manifest:
+        errors.append(f"Tools in manifest not in config: {sorted(only_manifest)}")
+    if only_config:
+        errors.append(f"Tools in config not in manifest: {sorted(only_config)}")
+
+    # Check tool IDs match
+    manifest_ids = {t.get("id") for t in mf.get("tools", []) if isinstance(t, dict)}
+    config_ids = {t.get("id") for t in tc.get("tools", []) if isinstance(t, dict)}
+    only_mf_ids = manifest_ids - config_ids
+    only_cf_ids = config_ids - manifest_ids
+    if only_mf_ids:
+        errors.append(f"Tool IDs in manifest not in config: {sorted(only_mf_ids)}")
+    if only_cf_ids:
+        errors.append(f"Tool IDs in config not in manifest: {sorted(only_cf_ids)}")
+except json.JSONDecodeError as e:
+    errors.append(f"Cross-check JSON error: {e}")
+except FileNotFoundError as e:
+    errors.append(f"Cross-check file missing: {e}")
+except Exception as e:
+    errors.append(f"Cross-check error: {type(e).__name__}: {e}")
 
 # ── Report ─────────────────────────────────────────────
 if errors:

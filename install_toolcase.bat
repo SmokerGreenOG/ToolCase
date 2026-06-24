@@ -1,7 +1,7 @@
 @echo off
 REM =====================================================================
 REM  install_toolcase.bat — ToolCase v5.4.1 Installatie voor Windows
-REM  Valideert alle 60 tools, tests, SKILL.md, manifest.json en dashboard.
+REM  Valideert alle 62 tools, tests, SKILL.md, manifest.json en dashboard.
 REM  Maker: SmokerGreenOG
 REM =====================================================================
 setlocal enabledelayedexpansion
@@ -9,7 +9,7 @@ setlocal enabledelayedexpansion
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
 echo ║      ToolCase v5.4.1 — Installatie voor Windows            ║
-echo ║      60 tools · 10 safety rules · recursive improvement    ║
+echo ║      62 tools · 10 safety rules · recursive improvement    ║
 echo ║      Maker: SmokerGreenOG                                  ║
 echo ╚══════════════════════════════════════════════════════════════╝
 echo.
@@ -160,12 +160,12 @@ echo ╔════════════════════════
 echo ║      ToolCase v5.4.1 — Installatie voltooid!               ║
 echo ╠══════════════════════════════════════════════════════════════╣
 echo ║  📍 %TC_DIR%                    ║
-echo ║  🛠  60 tools · 10 safety rules                              ║
+echo ║  🛠  62 tools · 10 safety rules                              ║
 echo ║  🌐  EN/NL/DE i18n                                            ║
 echo ║  ♻️  self_improve_loop.py — 13-step autonome workflow        ║
 echo ║                                                              ║
 echo ║  Quick start:                                                ║
-echo ║    python improve.py --list-tools          (toon 60 tools)   ║
+echo ║    python improve.py --list-tools          (toon 62 tools)   ║
 echo ║    python improve.py <bestand>             (check code)      ║
 echo ║    python self_improve_loop.py --dry-run   (dry run)         ║
 echo ║    python self_improve_loop.py --cycles 3  (auto-improve)    ║

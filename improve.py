@@ -457,7 +457,7 @@ Voorbeelden:
   python improve.py src/ --recursive             # Hele directory
   python improve.py --code "def foo(): pass"     # Code snippet
   python improve.py --auto-fix script.py         # Analyseer + automatisch fixen
-  python improve.py --list-tools                 # Toon alle 60 tools
+  python improve.py --list-tools                 # Toon alle 62 tools
   python improve.py --json-config                # Output tool config als JSON
   python improve.py --verify-install             # Controleer installatie
         """,
