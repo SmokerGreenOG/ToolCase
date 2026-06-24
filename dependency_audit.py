@@ -25,6 +25,14 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
+try:
+    import tomllib
+except ImportError:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -110,40 +118,76 @@ def get_python_deps(root: Path) -> list[dict]:
         except Exception as e:
             deps.append({"name": f"Error reading requirements.txt: {e}", "source": "error"})
 
-    # pyproject.toml
+    # pyproject.toml — use proper TOML parser, not naive line-by-line
     pyproj = root / "pyproject.toml"
     if pyproj.exists():
         try:
-            content = pyproj.read_text(encoding="utf-8")
-            # Parse [project] dependencies
-            in_deps = False
-            for line in content.split("\n"):
-                stripped = line.strip()
-                if stripped.startswith("[tool.poetry.dependencies]"):
-                    in_deps = True
-                    continue
-                if stripped.startswith("[tool.poetry"):
-                    in_deps = False
-                    continue
-                if stripped.startswith("[project"):
-                    in_deps = True
-                    continue
-                if stripped.startswith("[") and in_deps:
-                    in_deps = False
-                    continue
-                if in_deps and "=" in stripped and not stripped.startswith("#"):
-                    parts = stripped.split("=", 1)
-                    name = parts[0].strip().strip("\"'")
-                    version = parts[1].strip().strip("\"'")
-                    if name and name not in ("python", "requires-python"):
-                        m = re.match(r'[<>=!~]+\s*([\d.]+)', version)
-                        ver = m.group(1) if m else version
-                        deps.append({
+            if tomllib is not None:
+                with open(pyproj, "rb") as f:
+                    data = tomllib.load(f)
+                # Extract actual dependencies (not project metadata!)
+                project = data.get("project", {})
+                dependencies = project.get("dependencies", [])
+                optional_deps = project.get("optional-dependencies", {})
+                build_requires = data.get("build-system", {}).get("requires", [])
+
+                def _parse_pep508(spec: str) -> dict | None:
+                    m = re.match(r'^([a-zA-Z0-9_.-]+)\\s*([<>=!~]+)\\s*([\\d.]+)', spec)
+                    if m:
+                        return {
+                            "name": m.group(1).lower(),
+                            "constraint": m.group(2) + m.group(3),
+                            "version": m.group(3),
+                            "source": "pyproject.toml [project.dependencies]",
+                        }
+                    name = spec.split("[")[0].split(";")[0].strip()
+                    if name:
+                        return {
                             "name": name.lower(),
-                            "constraint": version if m else "",
-                            "version": ver,
-                            "source": "pyproject.toml",
-                        })
+                            "constraint": "",
+                            "version": "",
+                            "source": "pyproject.toml [project.dependencies]",
+                        }
+                    return None
+
+                for spec in dependencies:
+                    dep = _parse_pep508(spec)
+                    if dep:
+                        deps.append(dep)
+
+                for section, specs in optional_deps.items():
+                    for spec in specs:
+                        dep = _parse_pep508(spec)
+                        if dep:
+                            dep["source"] = f"pyproject.toml [project.optional-dependencies.{section}]"
+                            deps.append(dep)
+
+                for spec in build_requires:
+                    dep = _parse_pep508(spec)
+                    if dep:
+                        dep["source"] = "pyproject.toml [build-system.requires]"
+                        deps.append(dep)
+            else:
+                # Fallback: simple line-based parsing (legacy)
+                content = pyproj.read_text(encoding="utf-8")
+                in_deps = False
+                for line in content.split("\n"):
+                    stripped = line.strip()
+                    if stripped.startswith("dependencies") and "[" in stripped:
+                        in_deps = True
+                        continue
+                    if in_deps and stripped == "]":
+                        in_deps = False
+                        continue
+                    if in_deps and stripped and not stripped.startswith("#"):
+                        name = stripped.strip().strip('",').split("[")[0].split(";")[0].strip()
+                        if name:
+                            deps.append({
+                                "name": name.lower(),
+                                "constraint": "",
+                                "version": "",
+                                "source": "pyproject.toml",
+                            })
         except Exception as e:
             deps.append({"name": f"Error reading pyproject.toml: {e}", "source": "error"})
 

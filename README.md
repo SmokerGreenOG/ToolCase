@@ -1,6 +1,6 @@
 # ⚡ ToolCase v5.4 — AI Agent Code Toolkit
 
-[![Version](https://img.shields.io/badge/version-5.4.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.4.0)
+[![Version](https://img.shields.io/badge/version-5.4.1-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.4.1)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-ToolCase%201.0-7C3AED?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
@@ -342,7 +342,7 @@ ToolCase v5.4/
 ToolCase License 1.0 — see [LICENSE](LICENSE).
 
 **Maker:** [SmokerGreenOG](https://github.com/SmokerGreenOG)
-**Version:** 5.4.0
+**Version:** 5.4.1
 **Built for:** Hermes Agent · Claude Code · Codex · Every AI Agent
 
 ---
