@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
 [![Tests](https://img.shields.io/badge/tests-70%2F70-success?style=flat-square)]()
+[![Reliability](https://img.shields.io/badge/scanner--reliability-1.0-brightgreen?style=flat-square)]()
 [![Audit](https://img.shields.io/badge/self--audit-1.0000-brightgreen?style=flat-square)]()
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()

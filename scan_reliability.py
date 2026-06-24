@@ -159,13 +159,19 @@ class ScanSession:
 
     @property
     def reliability_score(self) -> float:
-        """0.0-1.0: how reliable this scan was."""
+        """0.0-1.0: how reliable this scan was.
+
+        Intentional skips (binary extensions, cache dirs, generated reports)
+        are excluded from the denominator — they don't penalize reliability.
+        Only crashes, timeouts, read errors and parse errors reduce the score.
+        """
         if self.files_found == 0:
             return 0.0 if self.crashed else 1.0
         if self.crashed or self.timed_out:
             return 0.0
-        # Score based on scan coverage and error rate
-        coverage = self.files_scanned / max(self.files_found, 1)
+        # Coverage: scanned vs scannable (excluding intentional skips)
+        scannable = max(self.files_found - self.files_skipped, 1)
+        coverage = min(1.0, self.files_scanned / scannable)
         error_penalty = (self.read_errors + self.parse_errors) / max(self.files_scanned, 1)
         return max(0.0, min(1.0, coverage - error_penalty * 0.5))
 
