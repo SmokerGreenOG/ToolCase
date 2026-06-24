@@ -72,6 +72,12 @@ from typing import Optional
 
 from i18n import t, add_lang_arg, get_lang
 
+# Ensure UTF-8 output on all platforms (Windows cp1252 can't handle emoji/unicode)
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 
 # ─────────────────────────────────────────────
 # Documentatie helper — toon tool-overzicht
@@ -400,10 +406,10 @@ def find_python_files(directory: str, recursive: bool = False) -> list[str]:
 
     def is_in_ignored_dir(candidate: Path) -> bool:
         """Check if in ignored dir.
-        
+
             Args:
                 candidate: Description.
-        
+
             Returns:
                 Description.
             """

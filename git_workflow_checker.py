@@ -37,10 +37,10 @@ BRANCH_PATTERNS = {
 
 def run_git(cmd: list[str]) -> tuple[str, str, int]:
     """Run git.
-    
+
         Args:
             cmd: Description.
-    
+
         Returns:
             Description.
         """

@@ -126,11 +126,11 @@ FOCUS_TO_ISSUE_TYPES = {
 
 def _c(text: str, code: str = "") -> str:
     """ c.
-    
+
         Args:
             text: Description.
             code: Description.
-    
+
         Returns:
             Description.
         """
@@ -347,10 +347,10 @@ class ImprovementMemory:
 
     def record_attempt(self, attempt: ImprovementAttempt) -> None:
         """record attempt.
-        
+
             Args:
                 attempt: Description.
-        
+
             Returns:
                 Description.
             """
@@ -429,10 +429,10 @@ class ImprovementMemory:
     @staticmethod
     def _cat_to_weight(category: str) -> str:
         """ cat to weight.
-        
+
             Args:
                 category: Description.
-        
+
             Returns:
                 Description.
             """
@@ -454,10 +454,10 @@ class ImprovementMemory:
     @staticmethod
     def _weight_to_cat(key: str) -> str:
         """ weight to cat.
-        
+
             Args:
                 key: Description.
-        
+
             Returns:
                 Description.
             """
@@ -504,10 +504,10 @@ class SelfAnalyzer:
 
     def analyze_file(self, filepath: Path) -> MetricSnapshot:
         """analyze file.
-        
+
             Args:
                 filepath: Description.
-        
+
             Returns:
                 Description.
             """
@@ -689,7 +689,7 @@ class SelfAnalyzer:
 
     def find_similar_imports(self) -> list[dict]:
         """Vind bestanden met sterk overlappende imports (coupling detectie).
-        
+
         Filtert stdlib imports uit — die deelt elke Python tool.
         Alleen third-party/project imports tellen voor echte coupling."""
         file_imports: dict[str, set[str]] = {}
@@ -751,10 +751,10 @@ class ImprovementPlanner:
 
         def add(a: ImprovementAttempt) -> None:
             """add.
-            
+
                 Args:
                     a: Description.
-            
+
                 Returns:
                     Description.
                 """
@@ -843,10 +843,10 @@ class ImprovementPlanner:
 
         def sort_key(a: ImprovementAttempt) -> tuple:
             """sort key.
-            
+
                 Args:
                     a: Description.
-            
+
                 Returns:
                     Description.
                 """
@@ -876,10 +876,10 @@ class ImprovementExecutor:
 
     def create_backup(self, filepath: Path) -> Optional[str]:
         """Create backup.
-        
+
             Args:
                 filepath: Description.
-        
+
             Returns:
                 Description.
             """
@@ -896,10 +896,10 @@ class ImprovementExecutor:
 
     def rollback(self, filepath: Path) -> bool:
         """rollback.
-        
+
             Args:
                 filepath: Description.
-        
+
             Returns:
                 Description.
             """
@@ -978,10 +978,10 @@ class ImprovementExecutor:
 
     def apply_e302_fix(self, filepath: Path) -> tuple[bool, str]:
         """Apply e302 fix.
-        
+
             Args:
                 filepath: Description.
-        
+
             Returns:
                 Description.
             """
@@ -1174,10 +1174,10 @@ class RecursiveSelfImprove:
 
     def run_cycle(self, cycle: int) -> CycleReport:
         """Run cycle.
-        
+
             Args:
                 cycle: Description.
-        
+
             Returns:
                 Description.
             """
@@ -1346,10 +1346,10 @@ class RecursiveSelfImprove:
 
     def run(self, cycles: int = 1) -> list[CycleReport]:
         """run.
-        
+
             Args:
                 cycles: Description.
-        
+
             Returns:
                 Description.
             """

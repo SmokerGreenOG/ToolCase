@@ -21,10 +21,10 @@ EXPECTED_MAKER = "SmokerGreenOG"
 
 def check_file(fp: Path) -> dict:
     """Check file.
-    
+
         Args:
             fp: Description.
-    
+
         Returns:
             Description.
         """

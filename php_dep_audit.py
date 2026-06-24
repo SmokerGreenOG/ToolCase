@@ -30,10 +30,10 @@ COMPOSER = shutil.which("composer") or shutil.which("composer.phar")
 
 def find_composer_files(root: Path) -> dict:
     """Find composer files.
-    
+
         Args:
             root: Description.
-    
+
         Returns:
             Description.
         """

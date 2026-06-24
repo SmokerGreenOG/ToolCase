@@ -188,7 +188,7 @@ def apply_docstrings(filepath: Path, dry_run: bool = False) -> dict:
             if lineno + 1 < len(modified):
                 next_line = modified[lineno + 1]
                 next_indent = len(next_line) - len(next_line.lstrip()) if next_line.strip() else 99
-                # Als de volgende regel meer geïndenteerd is dan de functie, 
+                # Als de volgende regel meer geïndenteerd is dan de functie,
                 # voeg docstring toe vóór de body
                 insert_at = lineno + 1
             else:

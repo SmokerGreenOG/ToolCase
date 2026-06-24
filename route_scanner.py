@@ -36,11 +36,11 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     "build", "dist", ".next", "out",
         ".backups",
-        
+
         ".rsi_backups",
-        
+
         ".rsi_reports",
-        
+
         ".self_improve_reports",
         })
 
@@ -317,10 +317,10 @@ def generate_graph(all_routes: list[dict]) -> str:
     # Sort routes by depth
     def route_depth(route: str) -> int:
         """route depth.
-        
+
             Args:
                 route: Description.
-        
+
             Returns:
                 Description.
             """

@@ -25,6 +25,12 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+# Ensure UTF-8 output on all platforms (Windows cp1252 can't handle emoji/unicode)
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 
 # ---------------------------------------------------------------------------
 # Risk patterns per file type
@@ -442,7 +448,7 @@ Examples:
             stats["skipped_generated"] += 1
         else:
             stats["scanned"] += 1
-    
+
         findings = scan_file(fp)
         read_errors = [f for f in findings if f.get("pattern") == "read_error"]
         if read_errors:

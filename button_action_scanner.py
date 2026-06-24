@@ -37,11 +37,11 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     "build", "dist", ".next", "coverage", ".svelte-kit",
         ".backups",
-        
+
         ".rsi_backups",
-        
+
         ".rsi_reports",
-        
+
         ".self_improve_reports",
         })
 
@@ -462,10 +462,10 @@ def summarize(findings: list[dict]) -> dict:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse args.
-    
+
         Args:
             argv: Description.
-    
+
         Returns:
             Description.
         """
@@ -502,10 +502,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     """main.
-    
+
         Args:
             argv: Description.
-    
+
         Returns:
             Description.
         """

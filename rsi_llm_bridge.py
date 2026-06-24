@@ -116,10 +116,10 @@ class FixRequest:
     @classmethod
     def from_dict(cls, data: dict) -> "FixRequest":
         """from dict.
-        
+
             Args:
                 data: Description.
-        
+
             Returns:
                 Description.
             """
@@ -154,10 +154,10 @@ class FixResult:
     @classmethod
     def from_dict(cls, data: dict) -> "FixResult":
         """from dict.
-        
+
             Args:
                 data: Description.
-        
+
             Returns:
                 Description.
             """

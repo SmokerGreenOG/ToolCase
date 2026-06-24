@@ -175,10 +175,10 @@ class Changelog:
     @staticmethod
     def _resolve_section(description: str) -> str:
         """ resolve section.
-        
+
             Args:
                 description: Description.
-        
+
             Returns:
                 Description.
             """

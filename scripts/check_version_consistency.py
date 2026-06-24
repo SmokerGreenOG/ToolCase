@@ -34,6 +34,7 @@ except Exception as e:
     errors.append(f"pyproject.toml: CANNOT READ — {e}")
     canonical = None
 
+
 def require_file(path: str, label: str) -> str:
     """Read a file; fail if missing."""
     fp = ROOT / path
@@ -41,6 +42,7 @@ def require_file(path: str, label: str) -> str:
         errors.append(f"{path}: MISSING (required for {label})")
         return ""
     return fp.read_text(encoding="utf-8")
+
 
 def check_version(path: str, label: str, pattern: str, content: str = None) -> None:
     """Check that the file contains EXACTLY the canonical version."""

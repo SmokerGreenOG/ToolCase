@@ -345,11 +345,11 @@ EXCLUDE_DIRS = frozenset({
     "target", ".svn", ".hg", ".idea", ".vscode",
     "bower_components", "jspm_packages", ".cache",
         ".backups",
-        
+
         ".rsi_backups",
-        
+
         ".rsi_reports",
-        
+
         ".self_improve_reports",
         })
 

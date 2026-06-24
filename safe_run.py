@@ -463,7 +463,7 @@ def is_within_workspace(target: str | Path, workspace: str | Path) -> bool:
 
 def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
     """Extract potential file/directory paths from a command.
-    
+
     Includes the executable, option values with =, and positional args.
     """
     if isinstance(cmd, str):

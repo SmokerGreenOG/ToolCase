@@ -65,7 +65,7 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", ".git", "__pycache__", ".venv", "venv",
     ".backups", ".self_improve_reports", "release", "build", "dist",
         ".rsi_backups",
-        
+
         ".rsi_reports",
         })
 

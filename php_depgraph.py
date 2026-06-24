@@ -35,10 +35,10 @@ CLASS_PATTERN = re.compile(r'^\s*(?:abstract\s+)?(?:final\s+)?class\s+(\w+)', re
 
 def discover_php_files(root: Path) -> list[Path]:
     """discover php files.
-    
+
         Args:
             root: Description.
-    
+
         Returns:
             Description.
         """

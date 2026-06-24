@@ -25,6 +25,12 @@ import os
 import argparse
 from collections import defaultdict
 
+# Ensure UTF-8 output on all platforms (Windows cp1252 can't handle emoji/unicode)
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 # ─────────────────────────────────────────────
 # PATRONEN per taal
 # ─────────────────────────────────────────────
@@ -274,12 +280,12 @@ def find_functions_rs(lines: list[str]) -> list[dict]:
 
 def _make_rs_func(lines: list[str], text: str, m: re.Match) -> dict | None:
     """ make rs func.
-    
+
         Args:
             lines: Description.
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """

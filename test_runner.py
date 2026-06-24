@@ -35,11 +35,11 @@ EXCLUDE_DIRS = frozenset({
     "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
     ".tox", ".eggs", "build", "dist", ".next",
         ".backups",
-        
+
         ".rsi_backups",
-        
+
         ".rsi_reports",
-        
+
         ".self_improve_reports",
         })
 
@@ -208,7 +208,7 @@ def detect_runner(root: Path, test_info: list[dict]) -> str:
 
     # Return highest-scoring runner
     best = max(scores, key=scores.get)
-    
+
     # If pytest was selected but isn't installed, fallback to unittest
     if best == "pytest":
         try:
@@ -217,7 +217,7 @@ def detect_runner(root: Path, test_info: list[dict]) -> str:
             if "unittest" in scores:
                 return "unittest"
             return "unittest"  # Default fallback
-    
+
     return best
 
 

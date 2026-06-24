@@ -111,10 +111,10 @@ _RESET = "\033[0m"
 
 def _colorize(status: str) -> str:
     """ colorize.
-    
+
         Args:
             status: Description.
-    
+
         Returns:
             Description.
         """
@@ -126,10 +126,10 @@ def _colorize(status: str) -> str:
 
 def _icon(status: str) -> str:
     """ icon.
-    
+
         Args:
             status: Description.
-    
+
         Returns:
             Description.
         """
@@ -202,10 +202,10 @@ def print_table(report: list[dict]) -> None:
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     """Parse args.
-    
+
         Args:
             argv: Description.
-    
+
         Returns:
             Description.
         """

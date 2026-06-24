@@ -169,10 +169,10 @@ VERSION_ORDER = ["7.0", "7.1", "7.2", "7.3", "7.4", "8.0", "8.1", "8.2", "8.3"]
 
 def discover_php_files(root: Path) -> list[Path]:
     """discover php files.
-    
+
         Args:
             root: Description.
-    
+
         Returns:
             Description.
         """
@@ -190,11 +190,11 @@ def discover_php_files(root: Path) -> list[Path]:
 
 def audit_file(filepath: Path, target_version: str) -> dict:
     """audit file.
-    
+
         Args:
             filepath: Description.
             target_version: Description.
-    
+
         Returns:
             Description.
         """
@@ -245,11 +245,11 @@ def audit_file(filepath: Path, target_version: str) -> dict:
 
 def print_report(results: list[dict], target_version: str) -> None:
     """Print report.
-    
+
         Args:
             results: Description.
             target_version: Description.
-    
+
         Returns:
             Description.
         """
@@ -291,11 +291,11 @@ def print_report(results: list[dict], target_version: str) -> None:
 
 def print_json(results: list[dict], target_version: str) -> None:
     """Print json.
-    
+
         Args:
             results: Description.
             target_version: Description.
-    
+
         Returns:
             Description.
         """

@@ -47,9 +47,9 @@ EXCLUDE_DIRS = frozenset({
     ".pytest_cache", ".cache", ".backups", "_test_contract", "_test_patches",
     "demo", "logs", "tests",
         ".rsi_backups",
-        
+
         ".rsi_reports",
-        
+
         ".self_improve_reports",
         })
 
@@ -657,10 +657,10 @@ def _print_human(report: dict[str, Any]) -> None:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse args.
-    
+
         Args:
             argv: Description.
-    
+
         Returns:
             Description.
         """
@@ -691,10 +691,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     """main.
-    
+
         Args:
             argv: Description.
-    
+
         Returns:
             Description.
         """

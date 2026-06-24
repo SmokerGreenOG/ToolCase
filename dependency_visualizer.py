@@ -78,11 +78,11 @@ def find_circular(graph: dict[str, set[str]]) -> list[list[str]]:
 
     def dfs(node: str, path: list[str]) -> None:
         """dfs.
-        
+
             Args:
                 node: Description.
                 path: Description.
-        
+
             Returns:
                 Description.
             """

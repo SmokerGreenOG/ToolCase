@@ -88,7 +88,7 @@ def generate_html(report_data: list[dict], memory_data: dict = None,
 
     # Top patterns
     top_patterns = sorted(
-        patterns_list, 
+        patterns_list,
         key=lambda p: p.get("times_success", 0) / max(1, p.get("times_tried", 1)),
         reverse=True
     )[:8]

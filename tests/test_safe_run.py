@@ -12,7 +12,7 @@ from safe_run import classify_command, safe_run, Risk
 
 def _make_safe_cmd(workspace: str) -> list[str]:
     """Create a truly safe cross-platform test command.
-    
+
     Writes a tiny .py script and runs it — this is classified as LOW risk
     by safe_run (matches 'python script.py' pattern), not blocked as shell
     interpreter (which only blocks python -c, not script execution).

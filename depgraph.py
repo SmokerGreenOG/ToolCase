@@ -33,11 +33,11 @@ from pathlib import Path
 
 EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__",
         ".backups",
-        
+
         ".rsi_backups",
-        
+
         ".rsi_reports",
-        
+
         ".self_improve_reports",
         })
 DEFAULT_MAX_DEPTH = 3
@@ -419,10 +419,10 @@ def find_cycles(graph: dict, show_external: bool = False) -> list:
 
     def dfs(u: str) -> None:
         """dfs.
-        
+
             Args:
                 u: Description.
-        
+
             Returns:
                 Description.
             """

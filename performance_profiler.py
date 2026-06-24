@@ -49,10 +49,10 @@ PATTERNS = {
 
 def analyze_file(filepath: Path) -> list[dict]:
     """analyze file.
-    
+
         Args:
             filepath: Description.
-    
+
         Returns:
             Description.
         """
@@ -98,10 +98,10 @@ def analyze_file(filepath: Path) -> list[dict]:
 
 def scan_workspace(workspace: Path) -> list[dict]:
     """Scan workspace.
-    
+
         Args:
             workspace: Description.
-    
+
         Returns:
             Description.
         """

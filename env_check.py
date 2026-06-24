@@ -143,11 +143,11 @@ def extract_referenced_env_vars(root: Path) -> set[str]:
 
     EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__", ".venv", "venv",
         ".backups",
-        
+
         ".rsi_backups",
-        
+
         ".rsi_reports",
-        
+
         ".self_improve_reports",
         })
 

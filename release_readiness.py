@@ -59,10 +59,10 @@ def _run(cmd: list[str], timeout: int = 60) -> subprocess.CompletedProcess:
 
 def _load_json(path: Path) -> dict[str, Any]:
     """ load json.
-    
+
         Args:
             path: Description.
-    
+
         Returns:
             Description.
         """
@@ -72,10 +72,10 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 def _load_toml(path: Path) -> dict[str, Any]:
     """ load toml.
-    
+
         Args:
             path: Description.
-    
+
         Returns:
             Description.
         """
@@ -116,10 +116,10 @@ class CheckResult:
 
     def pass_(self, detail: str = "") -> "CheckResult":
         """pass .
-        
+
             Args:
                 detail: Description.
-        
+
             Returns:
                 Description.
             """
@@ -129,10 +129,10 @@ class CheckResult:
 
     def fail(self, detail: str) -> "CheckResult":
         """fail.
-        
+
             Args:
                 detail: Description.
-        
+
             Returns:
                 Description.
             """
@@ -142,10 +142,10 @@ class CheckResult:
 
     def skip(self, detail: str = "") -> "CheckResult":
         """skip.
-        
+
             Args:
                 detail: Description.
-        
+
             Returns:
                 Description.
             """
