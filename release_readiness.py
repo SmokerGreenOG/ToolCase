@@ -511,6 +511,8 @@ def main() -> None:
                         help="Output as JSON")
     parser.add_argument("--ci", action="store_true",
                         help="CI mode (skip git checks)")
+    parser.add_argument("target", nargs="?", default=None,
+                        help="Optional target path (default: ToolCase project root)")
     parser.add_argument("--version", action="version",
                         version="release_readiness.py v1.0.0")
 

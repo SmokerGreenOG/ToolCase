@@ -1,7 +1,7 @@
 ---
 name: toolcase-self-improve
-description: "ToolCase v5.4.0 — 60 tools, RSI 2.0 met LLM Bridge (Hermes-integratie). Full autonomous code health workflow met dark-themed dashboard."
-version: 5.4.0
+description: "ToolCase v5.4.1 — 62 tools, RSI 2.0 met safe_run executor. Full autonomous code health workflow met dark-themed dashboard."
+version: 5.4.1
 author: SmokerGreenOG
 metadata:
   hermes:

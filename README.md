@@ -4,9 +4,9 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-ToolCase%201.0-7C3AED?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
-[![Tests](https://img.shields.io/badge/tests-70%2F70-success?style=flat-square)]()
-[![Reliability](https://img.shields.io/badge/scanner--reliability-1.0-brightgreen?style=flat-square)]()
-[![Audit](https://img.shields.io/badge/self--audit-passing-brightgreen?style=flat-square)]()
+[![Tests](https://img.shields.io/badge/tests-109-blue?style=flat-square)]()
+[![Reliability](https://img.shields.io/badge/scanner--reliability-0.99-blue?style=flat-square)]()
+[![Audit](https://img.shields.io/badge/self--audit-beta-blue?style=flat-square)]()
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
@@ -18,25 +18,25 @@
 
 ## 🛡️ Security
 
-ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase is
-**vrij van kritieke kwetsbaarheden** — geen `eval()`, geen `shell=True`, geen
-`os.system()` in productiecode.
+ToolCase ondergaat continue security-audits via de eigen toolchain. De productiecode
+vermijdt `eval()`, `shell=True` en `os.system()` waar mogelijk. Security scanning
+is self-reported — geen externe audit.
 
 | Check | Status |
 |-------|--------|
-| HIGH severity findings | **0** |
-| MEDIUM severity findings | **0** |
-| `eval()` / `exec()` in code | **0** |
+| HIGH severity findings (self-reported) | **0** |
+| MEDIUM severity findings (self-reported) | **0** |
+| `eval()` / `exec()` in productiecode | **0** |
 | `shell=True` in subprocess | **0** |
 | `os.system()` calls | **0** |
 | License compliance | **61/61** |
 | RSI quality score | **Self-audited** |
 
 **Actieve security-maatregelen:**
-- **Safe run executor** (`safe_run.py`): Centrale subprocess executor met workspace containment, shell-interpreter detectie, encoded command blocking, en risico-gebaseerde approval
+- **Safe run executor** (`safe_run.py`): Subprocess executor met workspace containment, shell-interpreter detectie, encoded command blocking, en risico-gebaseerde approval
 - **Command guard** (`command_guard.py`): Heuristische scanner die gevaarlijke commandopatronen detecteert en classificeert
 - **File guard** (`file_guard.py`): Beschermt configuratiebestanden tegen overschrijving
-- **Backup manager workspace containment** (`backup_manager.py`): Harde grens — geen writes buiten de workspace
+- **Backup manager workspace containment** (`backup_manager.py`): Workspace-begrenzing — blokkeert writes buiten de workspace (symlinks, pad-traversal)
 - **Skill installer hardening** (`skill_installer.py`): Symlink-bescherming, path containment verificatie, expliciete `--trust-executables` flag
 - **AST + compile syntax checks**: `check_syntax.py` gebruikt `ast.parse()` + `compile()` voor volledige validatie — zero side-effects
 - **Maker attribution**: Alle tools bevatten `__maker__` + `_protect.py` voor attributiebewaking
@@ -57,7 +57,7 @@ It gives you **62 tools** across 10 categories — from static analysis and secu
 
 **🆕 RSI v2.0**: Recursive Self-Improvement nu met Hermes LLM integratie — de RSI analyseert, Hermes fixt, de RSI leert. Geen API keys nodig.
 
-**Zero external dependencies. Python 3.11+ only.** Runs on Windows, macOS, and Linux.
+**Zero external dependencies. Python 3.11+ only.** Primarily tested on Linux; Windows support in beta (some tools may need `PYTHONIOENCODING=utf-8`).
 
 ---
 

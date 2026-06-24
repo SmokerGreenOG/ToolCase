@@ -120,6 +120,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Config Validator — Controleer ToolCase config files"
     )
+    parser.add_argument("target", nargs="?", default=None,
+                        help="Optional target path (default: ToolCase project root)")
     parser.add_argument("--json", "-j", action="store_true", help="JSON output")
     args = parser.parse_args()
 

@@ -80,6 +80,8 @@ def main() -> None:
     """main.
         """
     parser = argparse.ArgumentParser(description="License Checker")
+    parser.add_argument("target", nargs="?", default=None,
+                        help="Optional target path (default: ToolCase project root)")
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
 

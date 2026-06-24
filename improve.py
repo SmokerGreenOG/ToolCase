@@ -669,21 +669,21 @@ Voorbeelden:
     # Legacy tools
     if args.multiscan:
         if not Path(args.multiscan).exists():
-            print(t("file_not_found", lang=lang, target=args.multiscan)); sys.exit(1)
+            print(t("file_not_found", lang=lang, target=args.multiscan)); sys.exit(2)
         print(f"\n{'='*60}\n 🛠  MULTISCAN — {args.multiscan}\n{'='*60}")
         _run_script("multiscan.py", args.multiscan)
         sys.exit(_last_exit_code)
 
     if args.complexity:
         if not Path(args.complexity).exists():
-            print(t("file_not_found", lang=lang, target=args.complexity)); sys.exit(1)
+            print(t("file_not_found", lang=lang, target=args.complexity)); sys.exit(2)
         print(f"\n{'='*60}\n 📏 COMPLEXITEIT — {args.complexity}\n{'='*60}")
         _run_script("complexity.py", args.complexity)
         sys.exit(_last_exit_code)
 
     if args.depgraph:
         if not Path(args.depgraph).exists():
-            print(t("file_not_found", lang=lang, target=args.depgraph)); sys.exit(1)
+            print(t("file_not_found", lang=lang, target=args.depgraph)); sys.exit(2)
         print(f"\n{'='*60}\n 🔗 DEPGRAPH — {args.depgraph}\n{'='*60}")
         _run_script("depgraph.py", args.depgraph)
         sys.exit(_last_exit_code)
@@ -712,7 +712,7 @@ Voorbeelden:
             target = str(val)
             if not Path(target).exists():
                 print(t("file_not_found", lang=lang, target=target))
-                sys.exit(1)
+                sys.exit(2)  # Input error, not findings
             print(f"\n{'='*60}\n 🛠  {script.replace('.py','').upper()} — {target}\n{'='*60}")
             _run_script(script, target)
             sys.exit(_last_exit_code)
@@ -820,7 +820,7 @@ Voorbeelden:
         target = args.all
         if not Path(target).exists():
             print(t("file_not_found", lang=lang, target=target))
-            sys.exit(1)
+            sys.exit(2)
         for tool_name, tool_script in [
             ("MULTISCAN", "multiscan.py"),
             ("COMPLEXITEIT", "complexity.py"),
