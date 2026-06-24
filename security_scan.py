@@ -366,7 +366,7 @@ def print_report(findings: list[dict], patterns_only: bool = False) -> None:
 
         for pattern_name, items in sorted(by_pattern.items()):
             risk = items[0]["risk"]
-            risk_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}[risk]
+            risk_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢", "INFO": "ℹ️"}.get(risk, "⚪")
             print(f"\n {risk_icon} [{risk}] {pattern_name} ({len(items)}x)")
             print(f"   💡 {FIX_SUGGESTIONS.get(pattern_name, '')}")
             for item in items[:5]:
@@ -376,7 +376,7 @@ def print_report(findings: list[dict], patterns_only: bool = False) -> None:
         return
 
     for item in findings:
-        risk_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}[item["risk"]]
+        risk_icon = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢", "INFO": "ℹ️"}.get(item["risk"], "⚪")
         print(f" {risk_icon} [{item['risk']}] {item['file']}:{item['line']}")
         print(f"   Pattern: {item['pattern']}")
         print(f"   Match:   {item['match']}")
