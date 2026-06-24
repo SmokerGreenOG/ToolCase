@@ -302,7 +302,7 @@ ToolCase v5.4/
 │   ├── check_syntax.py          # AST syntax checker
 │   └── check_version_consistency.py  # CI version validator
 ├── tests/
-│   ├── test_*.py              # 70 unit tests (8 modules)
+│   ├── test_*.py              # 109 tests (self-reported via pytest)
 │   └── __init__.py
 └── README.md
 ```
@@ -315,7 +315,7 @@ ToolCase v5.4/
 |--------|-------|
 | Tools | 62 |
 | Categories | 10 |
-| Unit tests | 70 (self-reported) |
+| Unit tests | 109 (self-reported) |
 | Self-audit | Passing (compile + syntax) |
 | Syntax errors | 0 |
 | Security HIGH/MEDIUM | 0 |

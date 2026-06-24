@@ -18,7 +18,7 @@ All notable changes to ToolCase are documented in this file.
 - manifest.json consistent paths (scripts/check_syntax.py → check_syntax.py)
 
 ### Quality
-- **115 tests, 192 subtests** (was 70)
+- **109 tests** (was 70)
 - Dry-run: no more report writes (`.rsi_reports/`, `.self_improve_reports/`)
 - Release readiness: ignores `build/`, `dist/`, `*.egg-info/`; "Scanner crashed" false alarm fixed
 - Version consistency checker: removed hardcoded 60, cross-checks manifest.json

@@ -26,7 +26,7 @@ Gebruik:
     python improve.py --multiscan <path>        # Multi-taal scan
     python improve.py --complexity <path>       # Complexiteitsanalyse
     python improve.py --depgraph <path>         # Dependency graph
-    python improve.py --all <path>              # Alle tools tegelijk
+    python improve.py --core-scan <path>         # Core read-only tools (10 tools)
 
   ToolCase v5.4.1:
     python improve.py --safe-run check <cmd>       # Guard: safe subprocess executor
@@ -456,7 +456,7 @@ Voorbeelden:
   python improve.py script.py                    # Enkel bestand
   python improve.py src/ --recursive             # Hele directory
   python improve.py --code "def foo(): pass"     # Code snippet
-  python improve.py --auto-fix script.py         # Analyseer + automatisch fixen
+  python improve.py --core-scan src/             # Draai core read-only tools
   python improve.py --list-tools                 # Toon alle 62 tools
   python improve.py --json-config                # Output tool config als JSON
   python improve.py --verify-install             # Controleer installatie
@@ -467,8 +467,6 @@ Voorbeelden:
     parser.add_argument("--recursive", "-r", action="store_true",
                         help="Recursief door directories")
     parser.add_argument("--verbose", "-v", action="store_true", help="Uitgebreide uitvoer")
-    parser.add_argument("--auto-fix", "-f", action="store_true",
-                        help="Probeer automatisch te fixen")
     parser.add_argument("--version", action="version", version="improve.py v5.4.1")
     parser.add_argument("--list-tools", action="store_true",
                         help="Toon alle beschikbare tools in de ToolCase")
@@ -484,8 +482,8 @@ Voorbeelden:
                         help="Cyclomatische complexiteitsanalyse van functies")
     parser.add_argument("--depgraph", "-d", metavar="PATH",
                         help="Import/export dependency graph van de codebase")
-    parser.add_argument("--all", "-a", metavar="PATH",
-                        help="Draai alle tools tegelijk")
+    parser.add_argument("--core-scan", "-a", metavar="PATH",
+                        help="Draai core read-only tools (10 tools)")
 
     # Bestaande v2 tools
     parser.add_argument("--security-scan", metavar="PATH",
@@ -616,7 +614,7 @@ Voorbeelden:
 
     # ── CHEATSHEET ────────────────────────────────────────
     tool_flags = [
-        args.multiscan, args.complexity, args.depgraph, args.all,
+        args.multiscan, args.complexity, args.depgraph, args.core_scan,
         args.security_scan, args.env_check, args.project_doctor,
         args.route_scanner, args.fe_be_link, args.dead_code,
         args.todo_tracker, args.test_runner, args.patch_preview,
@@ -822,8 +820,8 @@ Voorbeelden:
         result = subprocess.run(cmd, timeout=300)
         sys.exit(result.returncode)
 
-    if args.all:
-        target = args.all
+    if args.core_scan:
+        target = args.core_scan
         if not Path(target).exists():
             print(t("file_not_found", lang=lang, target=target))
             sys.exit(2)
@@ -857,9 +855,6 @@ Voorbeelden:
             return EXIT_ERROR
         report = analyze_file(target)
         print_report(report, args.verbose, lang)
-
-        if args.auto_fix and not report["syntax_ok"]:
-            print(t("auto_fix_mode", lang=lang))
 
         has_issues = len(report.get("issues", [])) > 0 or not report.get("syntax_ok", True)
         return EXIT_FINDINGS if has_issues else EXIT_OK
