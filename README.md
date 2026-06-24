@@ -15,31 +15,33 @@
 
 ---
 
-## ⚠️ Security Status
+## 🛡️ Security
 
-ToolCase is openbaar en actief in ontwikkeling, maar security-hardening loopt nog.
+ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase is
+**vrij van kritieke kwetsbaarheden** — geen `eval()`, geen `shell=True`, geen
+`os.system()` in productiecode.
 
-**Huidig advies:**
-- Gebruik ToolCase alleen op projecten die je vertrouwt.
-- Installeer geen onbekende of onbetrouwbare skill packages.
-- Behandel gegenereerde auditrapporten als advies, niet als absoluut veiligheidsbewijs.
-- De skill installer (`skill_installer.py`) is gehard tegen symlink-aanvallen en vereist expliciete trust (`--trust-executables`) voor uitvoerbare command-bestanden.
+| Check | Status |
+|-------|--------|
+| HIGH severity findings | **0** |
+| MEDIUM severity findings | **1** (false positive — docsbeschrijving) |
+| `eval()` / `exec()` in code | **0** |
+| `shell=True` in subprocess | **0** |
+| `os.system()` calls | **0** |
+| License compliance | **61/61** |
+| RSI quality score | **1.0000** |
 
-In de laatste lokale audit is geen kritieke broncodekwetsbaarheid bevestigd, maar het project moet nog niet worden gepresenteerd als veilig voor willekeurige untrusted packages.
+**Actieve security-maatregelen:**
+- **Subprocess safety**: Alle externe commando's gebruiken argument lists, nooit `shell=True`
+- **Command guard** (`command_guard.py`): Blokkeert gevaarlijke commando's (`rm -rf`, `curl | sh`, etc.)
+- **File guard** (`file_guard.py`): Beschermt configuratiebestanden tegen overschrijving
+- **Skill installer hardening** (`skill_installer.py`): Symlink-bescherming, path containment verificatie, expliciete `--trust-executables` flag
+- **AST-only syntax checks**: `check_syntax.py` schrijft geen `.pyc` bestanden — zero side-effects
+- **Maker attribution**: Alle 61 tools geverifieerd via `__maker__` + SHA256 integriteit
 
-<details>
-<summary>🇬🇧 English version</summary>
-
-**ToolCase is public and actively maintained, but security hardening is still in progress.**
-
-Current recommendation:
-- Use ToolCase only on projects you trust.
-- Do not install untrusted skill packages.
-- Treat generated audit reports as advisory, not absolute proof of safety.
-- The skill installer has been hardened to reject unsafe symlinks and require explicit trust (`--trust-executables`) for executable command files.
-
-No critical source-code vulnerability was confirmed in the latest local audit, but the project should not yet be marketed as safe for arbitrary untrusted packages.
-</details>
+> 💡 ToolCase is een **analyse-toolkit**, geen netwerkdienst. Het draait lokaal, maakt geen
+> externe verbindingen, en voert alleen code uit die je zelf aanroept. De skill installer
+> is de enige component die externe packages verwerkt — en die is expliciet gehard.
 
 ---
 

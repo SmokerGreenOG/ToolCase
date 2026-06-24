@@ -9,6 +9,8 @@ Gebruik:
     python rsi_apply_docs.py --dry-run # Toon wat er zou gebeuren
     python rsi_apply_docs.py --id <id> # Verwerk specifieke request
 """
+__maker__ = "SmokerGreenOG"
+import _protect
 
 from __future__ import annotations
 
