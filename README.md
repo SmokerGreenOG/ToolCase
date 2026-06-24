@@ -24,7 +24,7 @@ ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase 
 | Check | Status |
 |-------|--------|
 | HIGH severity findings | **0** |
-| MEDIUM severity findings | **1** (false positive — docsbeschrijving) |
+| MEDIUM severity findings | **0** |
 | `eval()` / `exec()` in code | **0** |
 | `shell=True` in subprocess | **0** |
 | `os.system()` calls | **0** |
@@ -314,7 +314,7 @@ ToolCase v5.4/
 | Unit tests | 70/70 ✅ |
 | Self-audit | Passing |
 | Syntax errors | 0 |
-| Security HIGH/MEDIUM | 1 (MEDIUM false positive) |
+| Security HIGH/MEDIUM | 0 |
 | Config/docs/security findings | 0 |
 | License compliance | Passing |
 | Python files | 78 |

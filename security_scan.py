@@ -176,19 +176,36 @@ _GENERATED_NAMES = {
     "dexcore_analysis_report.html",
 }
 
+# Documentation files excluded from security scan
+# (README, CHANGELOG etc. document security patterns but don't execute them)
+_DOC_FILES = {
+    "readme.md", "changelog.md", "license",
+}
+
+# Directories excluded from security scan
+_EXCLUDE_DIRS = {
+    ".hermes", ".github",
+}
+
 
 def _is_generated_report(filepath: Path) -> bool:
     """Check if a file is a generated audit report (to skip in scans)."""
     name_lower = filepath.name.lower()
     if name_lower in _GENERATED_NAMES:
         return True
+    if name_lower in _DOC_FILES:
+        return True
     if name_lower.endswith("_audit_report.md") or name_lower.endswith("_audit_report.html"):
         return True
-    # Check path contains generated report directories
+    # Check path contains generated report directories or excluded dirs
     path_str = str(filepath).lower().replace("\\", "/")
     for pattern in GENERATED_REPORT_PATTERNS:
         if pattern.strip("*").lower() in path_str:
             return True
+    # Check for excluded directories
+    parts = set(p.name.lower() for p in filepath.parents)
+    if parts & _EXCLUDE_DIRS:
+        return True
     return False
 
 
