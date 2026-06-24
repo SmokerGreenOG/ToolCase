@@ -591,6 +591,8 @@ def print_known_dangerous() -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="command_guard.py — Check terminal commands for safety before execution.",
         formatter_class=argparse.RawDescriptionHelpFormatter,

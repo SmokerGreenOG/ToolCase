@@ -90,6 +90,14 @@ def find_config_files(root: Path) -> list[Path]:
 
 
 def find_php_files(root: Path) -> list[Path]:
+    """Find php files.
+    
+        Args:
+            root: Description.
+    
+        Returns:
+            Description.
+        """
     files = []
     for f in root.rglob("*.php"):
         try:
@@ -177,6 +185,15 @@ def audit_php_code(filepath: Path) -> dict:
 
 
 def print_report(config_results: list, code_results: list) -> None:
+    """Print report.
+    
+        Args:
+            config_results: Description.
+            code_results: Description.
+    
+        Returns:
+            Description.
+        """
     all_findings = []
     for r in config_results + code_results:
         all_findings.extend(r["findings"])
@@ -219,6 +236,15 @@ def print_report(config_results: list, code_results: list) -> None:
 
 
 def print_json(config_results: list, code_results: list) -> None:
+    """Print json.
+    
+        Args:
+            config_results: Description.
+            code_results: Description.
+    
+        Returns:
+            Description.
+        """
     all_findings = []
     for r in config_results + code_results:
         all_findings.extend(r["findings"])
@@ -239,6 +265,8 @@ def print_json(config_results: list, code_results: list) -> None:
 
 
 def main():
+    """main.
+        """
     parser = argparse.ArgumentParser(description="php_config_audit.py - PHP config security audit")
     parser.add_argument("path", help="PHP project directory")
     parser.add_argument("--json", "-j", action="store_true")

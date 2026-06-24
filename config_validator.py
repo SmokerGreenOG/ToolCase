@@ -115,6 +115,8 @@ def validate() -> dict:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="Config Validator — Controleer ToolCase config files"
     )

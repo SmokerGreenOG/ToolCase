@@ -26,6 +26,7 @@ import _protect
 import argparse
 import ast
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -39,7 +40,7 @@ PROJECT_ROOT = Path(__file__).parent.resolve()
 
 # Force UTF-8 encoding for subprocess calls (critical on Windows)
 _SUBPROCESS_ENV = {
-    **__import__("os").environ,
+    **os.environ,
     "PYTHONUTF8": "1",
     "PYTHONIOENCODING": "utf-8",
 }
@@ -57,11 +58,27 @@ def _run(cmd: list[str], timeout: int = 60) -> subprocess.CompletedProcess:
 
 
 def _load_json(path: Path) -> dict[str, Any]:
+    """ load json.
+    
+        Args:
+            path: Description.
+    
+        Returns:
+            Description.
+        """
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
+    """ load toml.
+    
+        Args:
+            path: Description.
+    
+        Returns:
+            Description.
+        """
     try:
         import tomllib
     except ImportError:
@@ -71,6 +88,8 @@ def _load_toml(path: Path) -> dict[str, Any]:
 
 
 def _git(*args: str) -> subprocess.CompletedProcess:
+    """ git.
+        """
     return _run(["git"] + list(args), timeout=15)
 
 
@@ -96,22 +115,48 @@ class CheckResult:
         self.severity = "required"  # required | recommended | optional
 
     def pass_(self, detail: str = "") -> "CheckResult":
+        """pass .
+        
+            Args:
+                detail: Description.
+        
+            Returns:
+                Description.
+            """
         self.passed = True
         self.detail = detail
         return self
 
     def fail(self, detail: str) -> "CheckResult":
+        """fail.
+        
+            Args:
+                detail: Description.
+        
+            Returns:
+                Description.
+            """
         self.passed = False
         self.detail = detail
         return self
 
     def skip(self, detail: str = "") -> "CheckResult":
+        """skip.
+        
+            Args:
+                detail: Description.
+        
+            Returns:
+                Description.
+            """
         self.skipped = True
         self.detail = detail
         return self
 
     @property
     def icon(self) -> str:
+        """icon.
+            """
         if self.skipped:
             return "⊘"
         return "✅" if self.passed else "❌"
@@ -449,6 +494,8 @@ def print_report(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="release_readiness.py — Pre-release GO/NO-GO checklist",
     )

@@ -174,6 +174,14 @@ class Changelog:
 
     @staticmethod
     def _resolve_section(description: str) -> str:
+        """ resolve section.
+        
+            Args:
+                description: Description.
+        
+            Returns:
+                Description.
+            """
         return _categorise_line(description)
 
     def merge(self, other: "Changelog") -> None:
@@ -183,9 +191,13 @@ class Changelog:
 
     @property
     def is_empty(self) -> bool:
+        """Check if empty.
+            """
         return all(len(v) == 0 for v in self._data.values())
 
     def total_items(self) -> int:
+        """total items.
+            """
         return sum(len(v) for v in self._data.values())
 
     def render_text(self) -> str:

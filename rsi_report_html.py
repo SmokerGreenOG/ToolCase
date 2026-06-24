@@ -740,6 +740,8 @@ new Chart(document.getElementById('weightChart'), {{
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="RSI HTML Report Generator — Dark-themed dashboard",
     )

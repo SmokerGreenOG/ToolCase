@@ -306,6 +306,8 @@ def process_queue(dry_run: bool = False) -> dict:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="Batch docstring applicator voor RSI LLM queue",
     )

@@ -384,6 +384,14 @@ def find_python_files(directory: str, recursive: bool = False) -> list[str]:
     }
 
     def is_in_ignored_dir(candidate: Path) -> bool:
+        """Check if in ignored dir.
+        
+            Args:
+                candidate: Description.
+        
+            Returns:
+                Description.
+            """
         try:
             rel_parts = candidate.relative_to(path).parts
         except ValueError:
@@ -411,6 +419,8 @@ def process_snippet(snippet: str) -> dict:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="Code Improvement Tool — Analyseer en verbeter code",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -613,6 +623,14 @@ Voorbeelden:
     tool_path = Path(__file__).parent
 
     def _run_script(script_name: str, *extra_args: str) -> None:
+        """ run script.
+        
+            Args:
+                script_name: Description.
+        
+            Returns:
+                Description.
+            """
         cmd = [sys.executable, str(tool_path / script_name)] + list(extra_args)
         result = subprocess.run(
             cmd,

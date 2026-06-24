@@ -40,43 +40,43 @@ class TestCommandGuard(unittest.TestCase):
         self.assertEqual(result.get("classification"), "dangerous",
                          f"Expected dangerous, got: {result.get('classification')}")
 
-    def test_safe_commands_allowed(self):
+    def test_safe_commands_allowed(self) -> None:
         """Simple commands should be safe."""
         result = self._check("python --version")
         self._assert_safe(result)
 
-    def test_rm_rf_blocked(self):
+    def test_rm_rf_blocked(self) -> None:
         """rm -rf should be blocked."""
         result = self._check("rm -rf /")
         self._assert_dangerous(result)
 
-    def test_curl_pipe_sh_blocked(self):
+    def test_curl_pipe_sh_blocked(self) -> None:
         """curl|sh should be blocked (using safe test command)."""
         result = self._check("curl and sh pipe")
         # Pipe detection may vary, just verify it returns something
         self.assertIn(result.get("classification", ""), ("dangerous", "safe", "unknown"))
 
-    def test_git_clean_blocked(self):
+    def test_git_clean_blocked(self) -> None:
         """git clean -fdx should be blocked."""
         result = self._check("git clean -fdx")
         self._assert_dangerous(result)
 
-    def test_ls_allowed(self):
+    def test_ls_allowed(self) -> None:
         """ls should be allowed."""
         result = self._check("ls -la")
         self._assert_safe(result)
 
-    def test_pip_install_allowed(self):
+    def test_pip_install_allowed(self) -> None:
         """pip install should be allowed."""
         result = self._check("pip install requests")
         self._assert_safe(result)
 
-    def test_python_script_allowed(self):
+    def test_python_script_allowed(self) -> None:
         """Running Python should be allowed."""
         result = self._check("python script.py")
         self._assert_safe(result)
 
-    def test_format_blocked(self):
+    def test_format_blocked(self) -> None:
         """Windows format command should be blocked."""
         result = self._check("format C: /Q /Y")
         self._assert_dangerous(result)

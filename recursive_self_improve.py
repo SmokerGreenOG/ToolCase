@@ -702,12 +702,14 @@ class SelfAnalyzer:
                     if isinstance(node, ast.Import):
                         for alias in node.names:
                             name = alias.name.split(".")[0]
-                            if name not in self.STDLIB_TOP_LEVEL and name not in self.INTERNAL_IMPORTS:
+                            if (name not in self.STDLIB_TOP_LEVEL
+                                    and name not in self.INTERNAL_IMPORTS):
                                 imports.add(name)
                     elif isinstance(node, ast.ImportFrom):
                         if node.module:
                             name = node.module.split(".")[0]
-                            if name not in self.STDLIB_TOP_LEVEL and name not in self.INTERNAL_IMPORTS:
+                            if (name not in self.STDLIB_TOP_LEVEL
+                                    and name not in self.INTERNAL_IMPORTS):
                                 imports.add(name)
                 if imports:
                     file_imports[m.file] = imports

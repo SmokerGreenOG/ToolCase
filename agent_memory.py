@@ -241,6 +241,8 @@ def print_report(config: dict, skills: list[dict], memory: dict,
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="agent_memory.py — Track Hermes agent configuration and state",
         formatter_class=argparse.RawDescriptionHelpFormatter,

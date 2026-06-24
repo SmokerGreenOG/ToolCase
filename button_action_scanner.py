@@ -461,6 +461,14 @@ def summarize(findings: list[dict]) -> dict:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse args.
+    
+        Args:
+            argv: Description.
+    
+        Returns:
+            Description.
+        """
     parser = argparse.ArgumentParser(
         description="Scan frontend files for buttons, forms, and menu-items with no real action.",
         epilog="Exit codes: 0 = no issues, 1 = issues found, 2 = error",
@@ -493,6 +501,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """main.
+    
+        Args:
+            argv: Description.
+    
+        Returns:
+            Description.
+        """
     args = parse_args(argv)
 
     target = Path(args.path).resolve()

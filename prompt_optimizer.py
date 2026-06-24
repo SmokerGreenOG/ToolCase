@@ -95,6 +95,8 @@ class PromptFinding:
         self.severity = "info"
 
     def to_dict(self) -> dict:
+        """to dict.
+            """
         return {
             "file": self.file,
             "line": self.line,
@@ -306,6 +308,8 @@ class PromptOptimizer:
         }
 
     def run(self) -> list[PromptFinding]:
+        """run.
+            """
         files = find_prompt_files(self.path)
         self.stats["files_scanned"] = len(files)
 
@@ -326,6 +330,8 @@ class PromptOptimizer:
         return self.findings
 
     def get_report(self) -> dict:
+        """Get report.
+            """
         return {
             "path": str(self.path),
             "stats": self.stats,
@@ -403,6 +409,8 @@ def analyze_direct_prompt(prompt: str) -> dict:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="🧠 Prompt Optimizer — Analyseer en optimaliseer AI prompts in code",
         formatter_class=argparse.RawDescriptionHelpFormatter,

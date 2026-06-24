@@ -67,6 +67,8 @@ def get_local_ips() -> list[str]:
 
 
 def main():
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="QuickServe — minimale HTTP file server",
         formatter_class=argparse.RawDescriptionHelpFormatter,

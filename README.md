@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
 [![Tests](https://img.shields.io/badge/tests-70%2F70-success?style=flat-square)]()
-[![Audit](https://img.shields.io/badge/self--audit-0.999-brightgreen?style=flat-square)]()
+[![Audit](https://img.shields.io/badge/self--audit-1.0000-brightgreen?style=flat-square)]()
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
@@ -272,7 +272,7 @@ python recursive_self_improve.py . --cycles 5
 python recursive_self_improve.py . --focus code-quality
 ```
 
-**Current self-audit status: perfect 1.0** (0 syntax errors, 0 E501, 0 E302, quality score 1.0)
+**Current self-audit status: 1.0000** (0 syntax errors, 0 E501, quality score 1.0000, 94.9% doc coverage)
 
 ---
 
@@ -312,11 +312,15 @@ ToolCase v5.4/
 | Unit tests | 70/70 ✅ |
 | Self-audit | Passing |
 | Syntax errors | 0 |
-| Security HIGH/MEDIUM | 0 |
+| Security HIGH/MEDIUM | 1 (MEDIUM false positive) |
 | Config/docs/security findings | 0 |
 | License compliance | Passing |
-| Python files | 73 |
-| Lines of code | 26,000+ |
+| Python files | 78 |
+| Lines of code | 34,700+ |
+| RSI Quality | 1.0000 |
+| E501 long lines | 0 |
+| Security MEDIUM | 1 (false positive) |
+| Doc coverage | 94.9% (761/803) |
 
 ---
 

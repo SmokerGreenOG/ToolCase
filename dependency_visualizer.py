@@ -77,6 +77,15 @@ def find_circular(graph: dict[str, set[str]]) -> list[list[str]]:
     stack = set()
 
     def dfs(node: str, path: list[str]) -> None:
+        """dfs.
+        
+            Args:
+                node: Description.
+                path: Description.
+        
+            Returns:
+                Description.
+            """
         if node in stack:
             cycle_start = path.index(node)
             cycle = path[cycle_start:] + [node]
@@ -160,6 +169,8 @@ def print_report(data: dict) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="Dependency Visualizer — Mermaid.js diagrams"
     )

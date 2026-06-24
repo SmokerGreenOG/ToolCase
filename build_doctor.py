@@ -45,11 +45,11 @@ EXCLUDE_DIRS = frozenset({
     ".tox", ".eggs", "build", "dist", ".next", ".husky/_", ".git2",
     ".svn", ".hg", "coverage", ".nyc_output",
         ".backups",
-        
+
         ".rsi_backups",
-        
+
         ".rsi_reports",
-        
+
         ".self_improve_reports",
         })
 

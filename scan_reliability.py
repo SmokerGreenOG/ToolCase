@@ -142,13 +142,19 @@ class ScanSession:
         self.error_message = ""
 
     def start(self) -> None:
+        """start.
+            """
         self.start_time = time.monotonic()
 
     def stop(self) -> None:
+        """stop.
+            """
         self.end_time = time.monotonic()
 
     @property
     def elapsed_ms(self) -> float:
+        """elapsed ms.
+            """
         return (self.end_time - self.start_time) * 1000
 
     @property
@@ -164,6 +170,8 @@ class ScanSession:
         return max(0.0, min(1.0, coverage - error_penalty * 0.5))
 
     def to_dict(self) -> dict[str, Any]:
+        """to dict.
+            """
         return {
             "scanner": self.scanner_name,
             "files_found": self.files_found,
@@ -345,6 +353,8 @@ def print_summary(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="scan_reliability.py — Measure scanner reliability",
     )

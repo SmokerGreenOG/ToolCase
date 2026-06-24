@@ -373,6 +373,8 @@ def validate_sarif(sarif_path: str) -> tuple[bool, str]:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="sarif_exporter.py — Export ToolCase findings as SARIF v2.1.0",
         formatter_class=argparse.RawDescriptionHelpFormatter,

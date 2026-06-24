@@ -186,6 +186,8 @@ def print_bak_list(backups: list[dict]) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="rollback.py — Rollback files using .bak backups",
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -110,6 +110,14 @@ _RESET = "\033[0m"
 
 
 def _colorize(status: str) -> str:
+    """ colorize.
+    
+        Args:
+            status: Description.
+    
+        Returns:
+            Description.
+        """
     color = _STATUS_COLORS.get(status, "")
     if color and sys.stdout.isatty():
         return f"{color}{status}{_RESET}"
@@ -117,6 +125,14 @@ def _colorize(status: str) -> str:
 
 
 def _icon(status: str) -> str:
+    """ icon.
+    
+        Args:
+            status: Description.
+    
+        Returns:
+            Description.
+        """
     icons = {
         "Allowed": "✓",
         "Requires Approval": "⚠",
@@ -185,6 +201,14 @@ def print_table(report: list[dict]) -> None:
 
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+    """Parse args.
+    
+        Args:
+            argv: Description.
+    
+        Returns:
+            Description.
+        """
     parser = argparse.ArgumentParser(
         description="Agent Permission Auditor — simulate-check what the agent can do.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -204,6 +228,8 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
 
 
 def main() -> None:
+    """main.
+        """
     args = parse_args()
     report = build_report(PERMISSIONS, include_reason=args.json)
 

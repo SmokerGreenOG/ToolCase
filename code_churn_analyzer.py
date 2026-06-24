@@ -18,6 +18,8 @@ ROOT = Path(__file__).parent.resolve()
 
 
 def analyze() -> dict:
+    """analyze.
+        """
     results = {}
     stats = defaultdict(lambda: {"changes": 0, "lines": 0, "score": 0})
 
@@ -62,6 +64,8 @@ def analyze() -> dict:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(description="Code Churn Analyzer — Hotspot detectie")
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()

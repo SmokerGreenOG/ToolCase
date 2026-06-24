@@ -67,11 +67,11 @@ def _make_fix(*steps: str) -> list[str]:
 
 def _explain_modulenotfound(text: str, m: re.Match) -> dict[str, Any]:
     """ explain modulenotfound.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -91,11 +91,11 @@ def _explain_modulenotfound(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_importerror(text: str, m: re.Match) -> dict[str, Any]:
     """ explain importerror.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -119,11 +119,11 @@ def _explain_importerror(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_syntaxerror(text: str, m: re.Match) -> dict[str, Any]:
     """ explain syntaxerror.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -157,11 +157,11 @@ def _explain_syntaxerror(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_typeerror(text: str, m: re.Match) -> dict[str, Any]:
     """ explain typeerror.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -182,11 +182,11 @@ def _explain_typeerror(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_valueerror(text: str, m: re.Match) -> dict[str, Any]:
     """ explain valueerror.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -206,11 +206,11 @@ def _explain_valueerror(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_attributeerror(text: str, m: re.Match) -> dict[str, Any]:
     """ explain attributeerror.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -231,11 +231,11 @@ def _explain_attributeerror(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_nameerror(text: str, m: re.Match) -> dict[str, Any]:
     """ explain nameerror.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -255,11 +255,11 @@ def _explain_nameerror(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_indexerror(text: str, m: re.Match) -> dict[str, Any]:
     """ explain indexerror.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -278,11 +278,11 @@ def _explain_indexerror(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_keyerror(text: str, m: re.Match) -> dict[str, Any]:
     """ explain keyerror.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -302,11 +302,11 @@ def _explain_keyerror(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_filenotfound(text: str, m: re.Match) -> dict[str, Any]:
     """ explain filenotfound.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -379,11 +379,11 @@ _ERRNO_KNOWN = {
 
 def _explain_npm_install(text: str, m: re.Match) -> dict[str, Any]:
     """ explain npm install.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -404,11 +404,11 @@ def _explain_npm_install(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_npm_errcode(text: str, m: re.Match) -> dict[str, Any]:
     """ explain npm errcode.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -433,11 +433,11 @@ def _explain_npm_errcode(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_git_notrepo(text: str, m: re.Match) -> dict[str, Any]:
     """ explain git notrepo.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -457,11 +457,11 @@ def _explain_git_notrepo(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_git_mergeconflict(text: str, m: re.Match) -> dict[str, Any]:
     """ explain git mergeconflict.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -482,11 +482,11 @@ def _explain_git_mergeconflict(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_git_detached(text: str, m: re.Match) -> dict[str, Any]:
     """ explain git detached.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -507,11 +507,11 @@ def _explain_git_detached(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_git_pushrejected(text: str, m: re.Match) -> dict[str, Any]:
     """ explain git pushrejected.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -607,11 +607,11 @@ _TS_KNOWN_ERRORS: dict[str, dict[str, Any]] = {
 
 def _explain_ts_error(text: str, m: re.Match) -> dict[str, Any]:
     """ explain ts error.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -635,11 +635,11 @@ def _explain_ts_error(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_rust_panic(text: str, m: re.Match) -> dict[str, Any]:
     """ explain rust panic.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -661,11 +661,11 @@ def _explain_rust_panic(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_rust_compile(text: str, m: re.Match) -> dict[str, Any]:
     """ explain rust compile.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -692,11 +692,11 @@ def _explain_rust_compile(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_json_parse(text: str, m: re.Match) -> dict[str, Any]:
     """ explain json parse.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -718,11 +718,11 @@ def _explain_json_parse(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_yaml_parse(text: str, m: re.Match) -> dict[str, Any]:
     """ explain yaml parse.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -809,11 +809,11 @@ _NETWORK_KNOWN: dict[str, dict[str, Any]] = {
 
 def _explain_docker_daemon(text: str, m: re.Match) -> dict[str, Any]:
     """ explain docker daemon.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """
@@ -834,11 +834,11 @@ def _explain_docker_daemon(text: str, m: re.Match) -> dict[str, Any]:
 
 def _explain_docker_conflict(text: str, m: re.Match) -> dict[str, Any]:
     """ explain docker conflict.
-    
+
         Args:
             text: Description.
             m: Description.
-    
+
         Returns:
             Description.
         """

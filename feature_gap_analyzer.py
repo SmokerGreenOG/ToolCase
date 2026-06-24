@@ -295,6 +295,8 @@ def print_report(features: dict, gaps: list[dict],
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="feature_gap_analyzer.py — Analyze feature gaps between frontend & backend",
         formatter_class=argparse.RawDescriptionHelpFormatter,

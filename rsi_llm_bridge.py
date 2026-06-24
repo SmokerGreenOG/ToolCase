@@ -109,10 +109,20 @@ class FixRequest:
     status: str = "pending"      # pending | done | failed
 
     def to_dict(self) -> dict:
+        """to dict.
+            """
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> "FixRequest":
+        """from dict.
+        
+            Args:
+                data: Description.
+        
+            Returns:
+                Description.
+            """
         return cls(**{k: data.get(k) for k in [
             "id", "timestamp", "file_path", "issue_type",
             "description", "priority", "context", "status"
@@ -137,10 +147,20 @@ class FixResult:
     duration_ms: int = 0
 
     def to_dict(self) -> dict:
+        """to dict.
+            """
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> "FixResult":
+        """from dict.
+        
+            Args:
+                data: Description.
+        
+            Returns:
+                Description.
+            """
         return cls(**{k: data.get(k) for k in [
             "request_id", "timestamp", "success", "file_path",
             "changes_made", "diff_summary", "metrics_before",
@@ -164,6 +184,8 @@ class QueueState:
     version: str = REQUEST_VERSION
 
     def to_dict(self) -> dict:
+        """to dict.
+            """
         return asdict(self)
 
 
@@ -428,13 +450,6 @@ class LLMBridge:
 # ── CLI ───────────────────────────────────────────────────────
 
 
-def _c(text: str, code: str = "") -> str:
-    codes = {"green": "32", "yellow": "33", "red": "31",
-             "cyan": "36", "magenta": "35", "bold": "1", "dim": "2"}
-    c_code = codes.get(code, "")
-    return f"\033[{c_code}m{text}\033[0m" if c_code else text
-
-
 def cmd_list_pending(bridge: LLMBridge, args) -> None:
     """CLI: Toon pending requests."""
     pending = bridge.list_pending()
@@ -554,6 +569,8 @@ def cmd_clear(bridge: LLMBridge, args) -> None:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="RSI LLM Bridge — Brug tussen RSI en Hermes voor code fixes",
         formatter_class=argparse.RawDescriptionHelpFormatter,

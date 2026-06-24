@@ -56,6 +56,8 @@ def generate_tool_list() -> str:
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="Docs Sync Auto Fix — Update README automatically"
     )

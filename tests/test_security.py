@@ -10,14 +10,14 @@ import tempfile
 class TestSecurityScan(unittest.TestCase):
     """Test security scanning functionality."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         import shutil
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
-    def test_scan_clean_file_no_findings(self):
+    def test_scan_clean_file_no_findings(self) -> None:
         """A clean file should have no security findings."""
         from security_scan import scan_file
         from pathlib import Path
@@ -27,7 +27,7 @@ class TestSecurityScan(unittest.TestCase):
         findings = scan_file(Path(clean))
         self.assertEqual(len(findings), 0)
 
-    def test_scan_detects_api_key(self):
+    def test_scan_detects_api_key(self) -> None:
         """A file with an API key should be flagged."""
         from security_scan import scan_file
         from pathlib import Path
@@ -38,7 +38,7 @@ class TestSecurityScan(unittest.TestCase):
         self.assertGreater(len(findings), 0)
         self.assertTrue(any(f["risk"] == "HIGH" for f in findings))
 
-    def test_scan_respects_inline_suppression(self):
+    def test_scan_respects_inline_suppression(self) -> None:
         """Intentional examples can be suppressed without excluding a file."""
         from security_scan import scan_file
         from pathlib import Path
@@ -50,7 +50,7 @@ class TestSecurityScan(unittest.TestCase):
             )
         self.assertEqual(scan_file(Path(example)), [])
 
-    def test_scan_detects_eval(self):
+    def test_scan_detects_eval(self) -> None:
         """A file with eval() should be flagged."""
         from security_scan import scan_file
         from pathlib import Path
@@ -61,7 +61,7 @@ class TestSecurityScan(unittest.TestCase):
         self.assertGreater(len(findings), 0)
         self.assertTrue(any(f["pattern"] == "eval_exec" for f in findings))
 
-    def test_scan_detects_private_key(self):
+    def test_scan_detects_private_key(self) -> None:
         """A file with a private key header should be flagged."""
         from security_scan import scan_file
         from pathlib import Path
@@ -72,7 +72,7 @@ class TestSecurityScan(unittest.TestCase):
         self.assertGreater(len(findings), 0)
         self.assertTrue(any(f["pattern"] == "private_key" for f in findings))
 
-    def test_collect_files_finds_py(self):
+    def test_collect_files_finds_py(self) -> None:
         """collect_files should find .py files."""
         from security_scan import collect_files
         from pathlib import Path
@@ -84,14 +84,14 @@ class TestSecurityScan(unittest.TestCase):
         self.assertGreater(len(files), 0)
         self.assertTrue(any(f.name == "test.py" for f in files))
 
-    def test_mask_secret(self):
+    def test_mask_secret(self) -> None:
         """_mask_secret should mask sensitive values."""
         from security_scan import _mask_secret
         masked = _mask_secret('API_KEY = "sk-1234567890abcdef"')
         self.assertIn("**", masked)
         self.assertNotIn("1234567890abcdef", masked.replace("****", ""))
 
-    def test_scan_exclude_binary_extensions(self):
+    def test_scan_exclude_binary_extensions(self) -> None:
         """Binary files should be skipped."""
         from security_scan import scan_file
         from pathlib import Path
@@ -101,7 +101,7 @@ class TestSecurityScan(unittest.TestCase):
         findings = scan_file(Path(binary))
         self.assertEqual(len(findings), 0)
 
-    def test_scan_detects_connection_string(self):
+    def test_scan_detects_connection_string(self) -> None:
         """Connection strings with credentials should be flagged."""
         from security_scan import scan_file
         from pathlib import Path

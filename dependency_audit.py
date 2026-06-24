@@ -301,6 +301,8 @@ def print_report(deps_by_source: dict, issues: list[dict],
 
 
 def main() -> None:
+    """main.
+        """
     parser = argparse.ArgumentParser(
         description="dependency_audit.py — Audit project dependencies",
         formatter_class=argparse.RawDescriptionHelpFormatter,
