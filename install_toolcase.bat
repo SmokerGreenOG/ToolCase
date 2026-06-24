@@ -1,6 +1,6 @@
 @echo off
 REM =====================================================================
-REM  install_toolcase.bat — ToolCase v5.4.0 Installatie voor Windows
+REM  install_toolcase.bat — ToolCase v5.4.1 Installatie voor Windows
 REM  Valideert alle 60 tools, tests, SKILL.md, manifest.json en dashboard.
 REM  Maker: SmokerGreenOG
 REM =====================================================================
@@ -8,7 +8,7 @@ setlocal enabledelayedexpansion
 
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
-echo ║      ToolCase v5.4.0 — Installatie voor Windows            ║
+echo ║      ToolCase v5.4.1 — Installatie voor Windows            ║
 echo ║      60 tools · 10 safety rules · recursive improvement    ║
 echo ║      Maker: SmokerGreenOG                                  ║
 echo ╚══════════════════════════════════════════════════════════════╝
@@ -157,7 +157,7 @@ if !ERRORLEVEL! neq 0 (
 REM ── Summary ──────────────────────────────────────────────────
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
-echo ║      ToolCase v5.4.0 — Installatie voltooid!               ║
+echo ║      ToolCase v5.4.1 — Installatie voltooid!               ║
 echo ╠══════════════════════════════════════════════════════════════╣
 echo ║  📍 %TC_DIR%                    ║
 echo ║  🛠  60 tools · 10 safety rules                              ║

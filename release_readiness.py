@@ -6,7 +6,7 @@ Checks before you release:
   1. Version consistency (pyproject.toml == manifest.json == tools_config.json)
   2. Tool count consistency (manifest == tools_config == README)
   3. Syntax check (all .py files AST parse)
-  4. Unit tests pass (70/70 expected)
+  4. Unit tests pass (109 tests (self-reported))
   5. Security scan clean (0 HIGH findings)
   6. Install verify OK
   7. No generated reports in git tracked files
@@ -453,10 +453,11 @@ def run_all_checks(ci_mode: bool = False) -> dict[str, Any]:
 
     passed_required = all(
         c.passed for c in checks
-        if c.severity == "required" and not c.skipped
+        if c.severity == "required"
+        # Skipped/timeout required checks count as FAILED
     )
     passed_all = all(
-        c.passed or c.skipped for c in checks
+        c.passed or (c.skipped and c.severity != "required") for c in checks
     )
     verdict = "GO ✅" if passed_required else "NO-GO ❌"
     if passed_all and not passed_required:

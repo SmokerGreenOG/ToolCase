@@ -184,8 +184,13 @@ _DOC_FILES = {
 
 # Directories excluded from security scan
 _EXCLUDE_DIRS = {
-    ".hermes", ".github",
+    ".hermes", ".github", "build", "dist",
 }
+
+# Path suffixes to exclude (e.g. *.egg-info/PKG-INFO)
+_EXCLUDE_PATH_SUFFIXES = (
+    ".egg-info",
+)
 
 
 def _is_generated_report(filepath: Path) -> bool:
@@ -206,6 +211,11 @@ def _is_generated_report(filepath: Path) -> bool:
     parts = set(p.name.lower() for p in filepath.parents)
     if parts & _EXCLUDE_DIRS:
         return True
+    # Check for excluded path suffixes (*.egg-info etc.)
+    path_str_lower = str(filepath).lower().replace("\\", "/")
+    for suffix in _EXCLUDE_PATH_SUFFIXES:
+        if suffix in path_str_lower:
+            return True
     return False
 
 

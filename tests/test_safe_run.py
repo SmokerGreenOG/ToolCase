@@ -10,8 +10,16 @@ from pathlib import Path
 from safe_run import classify_command, safe_run, Risk
 
 
-# Cross-platform safe command for testing
-_SAFE_CMD = [sys.executable, "-c", "import sys; sys.stdout.write('hello_test\\n')"]
+def _make_safe_cmd(workspace: str) -> list[str]:
+    """Create a truly safe cross-platform test command.
+    
+    Writes a tiny .py script and runs it — this is classified as LOW risk
+    by safe_run (matches 'python script.py' pattern), not blocked as shell
+    interpreter (which only blocks python -c, not script execution).
+    """
+    script = Path(workspace) / "_test_safe.py"
+    script.write_text("import sys; sys.stdout.write('hello_test\\n')\n", encoding="utf-8")
+    return [sys.executable, str(script)]
 
 
 class TestSafeRunClassification(unittest.TestCase):
@@ -76,6 +84,18 @@ class TestSafeRunClassification(unittest.TestCase):
 class TestSafeRunExecution(unittest.TestCase):
     """Test safe_run() execution blocking."""
 
+    def setUp(self) -> None:
+        """Create temp workspace for execution tests."""
+        self.workspace = tempfile.mkdtemp()
+
+    def tearDown(self) -> None:
+        """Clean up."""
+        import shutil
+        shutil.rmtree(self.workspace, ignore_errors=True)
+
+    def _safe_cmd(self) -> list[str]:
+        return _make_safe_cmd(self.workspace)
+
     def test_blocked_command_refused(self) -> None:
         result = safe_run(
             ["powershell", "-EncodedCommand", "SGVsbG8="],
@@ -95,18 +115,19 @@ class TestSafeRunExecution(unittest.TestCase):
     def test_dangerous_kwargs_rejected(self) -> None:
         """shell=True and other dangerous kwargs must be rejected."""
         result = safe_run(
-            ["echo", "test"],
+            self._safe_cmd(),
             risk_level="low",
             approval_required=False,
-            shell=True,  # should be rejected
+            shell=True,
         )
         self.assertTrue(result.blocked)
         self.assertIn("shell", result.block_reason.lower())
 
     def test_safe_command_executes(self) -> None:
+        """A safe script execution must not be blocked."""
         result = safe_run(
-            _SAFE_CMD,
-            risk_level="medium",  # python -c is unknown → medium
+            self._safe_cmd(),
+            risk_level="medium",  # Full python path not in SAFE_PATTERNS
             approval_required=False,
         )
         self.assertFalse(result.blocked,
@@ -115,41 +136,39 @@ class TestSafeRunExecution(unittest.TestCase):
 
     def test_cwd_outside_workspace_blocked(self) -> None:
         """cwd outside workspace must be blocked."""
-        with tempfile.TemporaryDirectory() as ws:
-            outside_dir = tempfile.gettempdir()
-            result = safe_run(
-                _SAFE_CMD,
-                workspace=ws,
-                cwd=outside_dir,
-                risk_level="low",
-                approval_required=False,
-            )
-            self.assertTrue(result.blocked,
-                            f"Expected blocked, got blocked={result.blocked}")
+        outside_dir = tempfile.gettempdir()
+        result = safe_run(
+            self._safe_cmd(),
+            workspace=self.workspace,
+            cwd=outside_dir,
+            risk_level="low",
+            approval_required=False,
+        )
+        self.assertTrue(result.blocked,
+                        f"Expected blocked, got blocked={result.blocked}")
 
     def test_path_outside_workspace_resolved_blocked(self) -> None:
         """Relative paths resolved against cwd must be checked."""
-        with tempfile.TemporaryDirectory() as ws:
-            outside_file = str(Path(tempfile.gettempdir()) / "outside.txt")
-            result = safe_run(
-                ["ls", outside_file],
-                workspace=ws,
-                risk_level="medium",
-                approval_required=False,
-            )
-            self.assertTrue(result.blocked,
-                            f"Expected blocked for outside path, got {result.blocked}")
+        outside_file = str(Path(tempfile.gettempdir()) / "outside.txt")
+        result = safe_run(
+            ["ls", outside_file],
+            workspace=self.workspace,
+            risk_level="medium",
+            approval_required=False,
+        )
+        self.assertTrue(result.blocked,
+                        f"Expected blocked for outside path, got {result.blocked}")
 
     def test_workspace_containment_allows(self) -> None:
-        with tempfile.TemporaryDirectory() as ws:
-            result = safe_run(
-                _SAFE_CMD,
-                workspace=ws,
-                risk_level="medium",
-                approval_required=False,
-            )
-            self.assertFalse(result.blocked,
-                             f"blocked={result.blocked}, reason={result.block_reason}")
+        """In-workspace execution must be allowed."""
+        result = safe_run(
+            self._safe_cmd(),
+            workspace=self.workspace,
+            risk_level="medium",  # Full python path not in SAFE_PATTERNS
+            approval_required=False,
+        )
+        self.assertFalse(result.blocked,
+                         f"blocked={result.blocked}, reason={result.block_reason}")
 
 
 if __name__ == "__main__":

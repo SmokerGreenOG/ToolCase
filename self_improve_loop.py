@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-self_improve_loop.py — Autonomous self-improvement loop for ToolCase v5.4.0.
+self_improve_loop.py — Autonomous self-improvement loop for ToolCase v5.4.1.
 
 CLI commands:
     python self_improve_loop.py .                    # Default: dry-run, 1 cycle
@@ -1168,7 +1168,7 @@ def run_one_cycle(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="self_improve_loop.py — Autonomous self-improvement for ToolCase v5.4.0",
+        description="self_improve_loop.py — Autonomous self-improvement for ToolCase v5.4.1",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "CLI commands:\n"

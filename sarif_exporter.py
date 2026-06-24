@@ -48,7 +48,7 @@ TOOLCASE_DRIVER = {
     "fullName": "ToolCase — AI Agent Code Toolkit",
     "organization": "SmokerGreenOG",
     "informationUri": "https://github.com/SmokerGreenOG/ToolCase",
-    "semanticVersion": "5.4.0",
+    "semanticVersion": "5.4.1",
     "rules": [],  # Populated during export
 }
 

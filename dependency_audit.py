@@ -132,7 +132,7 @@ def get_python_deps(root: Path) -> list[dict]:
                 build_requires = data.get("build-system", {}).get("requires", [])
 
                 def _parse_pep508(spec: str) -> dict | None:
-                    m = re.match(r'^([a-zA-Z0-9_.-]+)\\s*([<>=!~]+)\\s*([\\d.]+)', spec)
+                    m = re.match(r'^([a-zA-Z0-9_.-]+)\s*([<>=!~]+)\s*([\d.]+)', spec)
                     if m:
                         return {
                             "name": m.group(1).lower(),

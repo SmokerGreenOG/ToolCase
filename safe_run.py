@@ -462,7 +462,10 @@ def is_within_workspace(target: str | Path, workspace: str | Path) -> bool:
 
 
 def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
-    """Extract potential file/directory paths from a command."""
+    """Extract potential file/directory paths from a command.
+    
+    Includes the executable, option values with =, and positional args.
+    """
     if isinstance(cmd, str):
         parts = shlex.split(cmd)
     else:
@@ -472,15 +475,25 @@ def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
     _CODE_FLAGS = frozenset({"-c", "-e", "-m", "--command", "-Command", "-EncodedCommand", "-enc"})
 
     paths = []
+    # Executable is intentionally NOT checked — system tools
+    # (python, git, docker) live outside project workspaces.
+    # Containment targets command ARGUMENTS (files operated on).
+
     skip_next = False
-    for part in parts:
+    for part in parts[1:]:  # Skip executable
         if skip_next:
             skip_next = False
             continue
         if part in _CODE_FLAGS or part.startswith("-EncodedCommand"):
             skip_next = True
             continue
-        # Skip flags
+        # Extract paths from --flag=value syntax
+        if part.startswith("--") and "=" in part:
+            _, value = part.split("=", 1)
+            if value:  # value could be a path
+                paths.append(value)
+            continue
+        # Skip other flags
         if part.startswith("-"):
             continue
         # Heuristic: paths contain / or \\ or start with .
@@ -672,9 +685,6 @@ def safe_run(
         effective_cwd = Path(cwd).resolve() if cwd else Path.cwd()
         resolved_paths = []
         for p in _extract_paths_from_command(cmd_list):
-            # Skip the executable itself (first arg)
-            if p == cmd_list[0]:
-                continue
             resolved = (effective_cwd / p).resolve()
             resolved_paths.append(str(resolved))
         for p in resolved_paths:
@@ -695,6 +705,19 @@ def safe_run(
         if RISK_LABELS[r] == risk_level:
             max_risk = r
             break
+
+    # ── Encoded command: allow if explicitly permitted ──────
+    if allow_encoded_commands and classification.risk == Risk.BLOCKED:
+        # Check if the only reason it's blocked is an encoded command pattern
+        is_encoded = any(
+            p.regex.search(classification.command)
+            for p in ENCODED_COMMAND_PATTERNS
+        )
+        if is_encoded:
+            # Downgrade from BLOCKED to HIGH — caller accepts the risk
+            classification.risk = Risk.HIGH
+            classification.risk_label = "high"
+            classification.blocked = False
 
     # ── Block checks ──────────────────────────────────────
     if classification.blocked:

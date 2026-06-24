@@ -635,7 +635,7 @@ Voorbeelden:
         print("\n" + "=" * 60)
         print(t("hermes_hint", lang=lang))
         print("=" * 60)
-        print(f"\n{t('workflow_title', lang=lang, VERSION='5.4.0')}\n")
+        print(f"\n{t('workflow_title', lang=lang, VERSION='5.4.1')}\n")
         print(t("workflow_step1", lang=lang))
         print(t("workflow_step2", lang=lang))
         print(t("workflow_step3", lang=lang))
@@ -834,7 +834,7 @@ Voorbeelden:
         sys.exit(_last_exit_code)
 
     # ── Analyse modus ─────────────────────────────────────
-    print(t("code_improvement_tool", lang=lang, VERSION="5.4.0"))
+    print(t("code_improvement_tool", lang=lang, VERSION="5.4.1"))
     print(f"{'='*60}")
 
     if args.code:
