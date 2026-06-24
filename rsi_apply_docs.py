@@ -9,12 +9,12 @@ Gebruik:
     python rsi_apply_docs.py --dry-run # Toon wat er zou gebeuren
     python rsi_apply_docs.py --id <id> # Verwerk specifieke request
 """
-__maker__ = "SmokerGreenOG"
-import _protect
 
 from __future__ import annotations
 
+__maker__ = "SmokerGreenOG"
 import _protect
+
 import argparse
 import ast
 import json
@@ -308,8 +308,7 @@ def process_queue(dry_run: bool = False) -> dict:
 
 
 def main() -> None:
-    """main.
-        """
+    """Batch docstring applicator entry point."""
     parser = argparse.ArgumentParser(
         description="Batch docstring applicator voor RSI LLM queue",
     )

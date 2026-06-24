@@ -442,7 +442,7 @@ Voorbeelden:
     parser.add_argument("--verbose", "-v", action="store_true", help="Uitgebreide uitvoer")
     parser.add_argument("--auto-fix", "-f", action="store_true",
                         help="Probeer automatisch te fixen")
-    parser.add_argument("--version", action="version", version="improve.py v5.1.0")
+    parser.add_argument("--version", action="version", version="improve.py v5.4.0")
     parser.add_argument("--list-tools", action="store_true",
                         help="Toon alle beschikbare tools in de ToolCase")
     parser.add_argument("--json-config", action="store_true",
@@ -611,7 +611,7 @@ Voorbeelden:
         print("\n" + "=" * 60)
         print(t("hermes_hint", lang=lang))
         print("=" * 60)
-        print(f"\n{t('workflow_title', lang=lang, VERSION='5.1.0')}\n")
+        print(f"\n{t('workflow_title', lang=lang, VERSION='5.4.0')}\n")
         print(t("workflow_step1", lang=lang))
         print(t("workflow_step2", lang=lang))
         print(t("workflow_step3", lang=lang))
@@ -807,7 +807,7 @@ Voorbeelden:
         return
 
     # ── Analyse modus ─────────────────────────────────────
-    print(t("code_improvement_tool", lang=lang, VERSION="5.1.0"))
+    print(t("code_improvement_tool", lang=lang, VERSION="5.4.0"))
     print(f"{'='*60}")
 
     if args.code:

@@ -7,13 +7,12 @@ name = "toolcase"
 version = "5.4.0"
 description = "AI Agent Code Toolkit — 60 tools for code analysis, security, APK reverse engineering, and recursive self-improvement"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "SmokerGreenOG"}]
 requires-python = ">=3.11"
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -23,6 +22,75 @@ classifiers = [
 
 [project.scripts]
 toolcase = "improve:main"
+
+[tool.setuptools]
+# All top-level .py modules (flat structure — no src/ layout yet)
+py-modules = [
+    "__init__",
+    "_protect",
+    "agent_memory",
+    "api_contract_checker",
+    "apk_reverse",
+    "backup_manager",
+    "build_doctor",
+    "button_action_scanner",
+    "changelog_generator",
+    "check_syntax",
+    "code_churn_analyzer",
+    "command_guard",
+    "complexity",
+    "config_validator",
+    "dead_code_finder",
+    "dependency_audit",
+    "dependency_visualizer",
+    "depgraph",
+    "docs_sync",
+    "docs_sync_auto_fix",
+    "env_check",
+    "error_explainer",
+    "fake_ui_detector",
+    "feature_gap_analyzer",
+    "file_guard",
+    "frontend_backend_linker",
+    "git_workflow_checker",
+    "i18n",
+    "improve",
+    "license_checker",
+    "log_viewer",
+    "multiscan",
+    "patch_preview",
+    "performance_profiler",
+    "permission_audit",
+    "php_checker",
+    "php_complexity",
+    "php_config_audit",
+    "php_dead_code",
+    "php_dep_audit",
+    "php_depgraph",
+    "php_test_runner",
+    "php_version_audit",
+    "project_doctor",
+    "prompt_optimizer",
+    "recursive_self_improve",
+    "release_packager",
+    "release_readiness",
+    "rollback",
+    "route_scanner",
+    "rsi_apply_docs",
+    "rsi_llm_bridge",
+    "rsi_report_html",
+    "sarif_exporter",
+    "scan_reliability",
+    "security_scan",
+    "self_improve_loop",
+    "skill_installer",
+    "state_inspector",
+    "test_runner",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["demo", "demo.*", "docs", "docs.*", "scripts", "scripts.*"]
 
 [tool.pytest.ini_options]
 addopts = "-v --tb=short"

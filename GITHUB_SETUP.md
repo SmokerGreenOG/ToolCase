@@ -1,4 +1,4 @@
-# ToolCase v5.1 publiceren op GitHub
+# ToolCase v5.4.0 publiceren op GitHub
 
 De map is voorbereid voor publicatie als `SmokerGreenOG/ToolCase`.
 
@@ -11,7 +11,7 @@ als die nog ontbreekt:
 ```powershell
 git config --global user.name "SmokerGreenOG"
 git config --global user.email "JOUW_GITHUB_EMAIL"
-git commit -m "release: ToolCase v5.1.0"
+git commit -m "release: ToolCase v5.4.0"
 ```
 
 Controleer eventueel vóór de commit met `git status` dat `.env`, caches,
@@ -31,12 +31,12 @@ git push -u origin main
 ## 4. Release taggen
 
 ```powershell
-git tag -a v5.1.0 -m "ToolCase v5.1.0"
-git push origin v5.1.0
+git tag -a v5.4.0 -m "ToolCase v5.4.0"
+git push origin v5.4.0
 ```
 
-Maak daarna op GitHub een release vanaf tag `v5.1.0` en gebruik de sectie
-`5.1.0` uit `CHANGELOG.md` als release notes.
+Maak daarna op GitHub een release vanaf tag `v5.4.0` en gebruik de sectie
+`5.4.0` uit `CHANGELOG.md` als release notes.
 
 ## 5. Lokale verificatie
 

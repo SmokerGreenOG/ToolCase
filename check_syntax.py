@@ -56,7 +56,11 @@ def check_syntax(root: Path = None) -> dict:
             continue
 
         try:
-            ast.parse(p.read_text(encoding='utf-8'), filename=str(p))
+            source = p.read_text(encoding='utf-8')
+            ast.parse(source, filename=str(p))
+            # Use compile() to catch from __future__ placement errors
+            # that ast.parse() silently accepts
+            compile(source, str(p), 'exec')
             scanned += 1
         except SyntaxError as e:
             errors_list.append({
