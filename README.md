@@ -139,7 +139,7 @@ hermes -s toolcase-self-improve
 
 ## 🧰 Tool Reference — workflow highlights
 
-ToolCase registers 60 unique tools. Tools can support multiple workflows, so a
+ToolCase registers 62 unique tools. Tools can support multiple workflows, so a
 tool may be relevant to more than one section below. The canonical complete
 registry is maintained in `manifest.json` and `tools_config.json`.
 
@@ -297,7 +297,7 @@ ToolCase v5.4/
 ├── _protect.py                # Maker signature protection
 ├── install_toolcase.bat       # Windows installer
 ├── LICENSE                    # ToolCase License 1.0
-├── *.py                       # 60 registered tool scripts
+├── *.py                       # 62 registered tool scripts
 ├── scripts/
 │   ├── check_syntax.py          # AST syntax checker
 │   └── check_version_consistency.py  # CI version validator
@@ -313,7 +313,7 @@ ToolCase v5.4/
 
 | Metric | Value |
 |--------|-------|
-| Tools | 60 |
+| Tools | 62 |
 | Categories | 10 |
 | Unit tests | 70 (self-reported) |
 | Self-audit | Passing (compile + syntax) |
