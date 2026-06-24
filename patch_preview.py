@@ -3,7 +3,7 @@
 patch_preview.py — Show a diff preview of what a patch would do.
 
 Analyzes a file or code snippet and shows what improvements
-would be made before applying them. Works with the code-improvement-loop skill.
+would be made before applying them. Works with the toolcase-self-improve skill.
 
 Features:
   - Preview formatting fixes (line length, trailing whitespace)
