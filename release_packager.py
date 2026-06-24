@@ -145,7 +145,7 @@ def _is_excluded(rel_path: str) -> bool:
 
 
 def _find_files(root: Path, pattern: str = "*") -> list[Path]:
-    """Find files recursively, excluding standard ignore dirs."""
+    """Find files recursively, excluding standard ignore dirs. Rejects symlinks."""
     results = []
     for p in root.rglob(pattern):
         try:
@@ -154,7 +154,7 @@ def _find_files(root: Path, pattern: str = "*") -> list[Path]:
             continue
         if _is_excluded(str(rel)):
             continue
-        if p.is_file():
+        if p.is_file() and not p.is_symlink():
             results.append(p)
     return results
 
@@ -259,12 +259,19 @@ def check_env_and_secrets(root: Path) -> list[dict]:
         # Skip binary-looking files
         if "\0" in content:
             continue
-        # Skip files with inline suppression marker
-        if SUPPRESSION_MARKER in content:
-            continue
+        # Build a set of suppressed line numbers
+        suppressed_lines: set[int] = set()
+        for i, line in enumerate(content.splitlines(), 1):
+            if SUPPRESSION_MARKER in line:
+                suppressed_lines.add(i)
 
         for pattern in API_KEY_PATTERNS:
-            matches = pattern.findall(content)
+            matches = []
+            for m in pattern.finditer(content):
+                # Check if this match is on a suppressed line
+                line_no = content[:m.start()].count('\n') + 1
+                if line_no not in suppressed_lines:
+                    matches.append(m.group())
             if matches:
                 try:
                     rel_path = p.relative_to(root)
@@ -711,22 +718,28 @@ version_override: str | None = None) -> Path | None:
 
     if pkg_type == "python":
         lines.extend([
-            "- Python 3.8 or higher",
+            "- Python 3.11 or higher",
             "- pip (Python package installer)",
             "",
             "## Quick Install",
             "",
             "```bash",
-            "# Option 1: Direct from source",
+            "# Install from the release archive",
             f"cd {name}-v{version}",
-            "pip install -r requirements.txt  # if present",
-            "python -m venv .venv",
-            "source .venv/bin/activate  # Linux/Mac",
-            ".venv\\Scripts\\activate   # Windows",
-            "pip install -e .          # Editable install",
+            "pip install .",
             "",
-            "# Option 2: Using the package directly",
-            "python main.py  # or entry point",
+            "# Verify the installation",
+            "toolcase --version",
+            "toolcase --verify-install",
+            "```",
+            "",
+            "## Hermes Skill Installation",
+            "",
+            "For use as a Hermes Agent skill:",
+            "```bash",
+            "mkdir -p ~/.hermes/skills/toolcase-self-improve",
+            "cp SKILL.md manifest.json ~/.hermes/skills/toolcase-self-improve/",
+            "cp -r scripts/ references/ ~/.hermes/skills/toolcase-self-improve/",
             "```",
         ])
     elif pkg_type == "node":
@@ -1161,21 +1174,23 @@ def main() -> None:
                         print(f"     {issue['detail'][:300]}")
             sys.exit(EXIT_BLOCKED)
 
-    # ── Step 6: Clean temp files ───────────────────────────────
-    if no_clean:
-        _print_step("Clean skipped (--no-clean)", "skip")
-    else:
-        _print_step("Cleaning temporary files...")
-        cleaned_count = clean_temp_files(root)
-        if cleaned_count > 0:
-            _print_step(f"Cleaned {cleaned_count} temporary file(s)", "ok")
-        else:
-            _print_step("No temporary files to clean", "ok")
-
-    # ── Steps 7-10: Package (skip if dry-run) ──────────────────
+    # ── Steps 6-10: Cleanup + Package (skip entirely if dry-run) ──
     if dry_run:
-        _print_step("Dry-run mode — skipping packaging steps", "skip")
+        _print_step("Dry-run mode — skipping all write/cleanup steps", "skip")
+        # Dry-run MUST NEVER modify source workspace.
+        # No files are deleted, built, or moved in dry-run mode.
     else:
+        # ── Step 6: Clean temp files ─────────────────────────
+        if no_clean:
+            _print_step("Clean skipped (--no-clean)", "skip")
+        else:
+            _print_step("Cleaning temporary files...")
+            cleaned_count = clean_temp_files(root)
+            if cleaned_count > 0:
+                _print_step(f"Cleaned {cleaned_count} temporary file(s)", "ok")
+            else:
+                _print_step("No temporary files to clean", "ok")
+
         # Step 7: Create release folder
         _print_step("Creating release folder...")
         release_dir = create_release_folder(root, metadata_info, version_override)

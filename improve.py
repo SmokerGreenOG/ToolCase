@@ -825,14 +825,20 @@ Voorbeelden:
         if not Path(target).exists():
             print(t("file_not_found", lang=lang, target=target))
             sys.exit(2)
-        for tool_name, tool_script in [
+        # 10 read-only tools as documented
+        core_tools = [
             ("MULTISCAN", "multiscan.py"),
             ("COMPLEXITEIT", "complexity.py"),
             ("DEPGRAPH", "depgraph.py"),
             ("SECURITY SCAN", "security_scan.py"),
             ("ENV CHECK", "env_check.py"),
             ("PROJECT DOCTOR", "project_doctor.py"),
-        ]:
+            ("TODO TRACKER", "todo_tracker.py"),
+            ("DEAD CODE", "dead_code_finder.py"),
+            ("DEPENDENCY AUDIT", "dependency_audit.py"),
+            ("LICENSE CHECK", "license_checker.py"),
+        ]
+        for tool_name, tool_script in core_tools:
             print(f"\n{'='*60}\n 🛠  {tool_name} — {target}\n{'='*60}")
             _run_script(tool_script, target)
         sys.exit(_last_exit_code)

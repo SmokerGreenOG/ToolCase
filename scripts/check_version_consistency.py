@@ -3,7 +3,7 @@
 
 Checks: pyproject.toml (canonical), manifest.json, tools_config.json, __init__.py,
 improve.py (--version output), README.md, CHANGELOG.md, SKILL.md, dashboard.html,
-SECURITY.md, GITHUB_SETUP.md, i18n.py.
+SECURITY.md, RELEASING.md, i18n.py.
 
 All files are MANDATORY — missing files cause failure.
 """
@@ -117,7 +117,7 @@ if canonical:
 check_version("README.md", "README badge", r"version-([\d.]+)-")
 check_version("CHANGELOG.md", "CHANGELOG heading", r"## \[([\d.]+)\]")
 check_version("SKILL.md", "SKILL version", r"version:\s*([\d.]+)")
-check_version("GITHUB_SETUP.md", "GITHUB_SETUP tag", r"v([\d.]+)")
+check_version("RELEASING.md", "RELEASING tag", r"v([\d.]+)")
 
 # ── dashboard.html ─────────────────────────────────────
 dashboard = require_file("dashboard.html", "dashboard version")

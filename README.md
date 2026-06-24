@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-ToolCase%201.0-7C3AED?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
-[![Tests](https://img.shields.io/badge/tests-109-blue?style=flat-square)]()
+[![Tests](https://img.shields.io/badge/tests-113-blue?style=flat-square)]()
 [![Reliability](https://img.shields.io/badge/scanner--reliability-0.99-blue?style=flat-square)]()
 [![Audit](https://img.shields.io/badge/self--audit-beta-blue?style=flat-square)]()
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
@@ -32,14 +32,14 @@ is self-reported — geen externe audit.
 | License compliance | **62/62** |
 | RSI quality score | **Self-audited** |
 
-**Actieve security-maatregelen:**
-- **Safe run executor** (`safe_run.py`): Subprocess executor met workspace containment, shell-interpreter detectie, encoded command blocking, en risico-gebaseerde approval
-- **Command guard** (`command_guard.py`): Heuristische scanner die gevaarlijke commandopatronen detecteert en classificeert
-- **File guard** (`file_guard.py`): Beschermt configuratiebestanden tegen overschrijving
-- **Backup manager workspace containment** (`backup_manager.py`): Workspace-begrenzing — blokkeert writes buiten de workspace (symlinks, pad-traversal)
-- **Skill installer hardening** (`skill_installer.py`): Symlink-bescherming, path containment verificatie, expliciete `--trust-executables` flag
-- **AST + compile syntax checks**: `check_syntax.py` gebruikt `ast.parse()` + `compile()` voor volledige validatie — zero side-effects
-- **Maker attribution**: Alle tools bevatten `__maker__` + `_protect.py` voor attributiebewaking
+**Active security-measures:**
+- **Safe run executor** (`safe_run.py`): Optional safe subprocess executor with workspace containment, shell-interpreter detection, encoded command blocking, and risk-based approval. Currently used in security-sensitive paths; full migration of all subprocess calls is in progress.
+- **Command guard** (`command_guard.py`): Heuristic scanner that detects dangerous command patterns
+- **File guard** (`file_guard.py`): Protects config files from overwrites
+- **Backup manager workspace containment** (`backup_manager.py`): Workspace boundary — blocks writes outside workspace
+- **Skill installer hardening** (`skill_installer.py`): Symlink protection, path containment verification
+- **AST + compile syntax checks**: `check_syntax.py` uses `ast.parse()` + `compile()` for full validation
+- **Maker attribution**: All tools contain `__maker__` + `_protect.py` for attribution
 
 > 💡 ToolCase is een **analyse-toolkit**, geen netwerkdienst. Het draait lokaal en voert
 > alleen code uit die je zelf aanroept. Sommige tools kunnen netwerkverkeer genereren
@@ -105,18 +105,28 @@ python -m http.server 8080 --directory .
 
 ## 📦 Installation
 
-**Option A: Run the installer (Windows)**
+**Option A: Windows installer (recommended on Windows)**
 ```bash
 .\install_toolcase.bat
 ```
+Runs: Python ≥ 3.11 check → `pip install .` → compile check → `pytest` → `--verify-install` → `release_readiness --ci` → Hermes skill install. Hard-fails on any error.
 
-**Option B: Manual install (any OS)**
+**Option B: pip install (any OS)**
+```bash
+git clone https://github.com/SmokerGreenOG/ToolCase.git
+cd ToolCase
+pip install .
+toolcase --verify-install
+```
+
+**Option C: Hermes skill only (for Hermes Agent users)**
+After installing with pip, copy the skill files including scripts:
 ```bash
 mkdir -p ~/.hermes/skills/toolcase-self-improve
-cp SKILL.md ~/.hermes/skills/toolcase-self-improve/
-cp manifest.json ~/.hermes/skills/toolcase-self-improve/
-hermes -s toolcase-self-improve
+cp SKILL.md manifest.json ~/.hermes/skills/toolcase-self-improve/
+cp -r scripts/ references/ ~/.hermes/skills/toolcase-self-improve/
 ```
+Or use the installer which does this automatically.
 
 ---
 
@@ -278,7 +288,7 @@ python recursive_self_improve.py . --cycles 5
 python recursive_self_improve.py . --focus code-quality
 ```
 
-**Current test status:** 109 tests (self-reported). Tests validate core functionality; full cross-platform CI pending.
+**Current test status:** 113 tests (self-reported). Tests validate core functionality; full cross-platform CI pending.
 
 ---
 

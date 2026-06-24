@@ -6,11 +6,17 @@ on:
   pull_request:
     branches: [master, main]
 
+permissions:
+  contents: read
+
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    name: "Python ${{ matrix.python-version }} on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -18,16 +24,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # ── P0: Compile all Python files (catches from __future__ placement, real syntax errors) ──
+      # ── P0: Compile all Python files ──
       - name: Compile all Python files (py_compile — strict)
+        shell: bash
         run: |
           python -c "
           import py_compile, sys
           from pathlib import Path
           errors = []
+          skip = {'__pycache__', '.git', '.venv', 'venv', 'node_modules', 'build', 'dist', '.rsi_backups'}
           for p in Path('.').rglob('*.py'):
               parts = set(p.parts)
-              if parts & {'__pycache__', '.git', '.venv', 'venv', 'node_modules', 'build', 'dist', '.rsi_backups'}:
+              if parts & skip:
                   continue
               try:
                   py_compile.compile(str(p), doraise=True)
@@ -40,22 +48,23 @@ jobs:
           print('All Python files compile successfully')
           "
 
-      # ── Syntax check (fast AST + compile double-check) ──
+      # ── Syntax check ──
       - name: Syntax check all Python files
-        run: python3 check_syntax.py
+        run: python check_syntax.py
 
-      # ── Version consistency across ALL sources ──
+      # ── Version consistency ──
       - name: Version consistency check
-        run: python3 scripts/check_version_consistency.py
+        run: python scripts/check_version_consistency.py
 
-      # ── Dry-run self-improve (smoke test — warnings are OK) ──
+      # ── Dry-run self-improve smoke test ──
       - name: Dry-run self-improve
+        shell: bash
         run: |
           set +e
-          python3 self_improve_loop.py . --cycles 1 --dry-run --json --no-report > /tmp/si_output.json
+          python self_improve_loop.py . --cycles 1 --dry-run --json --no-report > /tmp/si_output.json
           EXIT=$?
           set -e
-          STATUS=$(python3 -c "import json; print(json.load(open('/tmp/si_output.json')).get('status','unknown'))" 2>/dev/null || echo "unknown")
+          STATUS=$(python -c "import json; print(json.load(open('/tmp/si_output.json')).get('status','unknown'))" 2>/dev/null || echo "unknown")
           echo "Self-improve status: $STATUS (exit $EXIT)"
           if [ "$STATUS" = "failed" ] || [ "$STATUS" = "blocked" ] || [ "$STATUS" = "rolled_back" ]; then
             echo "FAIL: self-improve reported $STATUS"
@@ -63,22 +72,43 @@ jobs:
           fi
           echo "OK: self-improve smoke test passed"
 
-      # ── P0: Build wheel and verify install ──
+      # ── Install test deps + coverage ──
+      - name: Install test dependencies
+        run: pip install pytest pyyaml pytest-cov
+
+      # ── Run tests with coverage ──
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests/ -v --tb=short \
+            --cov=. --cov-branch --cov-report=term-missing \
+            --cov-fail-under=70 \
+            --ignore=tests/fixtures
+
+      # ── Build wheel + sdist ──
       - name: Install build deps
-        run: pip install build
-      - name: Build wheel
-        run: python -m build --wheel
+        run: pip install build twine
+      - name: Build wheel and sdist
+        run: python -m build --sdist --wheel
+      - name: Check distribution with twine
+        run: python -m twine check dist/*
+
+      # ── Install wheel in clean venv and verify ──
       - name: Install wheel in clean venv
+        shell: bash
         run: |
           python -m venv /tmp/test_toolcase
           /tmp/test_toolcase/bin/pip install dist/toolcase-*.whl
-      - name: Verify CLI starts (--version)
+      - name: Verify CLI (--version)
+        shell: bash
         run: /tmp/test_toolcase/bin/toolcase --version
-      - name: Verify tool listing (--list-tools)
+      - name: Verify CLI (--list-tools)
+        shell: bash
         run: /tmp/test_toolcase/bin/toolcase --list-tools
-      - name: Verify install check (--verify-install)
+      - name: Verify CLI (--verify-install)
+        shell: bash
         run: /tmp/test_toolcase/bin/toolcase --verify-install
       - name: Verify pip check
+        shell: bash
         run: /tmp/test_toolcase/bin/pip check
       - name: Verify wheel has data files
         run: |
@@ -95,9 +125,3 @@ jobs:
               sys.exit(1)
           print('All required data files in wheel')
           "
-
-      # ── Run tests ──
-      - name: Install test dependencies
-        run: pip install pytest pyyaml
-      - name: Run tests
-        run: python3 -m pytest tests/ -v --tb=short

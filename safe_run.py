@@ -335,7 +335,8 @@ MEDIUM_PATTERNS: list[CommandPattern] = [
 SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     CommandPattern(
         re.compile(
-            r'\bpython[23]?\s+-c\s+["\']',
+            r'\bpython[23]?(?:\.exe)?\s+-c\s+\S',
+            re.IGNORECASE,
         ),
         Risk.HIGH,
         "Python inline code execution — runs arbitrary Python code from command line.",
@@ -343,7 +344,7 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bbash\s+-c\s+["\']',
+            r'\bbash\s+-c\s+\S',
         ),
         Risk.HIGH,
         "Bash inline command — runs arbitrary shell code.",
@@ -351,7 +352,7 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bsh\s+-c\s+["\']',
+            r'\bsh\s+-c\s+\S',
         ),
         Risk.HIGH,
         "Shell inline command — runs arbitrary shell code.",
@@ -359,7 +360,8 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\b(?:ruby|perl|node|php)\s+-[ce]\s+["\']',
+            r'\b(?:ruby|perl|node|php)(?:\.exe)?\s+-[cer]\s+\S',
+            re.IGNORECASE,
         ),
         Risk.HIGH,
         "Interpreter inline code — runs arbitrary code from command line.",
@@ -367,7 +369,7 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\b(?:powershell|pwsh)\s+-(?:Command|c|File)\s+',
+            r'\b(?:powershell|pwsh)(?:\.exe)?\s+-(?:Command|c|File)\s+',
             re.IGNORECASE,
         ),
         Risk.HIGH,
@@ -384,6 +386,54 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
         "Avoid cmd /c; use direct executable calls instead.",
     ),
 ]
+
+# ── Interpreter executables + flags (argv-token based, catches full Windows paths) ──
+
+# Normalised basenames (no .exe, no path) of interpreters that can run inline code.
+_INTERPRETER_EXECUTABLES: frozenset[str] = frozenset({
+    "python", "python3", "python2",
+    "bash", "sh", "zsh", "dash",
+    "ruby", "perl", "node", "php",
+    "powershell", "pwsh",
+    "cmd",
+})
+
+# Flags that indicate inline code execution (not running a script file).
+_INTERPRETER_CODE_FLAGS: frozenset[str] = frozenset({
+    "-c", "-e", "-r", "-Command", "-EncodedCommand", "/c", "/C",
+})
+
+def _is_shell_interpreter_cmd(cmd_list: list[str]) -> bool:
+    """Check if a command list invokes a shell/interpreter with inline code flags.
+
+    Works on the raw argv tokens, normalising argv[0] to basename without .exe
+    so that ``C:\\Python311\\python.exe -c "..."`` is caught identically to
+    ``python -c "..."``.
+    """
+    if not cmd_list:
+        return False
+    exe_path = cmd_list[0]
+    exe_name = Path(exe_path).name.lower()
+    # Strip .exe extension for comparison
+    if exe_name.endswith(".exe"):
+        exe_name = exe_name[:-4]
+    if exe_name not in _INTERPRETER_EXECUTABLES:
+        return False
+    # Check for inline-code flags in remaining args (case-insensitive)
+    for arg in cmd_list[1:]:
+        arg_lower = arg.lower()
+        # Exact match against known flags
+        if arg_lower in _INTERPRETER_CODE_FLAGS:
+            return True
+        # Handle combined form: -c"...", /c"..."
+        if len(arg_lower) > 2 and arg_lower[:2] in _INTERPRETER_CODE_FLAGS:
+            return True
+        # Handle --EncodedCommand=... form
+        if '=' in arg_lower:
+            flag = arg_lower.split('=', 1)[0]
+            if flag in _INTERPRETER_CODE_FLAGS:
+                return True
+    return False
 
 # ── ENCODED COMMANDS: Base64, hex, etc. ───────────────────
 
@@ -796,6 +846,18 @@ def safe_run(
             classification.risk_label = "high"
             classification.blocked = False
 
+    # ── Shell interpreter: downgrade if explicitly permitted ──
+    if allow_shell_interpreters and classification.risk == Risk.HIGH:
+        is_interpreter = any(
+            p.regex.search(classification.command)
+            for p in SHELL_INTERPRETER_PATTERNS
+        ) or _is_shell_interpreter_cmd(cmd_list)
+        if is_interpreter:
+            # Downgrade from HIGH to LOW — caller explicitly accepted the risk.
+            # LOW commands skip the approval gate entirely.
+            classification.risk = Risk.LOW
+            classification.risk_label = "low"
+
     # ── Block checks ──────────────────────────────────────
     if classification.blocked:
         _get_log().warning("BLOCKED: %s — %s", _mask_secrets(classification.command), classification.reason)
@@ -815,17 +877,27 @@ def safe_run(
             block_reason=classification.reason,
         )
 
-    # ── Shell interpreter check ───────────────────────────
+    # ── Shell interpreter check (regex + argv-token based) ──
     if not allow_shell_interpreters:
+        # First: regex patterns on the joined command string
+        blocked_by_regex = False
+        block_reason_re = ""
         for p in SHELL_INTERPRETER_PATTERNS:
             if p.regex.search(classification.command):
-                _get_log().warning("BLOCKED (shell interpreter): %s", classification.command)
-                return SafeRunResult(
-                    returncode=-1,
-                    classification=classification,
-                    blocked=True,
-                    block_reason=f"Shell interpreter execution blocked: {p.reason}",
-                )
+                blocked_by_regex = True
+                block_reason_re = p.reason
+                break
+        # Second: argv-token based check (catches full Windows paths, .exe variants)
+        blocked_by_argv = _is_shell_interpreter_cmd(cmd_list)
+        if blocked_by_regex or blocked_by_argv:
+            reason = block_reason_re or "Shell interpreter with inline code flag detected via argv analysis"
+            _get_log().warning("BLOCKED (shell interpreter): %s", classification.command)
+            return SafeRunResult(
+                returncode=-1,
+                classification=classification,
+                blocked=True,
+                block_reason=f"Shell interpreter execution blocked: {reason}",
+            )
 
     # ── Encoded command check ─────────────────────────────
     if not allow_encoded_commands:

@@ -6,13 +6,14 @@ Checks before you release:
   1. Version consistency (pyproject.toml == manifest.json == tools_config.json)
   2. Tool count consistency (manifest == tools_config == README)
   3. Syntax check (all .py files AST parse)
-  4. Unit tests pass (109 tests (self-reported))
+  4. Unit tests pass
   5. Security scan clean (0 HIGH findings)
   6. Install verify OK
   7. No generated reports in git tracked files
   8. CHANGELOG.md has entry for current version
   9. Git tag exists for current version
  10. README tool count matches manifest
+ 11. Clean working tree (no uncommitted changes)
 
 Usage:
     python release_readiness.py                    # Full check
@@ -336,7 +337,7 @@ def check_install_verify() -> CheckResult:
 def check_generated_in_git() -> CheckResult:
     """Check no generated report files are tracked by git."""
     r = CheckResult("Generated files in git")
-    r.severity = "recommended"
+    r.severity = "required"  # generated reports in git = release blocker
     try:
         proc = _run(["git", "ls-files"], timeout=10)
         if proc.returncode != 0:
@@ -365,7 +366,7 @@ def check_generated_in_git() -> CheckResult:
 def check_changelog() -> CheckResult:
     """Check CHANGELOG.md has current version entry."""
     r = CheckResult("CHANGELOG entry")
-    r.severity = "recommended"
+    r.severity = "required"  # missing changelog entry = release blocker
     try:
         ppt = _load_toml(PROJECT_ROOT / "pyproject.toml")
         version = ppt["project"]["version"]
@@ -388,7 +389,7 @@ def check_changelog() -> CheckResult:
 def check_git_tag() -> CheckResult:
     """Check git tag exists for current version."""
     r = CheckResult("Git tag")
-    r.severity = "recommended"
+    r.severity = "required"  # missing tag = release blocker
     try:
         ppt = _load_toml(PROJECT_ROOT / "pyproject.toml")
         version = ppt["project"]["version"]
@@ -432,6 +433,23 @@ def check_readme_match() -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
+
+def check_clean_working_tree() -> CheckResult:
+    """Check git working tree is clean (no uncommitted changes)."""
+    r = CheckResult("Clean working tree")
+    r.severity = "required"
+    try:
+        proc = _git("status", "--porcelain")
+        if proc.returncode != 0:
+            return r.skip("Git not available")
+        dirty = proc.stdout.strip()
+        if dirty:
+            changed = len(dirty.splitlines())
+            return r.fail(f"{changed} uncommitted file(s)")
+        return r.pass_("Working tree clean")
+    except Exception as e:
+        return r.skip(str(e))
+
 def run_all_checks(ci_mode: bool = False, root: Path | None = None) -> dict[str, Any]:
     """Run all release readiness checks and return report.
     
@@ -454,6 +472,7 @@ def run_all_checks(ci_mode: bool = False, root: Path | None = None) -> dict[str,
 
     if not ci_mode:
         checks.extend([
+            check_clean_working_tree(),
             check_generated_in_git(),
             check_changelog(),
             check_git_tag(),
@@ -465,11 +484,16 @@ def run_all_checks(ci_mode: bool = False, root: Path | None = None) -> dict[str,
         # Skipped/timeout required checks count as FAILED
     )
     passed_all = all(
-        c.passed or (c.skipped and c.severity != "required") for c in checks
+        c.passed for c in checks
+        if not c.skipped
     )
-    verdict = "GO ✅" if passed_required else "NO-GO ❌"
-    if passed_all and not passed_required:
-        verdict = "GO (recommended items failed) ⚠"
+    # Correct verdict logic: required failures → NO-GO, optional failures → WARNINGS
+    if not passed_required:
+        verdict = "NO-GO ❌"
+    elif not passed_all:
+        verdict = "GO WITH WARNINGS ⚠"
+    else:
+        verdict = "GO ✅"
 
     return {
         "verdict": verdict,
