@@ -2,6 +2,34 @@
 
 All notable changes to ToolCase are documented in this file.
 
+## [5.4.1] - 2026-06-24
+
+### Security — Critical fixes
+- **Exit code contract**: `improve.py` returns 0 (clean), 1 (findings), 2 (error). Was implicit 0 for all error paths.
+- **Workspace containment**: `backup_manager.py` hard-rejects paths outside workspace. Symlink traversal blocked on restore. `.backups/` excluded from snapshots.
+- **safe_run executor** (Tool #61): Central safe subprocess runner with risk-based approval (BLOCKED/HIGH/MEDIUM/SAFE), shell-interpreter blocking, encoded command detection, Docker/Git destructive recognition, cwd containment, dangerous kwarg rejection (shell=True, executable, etc.), case-insensitive classification.
+- **Release packager suppression**: `# toolcase: ignore-security` marker respected — no false positives on test fixtures.
+
+### Packaging
+- `requires-python = ">=3.11"` in pyproject.toml
+- `safe_run.py` added to wheel py-modules (was missing)
+- `check_syntax.py` registered as Tool #62
+- `.safe_run.log` removed from git, added to .gitignore
+- manifest.json consistent paths (scripts/check_syntax.py → check_syntax.py)
+
+### Quality
+- **115 tests, 192 subtests** (was 70)
+- Dry-run: no more report writes (`.rsi_reports/`, `.self_improve_reports/`)
+- Release readiness: ignores `build/`, `dist/`, `*.egg-info/`; "Scanner crashed" false alarm fixed
+- Version consistency checker: removed hardcoded 60, cross-checks manifest.json
+- README: 62 tools, security claims technically accurate
+
+### Known limitations (documented honestly)
+- `safe_run` migration in progress — ~18 modules still use direct `subprocess.run()`
+- Windows encoding: some tools may need `PYTHONIOENCODING=utf-8` on cp1252 consoles
+- Package layout: flat top-level modules, `src/toolcase/` migration pending
+- Install verify requires wheel build — fails in source-only checkout
+
 ## [5.4.0] - 2026-06-24
 
 ### Added — RSI v2.0: Hermes LLM Integration
