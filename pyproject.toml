@@ -7,9 +7,8 @@ name = "toolcase"
 version = "5.4.0"
 description = "AI Agent Code Toolkit — 60 tools for code analysis, security, APK reverse engineering, and recursive self-improvement"
 readme = "README.md"
-license = "MIT"
+license = "LicenseRef-ToolCase-1.0"
 authors = [{name = "SmokerGreenOG"}]
-requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-5.4.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.4.0)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-22c55e?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/license-ToolCase%201.0-7C3AED?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
 [![Tests](https://img.shields.io/badge/tests-70%2F70-success?style=flat-square)]()
 [![Reliability](https://img.shields.io/badge/scanner--reliability-1.0-brightgreen?style=flat-square)]()
@@ -293,7 +293,7 @@ ToolCase v5.4/
 ├── i18n.py                    # EN/NL/DE translations
 ├── _protect.py                # Maker signature protection
 ├── install_toolcase.bat       # Windows installer
-├── LICENSE                    # MIT
+├── LICENSE                    # ToolCase License 1.0
 ├── *.py                       # 60 registered tool scripts
 ├── scripts/
 │   ├── check_syntax.py          # AST syntax checker
@@ -336,7 +336,7 @@ ToolCase v5.4/
 
 ## 📝 License
 
-MIT License — see [LICENSE](LICENSE).
+ToolCase License 1.0 — see [LICENSE](LICENSE).
 
 **Maker:** [SmokerGreenOG](https://github.com/SmokerGreenOG)
 **Version:** 5.4.0
