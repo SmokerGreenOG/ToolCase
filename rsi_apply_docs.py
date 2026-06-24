@@ -37,7 +37,7 @@ def find_undocumented_functions(filepath: Path) -> list[dict]:
     try:
         content = filepath.read_text(encoding="utf-8", errors="replace")
         tree = ast.parse(content)
-    except (SyntaxError, Exception):
+    except SyntaxError:
         return []
 
     undocumented = []

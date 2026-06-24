@@ -17,14 +17,54 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Verify install
-        run: python3 improve.py --verify-install
+
+      # ── P0: Compile all Python files (catches from __future__ placement, real syntax errors) ──
+      - name: Compile all Python files (py_compile — strict)
+        run: |
+          python -c "
+          import py_compile, sys
+          from pathlib import Path
+          errors = []
+          for p in Path('.').rglob('*.py'):
+              parts = set(p.parts)
+              if parts & {'__pycache__', '.git', '.venv', 'venv', 'node_modules', 'build', 'dist', '.rsi_backups'}:
+                  continue
+              try:
+                  py_compile.compile(str(p), doraise=True)
+              except py_compile.PyCompileError as e:
+                  errors.append(f'{p}: {e}')
+          if errors:
+              for e in errors:
+                  print(f'FAIL: {e}', file=sys.stderr)
+              sys.exit(1)
+          print('All Python files compile successfully')
+          "
+
+      # ── Syntax check (fast AST + compile double-check) ──
       - name: Syntax check all Python files
         run: python3 check_syntax.py
+
+      # ── Version consistency across ALL sources ──
       - name: Version consistency check
         run: python3 scripts/check_version_consistency.py
+
+      # ── Dry-run self-improve (smoke test) ──
       - name: Dry-run self-improve
-        run: python3 recursive_self_improve.py . --dry-run --cycles 1 --json --no-report
+        run: python3 self_improve_loop.py . --cycles 1 --dry-run --json --no-report
+
+      # ── P0: Build wheel and verify install ──
+      - name: Install build deps
+        run: pip install build
+      - name: Build wheel
+        run: python -m build --wheel
+      - name: Install wheel in clean venv
+        run: |
+          python -m venv /tmp/test_toolcase
+          /tmp/test_toolcase/bin/pip install dist/toolcase-*.whl
+      - name: Verify CLI starts (--version)
+        run: /tmp/test_toolcase/bin/toolcase --version
+
+      # ── Run tests ──
       - name: Install test dependencies
         run: pip install pytest pyyaml
       - name: Run tests

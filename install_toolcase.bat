@@ -1,15 +1,15 @@
 @echo off
 REM =====================================================================
-REM  install_toolcase.bat — ToolCase v5.1 Installatie voor Windows
-REM  Valideert alle 53 tools, tests, SKILL.md, manifest.json en dashboard.
+REM  install_toolcase.bat — ToolCase v5.4.0 Installatie voor Windows
+REM  Valideert alle 60 tools, tests, SKILL.md, manifest.json en dashboard.
 REM  Maker: SmokerGreenOG
 REM =====================================================================
 setlocal enabledelayedexpansion
 
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
-echo ║      ToolCase v5.1 — Installatie voor Windows              ║
-echo ║      53 tools · 10 safety rules · recursive improvement    ║
+echo ║      ToolCase v5.4.0 — Installatie voor Windows            ║
+echo ║      60 tools · 10 safety rules · recursive improvement    ║
 echo ║      Maker: SmokerGreenOG                                  ║
 echo ╚══════════════════════════════════════════════════════════════╝
 echo.
@@ -32,7 +32,7 @@ python --version
 
 REM ── Verify all .py files compile ─────────────────────────────
 echo.
-echo 🔍 Checking all Python files...
+echo 🔍 Checking all Python files compile...
 set ERRORS=0
 for %%f in ("%TC_DIR%*.py") do (
     python -m py_compile "%%f" >nul 2>&1
@@ -44,9 +44,9 @@ for %%f in ("%TC_DIR%*.py") do (
     )
 )
 
-if %ERRORS% gtr 0 (
+if !ERRORS! gtr 0 (
     echo.
-    echo ⚠  %ERRORS% bestand(en) hebben compile fouten.
+    echo ⚠  !ERRORS! bestand(en) hebben compile fouten.
 ) else (
     echo    ✅ Alle .py bestanden compileren zonder fouten!
 )
@@ -123,15 +123,15 @@ if exist "%USERPROFILE%\.hermes\skills\" (
 REM ── Summary ──────────────────────────────────────────────────
 echo.
 echo ╔══════════════════════════════════════════════════════════════╗
-echo ║      ToolCase v5.1 — Installatie voltooid!                 ║
+echo ║      ToolCase v5.4.0 — Installatie voltooid!               ║
 echo ╠══════════════════════════════════════════════════════════════╣
 echo ║  📍 %TC_DIR%                    ║
-echo ║  🛠  53 tools · 10 safety rules                              ║
+echo ║  🛠  60 tools · 10 safety rules                              ║
 echo ║  🌐  EN/NL/DE i18n                                            ║
 echo ║  ♻️  self_improve_loop.py — 13-step autonome workflow        ║
 echo ║                                                              ║
 echo ║  Quick start:                                                ║
-echo ║    python improve.py --list-tools          (toon 53 tools)   ║
+echo ║    python improve.py --list-tools          (toon 60 tools)   ║
 echo ║    python improve.py <bestand>             (check code)      ║
 echo ║    python self_improve_loop.py --dry-run   (dry run)         ║
 echo ║    python self_improve_loop.py --cycles 3  (auto-improve)    ║

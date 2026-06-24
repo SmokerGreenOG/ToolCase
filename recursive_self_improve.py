@@ -654,7 +654,7 @@ class SelfAnalyzer:
                         if hasattr(node, 'end_lineno') and hasattr(node, 'lineno'):
                             if node.end_lineno - node.lineno > 3:
                                 func_sigs[sig].append((m.file, node.lineno))
-            except (SyntaxError, Exception):
+            except SyntaxError:
                 pass
 
         duplicates = []
@@ -713,7 +713,7 @@ class SelfAnalyzer:
                                 imports.add(name)
                 if imports:
                     file_imports[m.file] = imports
-            except (SyntaxError, Exception):
+            except SyntaxError:
                 pass
 
         similar = []

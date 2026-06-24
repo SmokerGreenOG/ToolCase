@@ -6,11 +6,11 @@
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
 [![Tests](https://img.shields.io/badge/tests-70%2F70-success?style=flat-square)]()
 [![Reliability](https://img.shields.io/badge/scanner--reliability-1.0-brightgreen?style=flat-square)]()
-[![Audit](https://img.shields.io/badge/self--audit-1.0000-brightgreen?style=flat-square)]()
+[![Audit](https://img.shields.io/badge/self--audit-passing-brightgreen?style=flat-square)]()
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **60 tools · 10 categories · 0 vulnerabilities · RSI v2.0 · 1.0000 quality**
+> **60 tools · 10 categories · RSI v2.0 · CI-verified builds**
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -30,14 +30,14 @@ ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase 
 | `shell=True` in subprocess | **0** |
 | `os.system()` calls | **0** |
 | License compliance | **61/61** |
-| RSI quality score | **1.0000** |
+| RSI quality score | **Self-audited** |
 
 **Actieve security-maatregelen:**
 - **Subprocess safety**: Alle externe commando's gebruiken argument lists, nooit `shell=True`
 - **Command guard** (`command_guard.py`): Blokkeert gevaarlijke commando's (`rm -rf`, `curl | sh`, etc.)
 - **File guard** (`file_guard.py`): Beschermt configuratiebestanden tegen overschrijving
 - **Skill installer hardening** (`skill_installer.py`): Symlink-bescherming, path containment verificatie, expliciete `--trust-executables` flag
-- **AST-only syntax checks**: `check_syntax.py` schrijft geen `.pyc` bestanden — zero side-effects
+- **AST + compile syntax checks**: `check_syntax.py` gebruikt `ast.parse()` + `compile()` voor volledige validatie — zero side-effects
 - **Maker attribution**: Alle 61 tools geverifieerd via `__maker__` + SHA256 integriteit
 
 > 💡 ToolCase is een **analyse-toolkit**, geen netwerkdienst. Het draait lokaal, maakt geen
@@ -48,7 +48,7 @@ ToolCase ondergaat continue security-audits via de eigen toolchain. De codebase 
 
 ## 🚀 What is ToolCase?
 
-**ToolCase** is a portable, production-ready code improvement toolkit designed for **AI agents** (Hermes, Claude Code, Codex) and **developers**.
+**ToolCase** is a portable, beta-stage code improvement toolkit designed for **AI agents** (Hermes, Claude Code, Codex) and **developers**.
 
 It gives you **60 tools** across 10 categories — from static analysis and security scanning to build diagnostics, release packaging, **RSI v2.0 recursive self-improvement with LLM Bridge**, and AI prompt optimization.
 
@@ -275,7 +275,7 @@ python recursive_self_improve.py . --cycles 5
 python recursive_self_improve.py . --focus code-quality
 ```
 
-**Current self-audit status: 1.0000** (0 syntax errors, 0 E501, quality score 1.0000, 94.9% doc coverage)
+**Current self-audit status: passing** (0 syntax errors, 0 compile errors, all version checks passing)
 
 ---
 
@@ -320,7 +320,7 @@ ToolCase v5.4/
 | License compliance | Passing |
 | Python files | 78 |
 | Lines of code | 34,700+ |
-| RSI Quality | 1.0000 |
+| RSI Quality | Self-audited |
 | E501 long lines | 0 |
 | Scanner reliability | 1.0 |
 | Doc coverage | 94.9% (761/803) |

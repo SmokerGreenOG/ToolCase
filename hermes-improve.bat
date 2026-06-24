@@ -1,5 +1,5 @@
 @echo off
-REM Hermes met Code Improvement skill — start Hermes met de code-improvement-loop skill geladen
+REM Hermes met ToolCase Self-Improve skill — start Hermes met de toolcase-self-improve skill geladen
 REM Gebruik: hermes-improve [extra flags]
 
-hermes -s code-improvement-loop %*
+hermes -s toolcase-self-improve %*
