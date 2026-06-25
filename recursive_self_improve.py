@@ -166,6 +166,8 @@ def _c(text: str, code: str = "") -> str:
 
 
 @dataclass
+
+
 class MetricSnapshot:
     file: str = ""
     syntax_ok: bool = True
@@ -224,6 +226,8 @@ class MetricSnapshot:
 
 
 @dataclass
+
+
 class ImprovementAttempt:
     cycle: int = 0
     category: str = ""
@@ -245,6 +249,8 @@ class ImprovementAttempt:
 
 
 @dataclass
+
+
 class LearnedPattern:
     pattern_id: str = ""
     category: str = ""
@@ -267,6 +273,8 @@ class LearnedPattern:
 
 
 @dataclass
+
+
 class CycleReport:
     cycle: int = 0
     focus: str = "all"
@@ -1283,6 +1291,7 @@ class Evaluator:
                 capture_output=True,
                 text=True,
                 timeout=60,
+                approval_required=False,
             )
             ok = r.returncode == 0
             details = [

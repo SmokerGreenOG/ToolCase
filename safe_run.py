@@ -167,6 +167,8 @@ _SYSTEM_EXECUTABLES: frozenset[str] = frozenset(
 
 
 # Build set of resolved paths for known system executables
+
+
 def _build_resolved_allowlist() -> frozenset[str]:
     """Resolve known executables via PATH and sys.executable."""
     resolved = set()
@@ -187,6 +189,8 @@ _RESOLVED_SYSTEM_PATHS: frozenset[str] = _build_resolved_allowlist()
 
 
 @dataclass
+
+
 class CommandPattern:
     """A detection pattern for command classification."""
 
@@ -700,6 +704,8 @@ def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
 
 
 @dataclass
+
+
 class ClassificationResult:
     """Result of command classification."""
 
@@ -782,6 +788,8 @@ def classify_command(command: str | list[str]) -> ClassificationResult:
 
 
 @dataclass
+
+
 class SafeRunResult:
     """Wraps subprocess.CompletedProcess with safety metadata."""
 
