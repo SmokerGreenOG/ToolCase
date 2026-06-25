@@ -46,7 +46,7 @@ from pathlib import Path
 from typing import Any
 
 from safe_run import SafeRunResult, safe_run
-from safe_delete import safe_rmtree
+from safe_delete import safe_rmtree, safe_unlink
 
 # ---------------------------------------------------------------------------
 # Constants & exit codes
