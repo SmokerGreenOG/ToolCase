@@ -94,22 +94,24 @@ def _get_log() -> logging.Logger:
     global _log
     if _log is not None:
         return _log
-    
+
     # Use a user-writable location, not site-packages
     log_dir = Path.home() / ".toolcase" / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
-    
+
     logger = logging.getLogger("safe_run")
     logger.setLevel(logging.INFO)
-    
+
     handler = logging.FileHandler(str(log_dir / "safe_run.log"), encoding="utf-8")
-    handler.setFormatter(logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    ))
+    handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s | %(levelname)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    )
     logger.addHandler(handler)
     logger.propagate = False
-    
+
     _log = logger
     return logger
 
@@ -117,20 +119,52 @@ def _get_log() -> logging.Logger:
 def _mask_secrets(cmd_str: str) -> str:
     """Mask potential secrets in command strings before logging."""
     # Mask --token, --password, --api-key style args
-    masked = re.sub(r'(--\w*(?:token|password|secret|key|auth)\w*)\s+\S+', r'\1 ***', cmd_str, flags=re.IGNORECASE)
+    masked = re.sub(
+        r"(--\w*(?:token|password|secret|key|auth)\w*)\s+\S+",
+        r"\1 ***",
+        cmd_str,
+        flags=re.IGNORECASE,
+    )
     # Mask KEY=VALUE style
-    masked = re.sub(r'(\w*(?:TOKEN|PASSWORD|SECRET|KEY|AUTH)\w*)=\S+', r'\1=***', masked, flags=re.IGNORECASE)
+    masked = re.sub(
+        r"(\w*(?:TOKEN|PASSWORD|SECRET|KEY|AUTH)\w*)=\S+", r"\1=***", masked, flags=re.IGNORECASE
+    )
     return masked
 
+
 # Well-known system executables exempt from workspace containment
-_SYSTEM_EXECUTABLES: frozenset[str] = frozenset({
-    "python", "python3", "python3.11", "python3.12", "python3.13",
-    "python.exe", "python3.exe", "pythonw.exe",
-    "git", "git.exe", "docker", "docker.exe",
-    "bash", "sh", "zsh", "node", "node.exe",
-    "npm", "npx", "pip", "pip3", "cargo",
-    "make", "cmake", "gcc", "g++", "clang",
-})
+_SYSTEM_EXECUTABLES: frozenset[str] = frozenset(
+    {
+        "python",
+        "python3",
+        "python3.11",
+        "python3.12",
+        "python3.13",
+        "python.exe",
+        "python3.exe",
+        "pythonw.exe",
+        "git",
+        "git.exe",
+        "docker",
+        "docker.exe",
+        "bash",
+        "sh",
+        "zsh",
+        "node",
+        "node.exe",
+        "npm",
+        "npx",
+        "pip",
+        "pip3",
+        "cargo",
+        "make",
+        "cmake",
+        "gcc",
+        "g++",
+        "clang",
+    }
+)
+
 
 # Build set of resolved paths for known system executables
 def _build_resolved_allowlist() -> frozenset[str]:
@@ -144,6 +178,7 @@ def _build_resolved_allowlist() -> frozenset[str]:
             resolved.add(str(Path(found).resolve()))
     return frozenset(resolved)
 
+
 _RESOLVED_SYSTEM_PATHS: frozenset[str] = _build_resolved_allowlist()
 
 # ---------------------------------------------------------------------------
@@ -154,6 +189,7 @@ _RESOLVED_SYSTEM_PATHS: frozenset[str] = _build_resolved_allowlist()
 @dataclass
 class CommandPattern:
     """A detection pattern for command classification."""
+
     regex: re.Pattern
     risk: Risk
     reason: str
@@ -165,8 +201,8 @@ class CommandPattern:
 BLOCKED_PATTERNS: list[CommandPattern] = [
     CommandPattern(
         re.compile(
-            r'(?:rm|del|erase)\s+(?:-[rR][fF]|-[fF][rR]|/[sS][fFqQ]?)\s+/(?:\s|$)'
-            r'|(?:rm|del)\s+(?:-[rR][fF]|/[sS][fFqQ]?)\s+(?:--no-preserve-root|/\*|C:\\)'
+            r"(?:rm|del|erase)\s+(?:-[rR][fF]|-[fF][rR]|/[sS][fFqQ]?)\s+/(?:\s|$)"
+            r"|(?:rm|del)\s+(?:-[rR][fF]|/[sS][fFqQ]?)\s+(?:--no-preserve-root|/\*|C:\\)"
         ),
         Risk.BLOCKED,
         "Recursive delete on root filesystem — would destroy the entire system.",
@@ -174,7 +210,7 @@ BLOCKED_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\b(?:format|mkfs\.\w+)\s+(?:c:|/dev/)',
+            r"\b(?:format|mkfs\.\w+)\s+(?:c:|/dev/)",
         ),
         Risk.BLOCKED,
         "Disk format — would destroy all data on a drive.",
@@ -182,7 +218,7 @@ BLOCKED_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'>\s*(?:/dev/sd[a-z]|/dev/nvme|/dev/mmcblk|/dev/disk)',
+            r">\s*(?:/dev/sd[a-z]|/dev/nvme|/dev/mmcblk|/dev/disk)",
         ),
         Risk.BLOCKED,
         "Output redirection to raw block device — would corrupt partition table.",
@@ -195,9 +231,9 @@ BLOCKED_PATTERNS: list[CommandPattern] = [
 HIGH_PATTERNS: list[CommandPattern] = [
     CommandPattern(
         re.compile(
-            r'\brm\s+(?:-[rR][fF]|-[fF][rR])'
-            r'|del\s+/[sS][fFqQ]?'
-            r'|rmdir\s+/[sS]'
+            r"\brm\s+(?:-[rR][fF]|-[fF][rR])"
+            r"|del\s+/[sS][fFqQ]?"
+            r"|rmdir\s+/[sS]"
         ),
         Risk.HIGH,
         "Recursive force delete — permanently removes files without confirmation.",
@@ -205,7 +241,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bdd\s+if=.*\s+of=',
+            r"\bdd\s+if=.*\s+of=",
         ),
         Risk.HIGH,
         "dd (disk destroyer) — can overwrite arbitrary disk blocks.",
@@ -213,7 +249,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'(?:curl|wget)\s+.*?\|\s*(?:sh|bash|zsh)\b',
+            r"(?:curl|wget)\s+.*?\|\s*(?:sh|bash|zsh)\b",
         ),
         Risk.HIGH,
         "Shell pipe from network — downloads and immediately executes remote script.",
@@ -221,7 +257,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bgit\s+clean\s+-[fF][dDxX]',
+            r"\bgit\s+clean\s+-[fF][dDxX]",
         ),
         Risk.HIGH,
         "Destructive git clean — removes untracked files and directories.",
@@ -229,7 +265,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bgit\s+reset\s+--hard\b',
+            r"\bgit\s+reset\s+--hard\b",
         ),
         Risk.HIGH,
         "Hard git reset — discards all uncommitted changes.",
@@ -237,7 +273,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bgit\s+push\s+.*?--force\b(?!-with-lease)',
+            r"\bgit\s+push\s+.*?--force\b(?!-with-lease)",
         ),
         Risk.HIGH,
         "Force git push — overwrites remote history.",
@@ -245,7 +281,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bdocker\s+(?:system\s+prune|container\s+prune|image\s+prune|volume\s+prune)\b',
+            r"\bdocker\s+(?:system\s+prune|container\s+prune|image\s+prune|volume\s+prune)\b",
         ),
         Risk.HIGH,
         "Docker prune — permanently removes containers/images/volumes.",
@@ -253,7 +289,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bdocker\s+rm\s+-f\b',
+            r"\bdocker\s+rm\s+-f\b",
         ),
         Risk.HIGH,
         "Docker force-remove — kills and removes running containers.",
@@ -261,7 +297,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bchmod\s+(?:-R\s+)?777\b',
+            r"\bchmod\s+(?:-R\s+)?777\b",
         ),
         Risk.HIGH,
         "World-writable permissions — grants everyone read/write/execute.",
@@ -269,7 +305,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bchown\s+-[Rr]\s+\S+\s+/',
+            r"\bchown\s+-[Rr]\s+\S+\s+/",
         ),
         Risk.HIGH,
         "Recursive chown on system path — changes ownership broadly.",
@@ -282,7 +318,7 @@ HIGH_PATTERNS: list[CommandPattern] = [
 MEDIUM_PATTERNS: list[CommandPattern] = [
     CommandPattern(
         re.compile(
-            r'(?:pip|pip3)\s+install\s+.*?(?:https?://|git\+)',
+            r"(?:pip|pip3)\s+install\s+.*?(?:https?://|git\+)",
         ),
         Risk.MEDIUM,
         "pip install from URL — could install malicious code.",
@@ -290,7 +326,7 @@ MEDIUM_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bnpm\s+(?:install|ci)\s+.*?--unsafe-perm',
+            r"\bnpm\s+(?:install|ci)\s+.*?--unsafe-perm",
         ),
         Risk.MEDIUM,
         "npm install --unsafe-perm — runs scripts as root.",
@@ -298,7 +334,7 @@ MEDIUM_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bgit\s+push\s+--force-with-lease\b',
+            r"\bgit\s+push\s+--force-with-lease\b",
         ),
         Risk.MEDIUM,
         "Force-with-lease git push — safer than --force but still rewrites history.",
@@ -306,7 +342,7 @@ MEDIUM_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\b(?:shutdown|reboot|poweroff|halt)\b',
+            r"\b(?:shutdown|reboot|poweroff|halt)\b",
         ),
         Risk.MEDIUM,
         "System shutdown/reboot — terminates all running processes.",
@@ -314,7 +350,7 @@ MEDIUM_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\beval\s+\$?\(',
+            r"\beval\s+\$?\(",
         ),
         Risk.MEDIUM,
         "Dynamic command evaluation — enables injection attacks.",
@@ -322,7 +358,7 @@ MEDIUM_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bcomposer\s+(?:update|require)\b',
+            r"\bcomposer\s+(?:update|require)\b",
         ),
         Risk.MEDIUM,
         "Composer update/require — modifies dependencies.",
@@ -335,7 +371,7 @@ MEDIUM_PATTERNS: list[CommandPattern] = [
 SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     CommandPattern(
         re.compile(
-            r'\bpython[23]?(?:\.exe)?\s+-c\s+\S',
+            r"\bpython[23]?(?:\.exe)?\s+-c\s+\S",
             re.IGNORECASE,
         ),
         Risk.HIGH,
@@ -344,7 +380,7 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bbash\s+-c\s+\S',
+            r"\bbash\s+-c\s+\S",
         ),
         Risk.HIGH,
         "Bash inline command — runs arbitrary shell code.",
@@ -352,7 +388,7 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bsh\s+-c\s+\S',
+            r"\bsh\s+-c\s+\S",
         ),
         Risk.HIGH,
         "Shell inline command — runs arbitrary shell code.",
@@ -360,7 +396,7 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\b(?:ruby|perl|node|php)(?:\.exe)?\s+-[cer]\s+\S',
+            r"\b(?:ruby|perl|node|php)(?:\.exe)?\s+-[cer]\s+\S",
             re.IGNORECASE,
         ),
         Risk.HIGH,
@@ -369,7 +405,7 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\b(?:powershell|pwsh)(?:\.exe)?\s+-(?:Command|c|File)\s+',
+            r"\b(?:powershell|pwsh)(?:\.exe)?\s+-(?:Command|c|File)\s+",
             re.IGNORECASE,
         ),
         Risk.HIGH,
@@ -378,7 +414,7 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bcmd(?:\.exe)?\s+/c\s+',
+            r"\bcmd(?:\.exe)?\s+/c\s+",
             re.IGNORECASE,
         ),
         Risk.HIGH,
@@ -390,18 +426,38 @@ SHELL_INTERPRETER_PATTERNS: list[CommandPattern] = [
 # ── Interpreter executables + flags (argv-token based, catches full Windows paths) ──
 
 # Normalised basenames (no .exe, no path) of interpreters that can run inline code.
-_INTERPRETER_EXECUTABLES: frozenset[str] = frozenset({
-    "python", "python3", "python2",
-    "bash", "sh", "zsh", "dash",
-    "ruby", "perl", "node", "php",
-    "powershell", "pwsh",
-    "cmd",
-})
+_INTERPRETER_EXECUTABLES: frozenset[str] = frozenset(
+    {
+        "python",
+        "python3",
+        "python2",
+        "bash",
+        "sh",
+        "zsh",
+        "dash",
+        "ruby",
+        "perl",
+        "node",
+        "php",
+        "powershell",
+        "pwsh",
+        "cmd",
+    }
+)
 
 # Flags that indicate inline code execution (not running a script file).
-_INTERPRETER_CODE_FLAGS: frozenset[str] = frozenset({
-    "-c", "-e", "-r", "-Command", "-EncodedCommand", "/c", "/C",
-})
+_INTERPRETER_CODE_FLAGS: frozenset[str] = frozenset(
+    {
+        "-c",
+        "-e",
+        "-r",
+        "-Command",
+        "-EncodedCommand",
+        "/c",
+        "/C",
+    }
+)
+
 
 def _is_shell_interpreter_cmd(cmd_list: list[str]) -> bool:
     """Check if a command list invokes a shell/interpreter with inline code flags.
@@ -412,6 +468,7 @@ def _is_shell_interpreter_cmd(cmd_list: list[str]) -> bool:
     """
     if not cmd_list:
         return False
+
 
 def _is_encoded_command(cmd_list: list[str]) -> bool:
     """Check for PowerShell encoded commands via argv-token analysis.
@@ -446,18 +503,19 @@ def _is_encoded_command(cmd_list: list[str]) -> bool:
         if len(arg_lower) > 2 and arg_lower[:2] in _INTERPRETER_CODE_FLAGS:
             return True
         # Handle --EncodedCommand=... form
-        if '=' in arg_lower:
-            flag = arg_lower.split('=', 1)[0]
+        if "=" in arg_lower:
+            flag = arg_lower.split("=", 1)[0]
             if flag in _INTERPRETER_CODE_FLAGS:
                 return True
     return False
+
 
 # ── ENCODED COMMANDS: Base64, hex, etc. ───────────────────
 
 ENCODED_COMMAND_PATTERNS: list[CommandPattern] = [
     CommandPattern(
         re.compile(
-            r'\b(?:powershell|pwsh)(?:\.exe)?\s+.*?(?:-EncodedCommand|-enc|-e)\s+\S',
+            r"\b(?:powershell|pwsh)(?:\.exe)?\s+.*?(?:-EncodedCommand|-enc|-e)\s+\S",
             re.IGNORECASE,
         ),
         Risk.BLOCKED,
@@ -466,7 +524,7 @@ ENCODED_COMMAND_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\bcmd\s+/c\s+.*?(?:echo|type).*?\|.*?\b(?:powershell|pwsh)(?:\.exe)?\b',
+            r"\bcmd\s+/c\s+.*?(?:echo|type).*?\|.*?\b(?:powershell|pwsh)(?:\.exe)?\b",
             re.IGNORECASE,
         ),
         Risk.BLOCKED,
@@ -475,7 +533,7 @@ ENCODED_COMMAND_PATTERNS: list[CommandPattern] = [
     ),
     CommandPattern(
         re.compile(
-            r'\b(?:bash|sh)\s+<<<\s*\$\(echo\s+',
+            r"\b(?:bash|sh)\s+<<<\s*\$\(echo\s+",
         ),
         Risk.BLOCKED,
         "Base64-decoded bash execution — obfuscated command.",
@@ -487,67 +545,67 @@ ENCODED_COMMAND_PATTERNS: list[CommandPattern] = [
 
 SAFE_PATTERNS: list[CommandPattern] = [
     CommandPattern(
-        re.compile(r'^(?:ls|dir)\b'),
+        re.compile(r"^(?:ls|dir)\b"),
         Risk.SAFE,
         "List directory contents — read-only.",
         "",
     ),
     CommandPattern(
-        re.compile(r'^(?:cd|pwd|chdir)\b'),
+        re.compile(r"^(?:cd|pwd|chdir)\b"),
         Risk.SAFE,
         "Navigation — no destructive potential.",
         "",
     ),
     CommandPattern(
-        re.compile(r'^(?:cat|type|head|tail)\s+\S'),
+        re.compile(r"^(?:cat|type|head|tail)\s+\S"),
         Risk.SAFE,
         "Display file contents — read-only.",
         "",
     ),
     CommandPattern(
-        re.compile(r'^grep\b'),
+        re.compile(r"^grep\b"),
         Risk.SAFE,
         "Text search — read-only.",
         "",
     ),
     CommandPattern(
-        re.compile(r'^git\s+(?:status|log|diff|branch|stash\s+list)\b'),
+        re.compile(r"^git\s+(?:status|log|diff|branch|stash\s+list)\b"),
         Risk.SAFE,
         "Git read operations — no modifications.",
         "",
     ),
     CommandPattern(
-        re.compile(r'^git\s+(?:add|commit)\b'),
+        re.compile(r"^git\s+(?:add|commit)\b"),
         Risk.LOW,
         "Git stage/commit — local modifications only.",
         "Review staged changes with 'git diff --staged' before committing.",
     ),
     CommandPattern(
-        re.compile(r'^git\s+checkout\s+(?!-b)'),
+        re.compile(r"^git\s+checkout\s+(?!-b)"),
         Risk.LOW,
         "Git checkout — switches branches, may overwrite local changes.",
         "Stash or commit changes before switching branches.",
     ),
     CommandPattern(
-        re.compile(r'^docker\s+ps\b'),
+        re.compile(r"^docker\s+ps\b"),
         Risk.SAFE,
         "Docker list containers — read-only.",
         "",
     ),
     CommandPattern(
-        re.compile(r'^docker\s+(?:images|logs|inspect|stats)\b'),
+        re.compile(r"^docker\s+(?:images|logs|inspect|stats)\b"),
         Risk.SAFE,
         "Docker info — read-only.",
         "",
     ),
     CommandPattern(
-        re.compile(r'^(?:echo|printf|print)\b'),
+        re.compile(r"^(?:echo|printf|print)\b"),
         Risk.SAFE,
         "Print output — no side effects.",
         "",
     ),
     CommandPattern(
-        re.compile(r'^python[23]?\s+\S+\.py\b'),
+        re.compile(r"^python[23]?\s+\S+\.py\b"),
         Risk.LOW,
         "Run Python script — review the script before executing.",
         "Review scripts from untrusted sources before running.",
@@ -644,6 +702,7 @@ def _extract_paths_from_command(cmd: list[str] | str) -> list[str]:
 @dataclass
 class ClassificationResult:
     """Result of command classification."""
+
     command: str
     risk: Risk
     risk_label: str
@@ -706,15 +765,13 @@ def classify_command(command: str | list[str]) -> ClassificationResult:
                 result.reason = pattern_def.reason
                 result.safe_alternative = pattern_def.safe_alternative
                 result.matched_pattern = match.group()
-                result.blocked = (pattern_def.risk == Risk.BLOCKED)
+                result.blocked = pattern_def.risk == Risk.BLOCKED
 
     # Unknown commands: classify as MEDIUM risk
     if highest_risk is None:
         result.risk = Risk.MEDIUM
         result.risk_label = "medium"
-        result.reason = (
-            "Unknown command — could not classify. Review manually before executing."
-        )
+        result.reason = "Unknown command — could not classify. Review manually before executing."
 
     return result
 
@@ -727,6 +784,7 @@ def classify_command(command: str | list[str]) -> ClassificationResult:
 @dataclass
 class SafeRunResult:
     """Wraps subprocess.CompletedProcess with safety metadata."""
+
     returncode: int
     stdout: str = ""
     stderr: str = ""
@@ -778,10 +836,17 @@ def safe_run(
         SafeRunResult with execution output and safety metadata.
     """
     # ── Reject dangerous kwargs ────────────────────────────
-    DANGEROUS_KWARGS = frozenset({
-        "shell", "executable", "preexec_fn", "start_new_session",
-        "pipesize", "pass_fds", "restore_signals",
-    })
+    DANGEROUS_KWARGS = frozenset(
+        {
+            "shell",
+            "executable",
+            "preexec_fn",
+            "start_new_session",
+            "pipesize",
+            "pass_fds",
+            "restore_signals",
+        }
+    )
     dangerous = [k for k in kwargs if k in DANGEROUS_KWARGS]
     if dangerous:
         return SafeRunResult(
@@ -853,10 +918,7 @@ def safe_run(
     # ── Encoded command: allow if explicitly permitted ──────
     if allow_encoded_commands and classification.risk == Risk.BLOCKED:
         # Check if the only reason it's blocked is an encoded command pattern
-        is_encoded = any(
-            p.regex.search(classification.command)
-            for p in ENCODED_COMMAND_PATTERNS
-        )
+        is_encoded = any(p.regex.search(classification.command) for p in ENCODED_COMMAND_PATTERNS)
         if is_encoded:
             # Downgrade from BLOCKED to HIGH — caller accepts the risk
             classification.risk = Risk.HIGH
@@ -866,8 +928,7 @@ def safe_run(
     # ── Shell interpreter: downgrade if explicitly permitted ──
     if allow_shell_interpreters and classification.risk == Risk.HIGH:
         is_interpreter = any(
-            p.regex.search(classification.command)
-            for p in SHELL_INTERPRETER_PATTERNS
+            p.regex.search(classification.command) for p in SHELL_INTERPRETER_PATTERNS
         ) or _is_shell_interpreter_cmd(cmd_list)
         if is_interpreter:
             # Downgrade from HIGH to LOW — caller explicitly accepted the risk.
@@ -877,7 +938,9 @@ def safe_run(
 
     # ── Block checks ──────────────────────────────────────
     if classification.blocked:
-        _get_log().warning("BLOCKED: %s — %s", _mask_secrets(classification.command), classification.reason)
+        _get_log().warning(
+            "BLOCKED: %s — %s", _mask_secrets(classification.command), classification.reason
+        )
         return SafeRunResult(
             returncode=-1,
             classification=classification,
@@ -886,7 +949,9 @@ def safe_run(
         )
 
     if classification.risk == Risk.BLOCKED:
-        _get_log().warning("BLOCKED: %s — %s", _mask_secrets(classification.command), classification.reason)
+        _get_log().warning(
+            "BLOCKED: %s — %s", _mask_secrets(classification.command), classification.reason
+        )
         return SafeRunResult(
             returncode=-1,
             classification=classification,
@@ -907,7 +972,10 @@ def safe_run(
         # Second: argv-token based check (catches full Windows paths, .exe variants)
         blocked_by_argv = _is_shell_interpreter_cmd(cmd_list)
         if blocked_by_regex or blocked_by_argv:
-            reason = block_reason_re or "Shell interpreter with inline code flag detected via argv analysis"
+            reason = (
+                block_reason_re
+                or "Shell interpreter with inline code flag detected via argv analysis"
+            )
             _get_log().warning("BLOCKED (shell interpreter): %s", classification.command)
             return SafeRunResult(
                 returncode=-1,
@@ -1063,17 +1131,24 @@ def build_parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run", help="Execute a command with guard enforcement.")
     run.add_argument("command", nargs="+", help="Command to execute.")
     run.add_argument("--workspace", "-w", help="Restrict to workspace directory.")
-    run.add_argument("--risk", default="medium",
-                     choices=["safe", "low", "medium", "high"],
-                     help="Maximum allowed risk level (default: medium).")
-    run.add_argument("--approve", action="store_true",
-                     help="Approve medium/high risk execution.")
-    run.add_argument("--allow-shell", action="store_true",
-                     help="Allow shell interpreter execution (python -c, bash -c).")
-    run.add_argument("--allow-encoded", action="store_true",
-                     help="Allow encoded commands (PowerShell -EncodedCommand).")
-    run.add_argument("--timeout", type=int, default=300,
-                     help="Timeout in seconds (default: 300).")
+    run.add_argument(
+        "--risk",
+        default="medium",
+        choices=["safe", "low", "medium", "high"],
+        help="Maximum allowed risk level (default: medium).",
+    )
+    run.add_argument("--approve", action="store_true", help="Approve medium/high risk execution.")
+    run.add_argument(
+        "--allow-shell",
+        action="store_true",
+        help="Allow shell interpreter execution (python -c, bash -c).",
+    )
+    run.add_argument(
+        "--allow-encoded",
+        action="store_true",
+        help="Allow encoded commands (PowerShell -EncodedCommand).",
+    )
+    run.add_argument("--timeout", type=int, default=300, help="Timeout in seconds (default: 300).")
     run.add_argument("--json", action="store_true", help="Output as JSON.")
 
     # ── patterns ──────────────────────────────────────────
@@ -1129,7 +1204,9 @@ def main() -> int:
 
         if args.json:
             output = {
-                "command": result.classification.command if result.classification else " ".join(cmd),
+                "command": result.classification.command
+                if result.classification
+                else " ".join(cmd),
                 "returncode": result.returncode,
                 "blocked": result.blocked,
                 "block_reason": result.block_reason,

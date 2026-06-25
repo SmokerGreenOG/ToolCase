@@ -15,6 +15,7 @@ Gebruik:
     python todo_tracker.py <path> --assignees
     python todo_tracker.py <path> --priority-only
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -30,45 +31,82 @@ from datetime import datetime
 from pathlib import Path
 
 # Ensure UTF-8 output on all platforms (Windows cp1252 can't handle emoji/unicode)
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", ".backups", "tests",
-    ".self_improve_reports", ".rsi_reports",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        ".backups",
+        "tests",
+        ".self_improve_reports",
+        ".rsi_reports",
         ".rsi_backups",
-        })
+    }
+)
 
-EXCLUDE_EXTENSIONS = frozenset({
-    ".pyc", ".pyo", ".so", ".dll", ".dylib", ".exe",
-    ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg",
-    ".woff", ".woff2", ".ttf", ".eot",
-    ".mp3", ".mp4", ".ogg", ".wav",
-    ".zip", ".tar", ".gz", ".bz2", ".7z",
-    ".lock", ".sum",
-})
+EXCLUDE_EXTENSIONS = frozenset(
+    {
+        ".pyc",
+        ".pyo",
+        ".so",
+        ".dll",
+        ".dylib",
+        ".exe",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".ico",
+        ".svg",
+        ".woff",
+        ".woff2",
+        ".ttf",
+        ".eot",
+        ".mp3",
+        ".mp4",
+        ".ogg",
+        ".wav",
+        ".zip",
+        ".tar",
+        ".gz",
+        ".bz2",
+        ".7z",
+        ".lock",
+        ".sum",
+    }
+)
 
 # Marker detection patterns — only matches in comments (#) or docstrings (""")
 TODO_PATTERN = re.compile(
-    r'(?:#|//|/\*+|<!--|--\s+|\"\"\"|\'\'\')\s*'
-    r'((?:TODO|FIXME|HACK|XXX|BUG|OPTIMIZE|OPTIMISE|NOTE|TEMP|'
-    r'WORKAROUND|KLUDGE|HARDCODED|HARCODED))\b'
-    r'(?:\s*[\(\[#]\s*(\w[\w.@+-]*)\s*[\)\]]?)?'  # Optional assignee
-    r'(?:\s*[:;]\s*)?'  # Optional separator
-    r'([^\n]*)',  # Description
-    re.IGNORECASE
+    r"(?:#|//|/\*+|<!--|--\s+|\"\"\"|\'\'\')\s*"
+    r"((?:TODO|FIXME|HACK|XXX|BUG|OPTIMIZE|OPTIMISE|NOTE|TEMP|"
+    r"WORKAROUND|KLUDGE|HARDCODED|HARCODED))\b"
+    r"(?:\s*[\(\[#]\s*(\w[\w.@+-]*)\s*[\)\]]?)?"  # Optional assignee
+    r"(?:\s*[:;]\s*)?"  # Optional separator
+    r"([^\n]*)",  # Description
+    re.IGNORECASE,
 )
 
 # Priority detection
-PRIORITY_PATTERN = re.compile(r'(?<!!)!+')
+PRIORITY_PATTERN = re.compile(r"(?<!!)!+")
 
 CATEGORIES = {
     "TODO": "todo",
@@ -149,9 +187,7 @@ def scan_file(filepath: Path, base_path: Path = None) -> list[dict]:
         try:
             tokens = tokenize.generate_tokens(io.StringIO(content).readline)
             candidates = [
-                (token.start[0], token.string)
-                for token in tokens
-                if token.type == tokenize.COMMENT
+                (token.start[0], token.string) for token in tokens if token.type == tokenize.COMMENT
             ]
         except (tokenize.TokenError, IndentationError):
             candidates = list(enumerate(lines, 1))
@@ -176,29 +212,33 @@ def scan_file(filepath: Path, base_path: Path = None) -> list[dict]:
             category = CATEGORIES.get(marker, "todo")
             try:
                 file_rel = (
-                    filepath.relative_to(base_path) if base_path
+                    filepath.relative_to(base_path)
+                    if base_path
                     else filepath.relative_to(Path.cwd())
                 )
             except ValueError:
                 file_rel = filepath
 
-            todos.append({
-                "file": str(filepath),
-                "file_rel": str(file_rel),
-                "line": i,
-                "marker": marker,
-                "category": category,
-                "assignee": assignee,
-                "description": description,
-                "priority": priority,
-                "context": line.strip()[:120],
-            })
+            todos.append(
+                {
+                    "file": str(filepath),
+                    "file_rel": str(file_rel),
+                    "line": i,
+                    "marker": marker,
+                    "category": category,
+                    "assignee": assignee,
+                    "description": description,
+                    "priority": priority,
+                    "context": line.strip()[:120],
+                }
+            )
 
     return todos
 
 
-def print_report(all_todos: list[dict], show_assignees: bool = False,
-                 priority_only: str = None) -> None:
+def print_report(
+    all_todos: list[dict], show_assignees: bool = False, priority_only: str = None
+) -> None:
     """Print a formatted TODO report."""
     if not all_todos:
         print("\n ✅ Geen TODO/FIXME/HACK markers gevonden!")
@@ -221,9 +261,9 @@ def print_report(all_todos: list[dict], show_assignees: bool = False,
 
     total = len(all_todos)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 📋 TODO TRACKER — {total} marker(s)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   🔴 HIGH priority:   {priorities.get('HIGH', 0)}")
     print(f"   🟡 MEDIUM priority: {priorities.get('MEDIUM', 0)}")
     print(f"   🟢 LOW priority:    {priorities.get('LOW', 0)}")
@@ -237,9 +277,19 @@ def print_report(all_todos: list[dict], show_assignees: bool = False,
         print()
 
     # Per-category report
-    categories = ["fixme", "bug", "hack", "todo", "optimize",
-                   "temp", "workaround", "note", "xxx",
-                   "kludge", "harcoded"]
+    categories = [
+        "fixme",
+        "bug",
+        "hack",
+        "todo",
+        "optimize",
+        "temp",
+        "workaround",
+        "note",
+        "xxx",
+        "kludge",
+        "harcoded",
+    ]
     for category in categories:
         items = by_category.get(category, [])
         if not items:
@@ -254,8 +304,8 @@ def print_report(all_todos: list[dict], show_assignees: bool = False,
         items.sort(key=lambda x: (priority_order.get(x["priority"], 99), x["file"], x["line"]))
 
         for item in items[:20]:
-            prio_tag = f"[{item['priority']}] " if item['priority'] != "NONE" else ""
-            assignee_tag = f"(@{item['assignee']}) " if item['assignee'] else ""
+            prio_tag = f"[{item['priority']}] " if item["priority"] != "NONE" else ""
+            assignee_tag = f"(@{item['assignee']}) " if item["assignee"] else ""
             desc = item["description"][:60] if item["description"] else "(geen beschrijving)"
             print(f"   {prio_tag}{assignee_tag}{item['file_rel']}:{item['line']} — {desc}")
         if len(items) > 20:
@@ -271,8 +321,7 @@ def print_report(all_todos: list[dict], show_assignees: bool = False,
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="todo_tracker.py — Scan project for TODO/FIXME/HACK markers",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -286,11 +335,10 @@ Examples:
     )
     parser.add_argument("path", nargs="?", default=".", help="Bestand of directory")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--assignees", "-a", action="store_true",
-                        help="Toon toegewezen personen")
-    parser.add_argument("--priority-only", "-p",
-                        choices=["high", "medium", "low"],
-                        help="Filter op priority")
+    parser.add_argument("--assignees", "-a", action="store_true", help="Toon toegewezen personen")
+    parser.add_argument(
+        "--priority-only", "-p", choices=["high", "medium", "low"], help="Filter op priority"
+    )
     parser.add_argument("--version", action="version", version="todo_tracker.py v1.0.0")
 
     args = parser.parse_args()

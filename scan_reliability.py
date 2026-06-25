@@ -14,6 +14,7 @@ Usage:
     python scan_reliability.py <path> --scan security      # Per-scanner breakdown
     python scan_reliability.py <path> --summary            # Summary only
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -32,14 +33,32 @@ from typing import Any
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", ".pytest_cache",
-    ".mypy_cache", ".ruff_cache", ".cursor",
-    ".backups", ".rsi_backups", ".rsi_reports",
-    ".self_improve_reports", "vendor", ".hermes",
-    "tests/fixtures", "release",
-})
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".cursor",
+        ".backups",
+        ".rsi_backups",
+        ".rsi_reports",
+        ".self_improve_reports",
+        "vendor",
+        ".hermes",
+        "tests/fixtures",
+        "release",
+    }
+)
 
 # Generated report patterns (filename-level)
 GENERATED_REPORT_PATTERNS = (
@@ -50,14 +69,47 @@ GENERATED_REPORT_PATTERNS = (
     "dexcore_analysis_report.*",
 )
 
-SCANNABLE_EXTENSIONS = frozenset({
-    ".py", ".php", ".js", ".ts", ".tsx", ".jsx", ".rs", ".go",
-    ".java", ".kt", ".swift", ".c", ".cpp", ".h", ".hpp",
-    ".rb", ".sh", ".bash", ".ps1", ".bat", ".lua",
-    ".yaml", ".yml", ".toml", ".json", ".xml", ".ini", ".cfg",
-    ".md", ".rst", ".txt", ".css", ".scss", ".html",
-    ".env", ".htaccess", ".conf",
-})
+SCANNABLE_EXTENSIONS = frozenset(
+    {
+        ".py",
+        ".php",
+        ".js",
+        ".ts",
+        ".tsx",
+        ".jsx",
+        ".rs",
+        ".go",
+        ".java",
+        ".kt",
+        ".swift",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".rb",
+        ".sh",
+        ".bash",
+        ".ps1",
+        ".bat",
+        ".lua",
+        ".yaml",
+        ".yml",
+        ".toml",
+        ".json",
+        ".xml",
+        ".ini",
+        ".cfg",
+        ".md",
+        ".rst",
+        ".txt",
+        ".css",
+        ".scss",
+        ".html",
+        ".env",
+        ".htaccess",
+        ".conf",
+    }
+)
 
 
 def _is_generated_report(filepath: Path) -> bool:
@@ -142,19 +194,16 @@ class ScanSession:
         self.error_message = ""
 
     def start(self) -> None:
-        """start.
-            """
+        """start."""
         self.start_time = time.monotonic()
 
     def stop(self) -> None:
-        """stop.
-            """
+        """stop."""
         self.end_time = time.monotonic()
 
     @property
     def elapsed_ms(self) -> float:
-        """elapsed ms.
-            """
+        """elapsed ms."""
         return (self.end_time - self.start_time) * 1000
 
     @property
@@ -176,8 +225,7 @@ class ScanSession:
         return max(0.0, min(1.0, coverage - error_penalty * 0.5))
 
     def to_dict(self) -> dict[str, Any]:
-        """to dict.
-            """
+        """to dict."""
         return {
             "scanner": self.scanner_name,
             "files_found": self.files_found,
@@ -194,14 +242,19 @@ class ScanSession:
         }
 
 
-def scan_reliability(target: Path,
-                     scanners: list[str] | None = None) -> dict[str, Any]:
+def scan_reliability(target: Path, scanners: list[str] | None = None) -> dict[str, Any]:
     """Run reliability analysis on all/specific scanners against target."""
     files, collect_stats = collect_files(target)
 
-    all_scanners = scanners if scanners else [
-        "security_scan", "php_checker", "project_doctor",
-    ]
+    all_scanners = (
+        scanners
+        if scanners
+        else [
+            "security_scan",
+            "php_checker",
+            "project_doctor",
+        ]
+    )
 
     sessions: dict[str, ScanSession] = {}
 
@@ -224,12 +277,20 @@ def scan_reliability(target: Path,
             # Count read/parse errors from findings
             if isinstance(findings, list):
                 session.read_errors = len(
-                    [f for f in findings
-                     if isinstance(f, dict) and f.get("pattern") == "read_error"])
+                    [
+                        f
+                        for f in findings
+                        if isinstance(f, dict) and f.get("pattern") == "read_error"
+                    ]
+                )
                 session.parse_errors = len(
-                    [f for f in findings
-                     if isinstance(f, dict) and f.get("pattern") in
-                     ("parse_error", "syntax_error")])
+                    [
+                        f
+                        for f in findings
+                        if isinstance(f, dict)
+                        and f.get("pattern") in ("parse_error", "syntax_error")
+                    ]
+                )
         except ImportError:
             session.stop()
             session.crashed = True
@@ -248,9 +309,7 @@ def scan_reliability(target: Path,
     # Build report
     overall_reliability = 0.0
     if sessions:
-        overall_reliability = sum(
-            s.reliability_score for s in sessions.values()
-        ) / len(sessions)
+        overall_reliability = sum(s.reliability_score for s in sessions.values()) / len(sessions)
 
     return {
         "target": str(target),
@@ -258,8 +317,10 @@ def scan_reliability(target: Path,
         "scanners": {name: s.to_dict() for name, s in sessions.items()},
         "overall_reliability": round(overall_reliability, 3),
         "verdict": (
-            "reliable" if overall_reliability >= 0.95
-            else "degraded" if overall_reliability >= 0.80
+            "reliable"
+            if overall_reliability >= 0.95
+            else "degraded"
+            if overall_reliability >= 0.80
             else "unreliable"
         ),
     }
@@ -269,6 +330,7 @@ def _run_scanner(scanner_name: str, target: Path) -> list[dict]:
     """Run a named scanner against target and return findings."""
     if scanner_name == "security_scan":
         from security_scan import scan_file, collect_files as sec_collect
+
         files = sec_collect(target)
         all_findings = []
         for fp in files:
@@ -277,6 +339,7 @@ def _run_scanner(scanner_name: str, target: Path) -> list[dict]:
     elif scanner_name == "project_doctor":
         try:
             from project_doctor import diagnose_project
+
             result = diagnose_project(str(target))
             if isinstance(result, dict):
                 return result.get("findings", [])
@@ -286,6 +349,7 @@ def _run_scanner(scanner_name: str, target: Path) -> list[dict]:
     elif scanner_name == "php_checker":
         try:
             from php_checker import check_file
+
             findings = []
             php_files = list(target.rglob("*.php"))
             for pf in php_files[:200]:  # Limit for performance
@@ -359,20 +423,15 @@ def print_summary(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="scan_reliability.py — Measure scanner reliability",
     )
     parser.add_argument("path", help="Directory or file to analyze")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output as JSON")
-    parser.add_argument("--summary", "-s", action="store_true",
-                        help="One-line summary only")
-    parser.add_argument("--scan", nargs="*",
-                        help="Specific scanners to check (default: all)")
-    parser.add_argument("--version", action="version",
-                        version="scan_reliability.py v1.0.0")
+    parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
+    parser.add_argument("--summary", "-s", action="store_true", help="One-line summary only")
+    parser.add_argument("--scan", nargs="*", help="Specific scanners to check (default: all)")
+    parser.add_argument("--version", action="version", version="scan_reliability.py v1.0.0")
 
     args = parser.parse_args()
 

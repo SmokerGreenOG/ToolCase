@@ -8,52 +8,49 @@ Checkt:
   - .gitignore completeness
   - Uncommitted changes
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent.resolve()
 
 CONVENTIONAL_PATTERN = re.compile(
-    r'^(?:feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)'
-    r'(?:\([^)]+\))?!?:\s.+'
-    r'|^(?:Merge|Revert)'
-    r'|^[🎉✨🔧📝🧪♻️🔒🐛📊🔗🛡️🩺🌐🚀📦💾👷📚🟢🟡🔴✅]'
+    r"^(?:feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)"
+    r"(?:\([^)]+\))?!?:\s.+"
+    r"|^(?:Merge|Revert)"
+    r"|^[🎉✨🔧📝🧪♻️🔒🐛📊🔗🛡️🩺🌐🚀📦💾👷📚🟢🟡🔴✅]"
 )
 
 BRANCH_PATTERNS = {
-    "main": r'^(?:main|master)$',
-    "feature": r'^(?:feature|feat)/',
-    "bugfix": r'^(?:bugfix|fix|hotfix)/',
-    "release": r'^(?:release|rel)/',
+    "main": r"^(?:main|master)$",
+    "feature": r"^(?:feature|feat)/",
+    "bugfix": r"^(?:bugfix|fix|hotfix)/",
+    "release": r"^(?:release|rel)/",
 }
 
 
 def run_git(cmd: list[str]) -> tuple[str, str, int]:
     """Run git.
 
-        Args:
-            cmd: Description.
+    Args:
+        cmd: Description.
 
-        Returns:
-            Description.
-        """
-    r = subprocess.run(
-        ["git"] + cmd,
-        capture_output=True, text=True, cwd=str(ROOT)
-    )
+    Returns:
+        Description.
+    """
+    r = safe_run(["git"] + cmd, capture_output=True, text=True, cwd=str(ROOT))
     return r.stdout, r.stderr, r.returncode
 
 
 def check() -> dict:
-    """check.
-        """
+    """check."""
     errors, warnings, ok = [], [], []
 
     # Check if git repo
@@ -107,8 +104,7 @@ def check() -> dict:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="Git Workflow Checker")
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()

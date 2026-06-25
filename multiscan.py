@@ -11,6 +11,7 @@ Gebruik:
     python multiscan.py <path> --limit 100            # Max regel lengte
     python multiscan.py <path> --json                 # JSON output
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -241,7 +242,7 @@ def print_report(results: list[tuple], max_line: int) -> None:
     total_issues = 0
     total_long = 0
 
-    for (filepath, lang, issues, syntax_ok, line_count, long_lines) in results:
+    for filepath, lang, issues, syntax_ok, line_count, long_lines in results:
         per_lang[lang].append((filepath, issues, syntax_ok, line_count, long_lines))
         total_files += 1
         total_issues += len(issues)
@@ -249,9 +250,9 @@ def print_report(results: list[tuple], max_line: int) -> None:
 
         # Per-file report
         status = "✅" if (syntax_ok and not issues) else "⚠"
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f" {status} {filepath}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"   Lines: {line_count}  |  Lang: {lang.upper()}  |  Long lines: {long_lines}")
         print(f"   Syntax: {'OK' if syntax_ok else '❌ ERROR'}  |  Issues: {len(issues)}")
         if issues:
@@ -262,9 +263,9 @@ def print_report(results: list[tuple], max_line: int) -> None:
             print(f"   ✨ Geen issues gevonden")
 
     # Summary per language
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 📊 SAMENVATTING")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Totaal bestanden: {total_files}")
     print(f"   Totaal issues:    {total_issues}")
     print(f"   Totaal lange regels (> {max_line}): {total_long}")
@@ -275,7 +276,9 @@ def print_report(results: list[tuple], max_line: int) -> None:
         lang_issues = sum(len(i) for _, i, _, _, _ in lang_files)
         lang_ok = sum(1 for _, _, ok, _, _ in lang_files if ok)
         lang_total = len(lang_files)
-        print(f"   [{lang.upper()}] {lang_total} bestanden, {lang_ok} syntax OK, {lang_issues} issues")
+        print(
+            f"   [{lang.upper()}] {lang_total} bestanden, {lang_ok} syntax OK, {lang_issues} issues"
+        )
 
     print()
 
@@ -293,15 +296,17 @@ def print_json(results: list[tuple], max_line: int) -> None:
         "files": [],
     }
 
-    for (filepath, lang, issues, syntax_ok, line_count, long_lines) in results:
-        output["files"].append({
-            "file": filepath,
-            "lang": lang,
-            "issues": issues,
-            "syntax_ok": syntax_ok,
-            "line_count": line_count,
-            "long_lines": long_lines,
-        })
+    for filepath, lang, issues, syntax_ok, line_count, long_lines in results:
+        output["files"].append(
+            {
+                "file": filepath,
+                "lang": lang,
+                "issues": issues,
+                "syntax_ok": syntax_ok,
+                "line_count": line_count,
+                "long_lines": long_lines,
+            }
+        )
         if lang not in output["per_language"]:
             output["per_language"][lang] = {"files": 0, "issues": 0, "syntax_ok": 0}
         output["per_language"][lang]["files"] += 1
@@ -331,13 +336,15 @@ def resolve_languages(lang_arg: Optional[str]) -> set[str]:
         if part in LANG_CONFIG:
             langs.add(part)
         else:
-            print(f" ⚠  Onbekende taal: '{part}' — negeer (beschikbaar: py, ts, tsx, rs)", file=sys.stderr)
+            print(
+                f" ⚠  Onbekende taal: '{part}' — negeer (beschikbaar: py, ts, tsx, rs)",
+                file=sys.stderr,
+            )
     return langs
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="multiscan.py — Multi-taal code quality scanner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -351,12 +358,15 @@ Voorbeelden:
         """,
     )
     parser.add_argument("path", help="Bestand of directory om te scannen")
-    parser.add_argument("--lang", "-l",
-                        help="Filters op taal (comma-separated: py,ts,tsx,rs)")
-    parser.add_argument("--limit", "-m", type=int, default=DEFAULT_MAX_LINE_LENGTH,
-                        help=f"Maximum regel lengte (default: {DEFAULT_MAX_LINE_LENGTH})")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output als JSON")
+    parser.add_argument("--lang", "-l", help="Filters op taal (comma-separated: py,ts,tsx,rs)")
+    parser.add_argument(
+        "--limit",
+        "-m",
+        type=int,
+        default=DEFAULT_MAX_LINE_LENGTH,
+        help=f"Maximum regel lengte (default: {DEFAULT_MAX_LINE_LENGTH})",
+    )
+    parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
     parser.add_argument("--version", action="version", version="multiscan.py v1.0.0")
 
     args = parser.parse_args()
@@ -375,7 +385,7 @@ Voorbeelden:
     print(f"\n🔍 Multiscan v1.0.0 — scanning: {target}")
     print(f"   Talen: {lang_label.upper()}")
     print(f"   Max regel lengte: {args.limit}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     if target.is_file():
         # Single file — detect language from extension

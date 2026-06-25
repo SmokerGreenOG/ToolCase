@@ -34,16 +34,16 @@ _actual_hash = hashlib.sha256(_actual_maker.encode("utf-8")).hexdigest()
 
 if _actual_hash != _EXPECTED_HASH:
     print(
-        f"\n{'='*60}",
+        f"\n{'=' * 60}",
         f"🔒 TOOLCASE ATTRIBUTION CHECK FAILED",
-        f"{'='*60}",
+        f"{'=' * 60}",
         f"",
         f"  The central maker constant has been tampered with.",
         f"  Expected: SmokerGreenOG",
         f"  Found:    {_actual_maker}",
         f"",
         f"  Restore the original value to use ToolCase.",
-        f"{'='*60}",
+        f"{'=' * 60}",
         sep="\n",
     )
     sys.exit(1)

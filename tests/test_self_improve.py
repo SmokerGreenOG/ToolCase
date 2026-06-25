@@ -1,6 +1,8 @@
 """Tests for self_improve_loop.py — Core data classes and safety."""
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
@@ -15,6 +17,7 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_finding_dataclass(self) -> None:
         """Finding dataclass should create instances."""
         from self_improve_loop import Finding
+
         f = Finding(
             category="code-quality",
             severity="high",
@@ -33,6 +36,7 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_change_dataclass(self) -> None:
         """Change dataclass should create instances."""
         from self_improve_loop import Change
+
         c = Change(
             description="Test change",
             category="safe",
@@ -46,6 +50,7 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_cycle_report_defaults(self) -> None:
         """CycleReport should have sensible defaults."""
         from self_improve_loop import CycleReport
+
         r = CycleReport(cycle=1, mode="dry-run", focus="all")
         self.assertEqual(r.cycle, 1)
         self.assertEqual(r.mode, "dry-run")
@@ -58,31 +63,35 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_cycle_report_exit_code_passed(self) -> None:
         """Passed status should return exit code 0."""
         from self_improve_loop import CycleReport
+
         r = CycleReport(cycle=1, mode="dry-run", focus="all", status="passed")
         self.assertEqual(r.final_exit_code(), 0)
 
     def test_cycle_report_exit_code_warning(self) -> None:
         """Warning status should return exit code 1."""
         from self_improve_loop import CycleReport
+
         r = CycleReport(cycle=1, mode="dry-run", focus="all", status="warning")
         self.assertEqual(r.final_exit_code(), 1)
 
     def test_cycle_report_exit_code_failed(self) -> None:
         """Failed status should return exit code 2."""
         from self_improve_loop import CycleReport
+
         r = CycleReport(cycle=1, mode="dry-run", focus="all", status="failed")
         self.assertEqual(r.final_exit_code(), 2)
 
     def test_cycle_report_exit_code_rolled_back(self) -> None:
         """Rolled back status should return exit code 3."""
         from self_improve_loop import CycleReport
-        r = CycleReport(cycle=1, mode="dry-run", focus="all",
-                         status="rolled_back")
+
+        r = CycleReport(cycle=1, mode="dry-run", focus="all", status="rolled_back")
         self.assertEqual(r.final_exit_code(), 3)
 
     def test_cycle_report_exit_code_blocked(self) -> None:
         """Blocked status should return exit code 4."""
         from self_improve_loop import CycleReport
+
         r = CycleReport(cycle=1, mode="dry-run", focus="all", status="blocked")
         self.assertEqual(r.final_exit_code(), 4)
 
@@ -90,6 +99,7 @@ class TestSelfImproveCore(unittest.TestCase):
         """A healthy source-file count is inventory, not an actionable finding."""
         from self_improve_loop import CodeScanner
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmp:
             Path(tmp, "example.py").write_text("value = 1\n", encoding="utf-8")
             scanner = CodeScanner(Path(tmp))
@@ -98,6 +108,7 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_no_report_does_not_create_report_directory(self) -> None:
         """--no-report should keep audited workspaces free of generated state."""
         import tempfile
+
         script = Path(__file__).resolve().parents[1] / "self_improve_loop.py"
         with tempfile.TemporaryDirectory() as tmp:
             result = subprocess.run(
@@ -121,6 +132,7 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_safety_manager_forbidden_commands(self) -> None:
         """SafetyManager should block rm -rf."""
         from self_improve_loop import SafetyManager
+
         sm = SafetyManager(Path("."))
         result = sm.is_command_forbidden("rm -rf /")
         self.assertIsNotNone(result)
@@ -129,6 +141,7 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_safety_manager_safe_commands(self) -> None:
         """SafetyManager should allow safe commands."""
         from self_improve_loop import SafetyManager
+
         sm = SafetyManager(Path("."))
         result = sm.is_command_forbidden("python --version")
         self.assertIsNone(result)
@@ -136,6 +149,7 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_safety_manager_forbidden_reads(self) -> None:
         """SafetyManager should block .env reads."""
         from self_improve_loop import SafetyManager
+
         sm = SafetyManager(Path("."))
         result = sm.is_file_forbidden_to_read(".env")
         self.assertIsNotNone(result)
@@ -143,6 +157,7 @@ class TestSelfImproveCore(unittest.TestCase):
     def test_safety_manager_safe_reads(self) -> None:
         """SafetyManager should allow non-sensitive file reads."""
         from self_improve_loop import SafetyManager
+
         sm = SafetyManager(Path("."))
         result = sm.is_file_forbidden_to_read("test.py")
         self.assertIsNone(result)
@@ -151,6 +166,7 @@ class TestSelfImproveCore(unittest.TestCase):
         """SafetyManager should accept paths within workspace."""
         from self_improve_loop import SafetyManager
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmp:
             sm = SafetyManager(Path(tmp))
             inner = Path(tmp) / "test.py"
@@ -162,6 +178,7 @@ class TestSelfImproveCore(unittest.TestCase):
         """SafetyManager should block paths outside workspace."""
         from self_improve_loop import SafetyManager
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmp:
             sm = SafetyManager(Path(tmp))
             with self.assertRaises(PermissionError):
@@ -171,6 +188,7 @@ class TestSelfImproveCore(unittest.TestCase):
         """SafetyManager.create_backup should create .bak files."""
         from self_improve_loop import SafetyManager
         import tempfile
+
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             test_file = tmp_path / "test.py"
@@ -182,6 +200,7 @@ class TestSelfImproveCore(unittest.TestCase):
             self.assertTrue(bak_path.exists())
             # Cleanup
             import shutil
+
             shutil.rmtree(tmp_path / ".backups", ignore_errors=True)
 
 

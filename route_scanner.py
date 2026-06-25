@@ -16,6 +16,7 @@ Gebruik:
     python route_scanner.py <path> --unused
     python route_scanner.py <path> --graph
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -32,28 +33,33 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    "build", "dist", ".next", "out",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        ".next",
+        "out",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # Route patterns for different routers
 ROUTE_PATTERNS = {
     "react_router_route": re.compile(
         r'<Route\s+(?:path=[\'"]([^\'"]+)[\'"]\s*)?'
-        r'(?:\s*element=\{?\s*(?:<(\w+)|(\w+))\s*)'
-        r'[^>]*/?>'
+        r"(?:\s*element=\{?\s*(?:<(\w+)|(\w+))\s*)"
+        r"[^>]*/?>"
     ),
-    "react_router_navigate": re.compile(
-        r'(?:navigate|push)\s*\(\s*[\'"]([^\'"]+)[\'"]'
-    ),
+    "react_router_navigate": re.compile(r'(?:navigate|push)\s*\(\s*[\'"]([^\'"]+)[\'"]'),
     "react_router_link": re.compile(
         r'<Link\s+[^>]*to=[\'"]([^\'"]+)[\'"]',
     ),
@@ -95,7 +101,7 @@ PAGE_FILE_PATTERNS = {
     "slug": r"\[.*?\]\.[jt]sx?",
 }
 
-TRAILING_SLASH_NORMALIZE = re.compile(r'/+')
+TRAILING_SLASH_NORMALIZE = re.compile(r"/+")
 
 
 def normalize_route(route: str) -> str:
@@ -153,26 +159,30 @@ def find_routes_in_file(filepath: Path) -> list[dict]:
         for match in pattern.finditer(content):
             route = match.group(1)
             if route and not is_external_url(route):
-                routes.append({
-                    "route": normalize_route(route),
-                    "file": str(filepath),
-                    "pattern": pattern_name,
-                    "line": content[:match.start()].count("\n") + 1,
-                    "full_match": match.group()[:80],
-                })
+                routes.append(
+                    {
+                        "route": normalize_route(route),
+                        "file": str(filepath),
+                        "pattern": pattern_name,
+                        "line": content[: match.start()].count("\n") + 1,
+                        "full_match": match.group()[:80],
+                    }
+                )
 
     # Also scan href attributes in anchor tags
     if ext in (".html", ".tsx", ".jsx"):
         for match in re.finditer(r'href=[\'"]([^\'"]+)[\'"]', content):
             route = match.group(1)
             if route and not is_external_url(route) and not route.startswith("#"):
-                routes.append({
-                    "route": normalize_route(route),
-                    "file": str(filepath),
-                    "pattern": "href_attr",
-                    "line": content[:match.start()].count("\n") + 1,
-                    "full_match": match.group()[:80],
-                })
+                routes.append(
+                    {
+                        "route": normalize_route(route),
+                        "file": str(filepath),
+                        "pattern": "href_attr",
+                        "line": content[: match.start()].count("\n") + 1,
+                        "full_match": match.group()[:80],
+                    }
+                )
 
     return routes
 
@@ -200,23 +210,36 @@ def find_nextjs_pages(root: Path) -> list[dict]:
                     # Convert file path to route
                     route_parts = []
                     for part in parts:
-                        if part in ("pages", "app", "index.tsx", "index.jsx", "index.ts", "index.js"):
+                        if part in (
+                            "pages",
+                            "app",
+                            "index.tsx",
+                            "index.jsx",
+                            "index.ts",
+                            "index.js",
+                        ):
                             continue
                         if part.startswith("[") and part.endswith("]"):
                             route_parts.append(f":{part[1:-1]}")
                         elif part == "layout.tsx" or part == "layout.jsx":
                             route_parts.append("(layout)")
                         else:
-                            route_parts.append(part.replace(".tsx", "").replace(".jsx", "")
-                                               .replace(".ts", "").replace(".js", ""))
+                            route_parts.append(
+                                part.replace(".tsx", "")
+                                .replace(".jsx", "")
+                                .replace(".ts", "")
+                                .replace(".js", "")
+                            )
                     if route_parts:
                         route = "/" + "/".join(route_parts)
-                        routes.append({
-                            "route": route,
-                            "file": str(fp),
-                            "pattern": "nextjs_filesystem",
-                            "type": "page",
-                        })
+                        routes.append(
+                            {
+                                "route": route,
+                                "file": str(fp),
+                                "pattern": "nextjs_filesystem",
+                                "type": "page",
+                            }
+                        )
 
     return routes
 
@@ -230,12 +253,14 @@ def find_route_files_vite(root: Path) -> list[dict]:
         dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
         for fn in filenames:
             if fn == "routes.ts" or fn == "routes.tsx" or fn == "routes.js" or fn == "routes.jsx":
-                routes.append({
-                    "route": "(route config)",
-                    "file": str(Path(dirpath) / fn),
-                    "pattern": "route_config_file",
-                    "type": "config",
-                })
+                routes.append(
+                    {
+                        "route": "(route config)",
+                        "file": str(Path(dirpath) / fn),
+                        "pattern": "route_config_file",
+                        "type": "config",
+                    }
+                )
 
     return routes
 
@@ -262,8 +287,12 @@ def find_unused_routes(all_routes: list[dict]) -> list[dict]:
     # Also check links that point to defined routes
     linked_routes = set()
     for ref in references:
-        if ref.get("pattern") in ("react_router_link", "react_router_navlink",
-                                   "nextjs_link", "anchor_href"):
+        if ref.get("pattern") in (
+            "react_router_link",
+            "react_router_navlink",
+            "nextjs_link",
+            "anchor_href",
+        ):
             linked_routes.add(ref["route"])
 
     unused = []
@@ -295,12 +324,14 @@ def find_orphaned_pages(all_routes: list[dict], root: Path) -> list[dict]:
     orphaned_files = page_files - route_files
 
     for fp in sorted(orphaned_files):
-        orphans.append({
-            "route": "(orphaned)",
-            "file": fp,
-            "pattern": "orphaned_page",
-            "type": "orphan",
-        })
+        orphans.append(
+            {
+                "route": "(orphaned)",
+                "file": fp,
+                "pattern": "orphaned_page",
+                "type": "orphan",
+            }
+        )
 
     return orphans
 
@@ -318,12 +349,12 @@ def generate_graph(all_routes: list[dict]) -> str:
     def route_depth(route: str) -> int:
         """route depth.
 
-            Args:
-                route: Description.
+        Args:
+            route: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         return len([p for p in route.split("/") if p])
 
     sorted_routes = sorted(by_route.keys(), key=lambda r: (route_depth(r), r))
@@ -335,8 +366,11 @@ def generate_graph(all_routes: list[dict]) -> str:
 
         refs = by_route[route]
         page_refs = [r for r in refs if r.get("type") == "page"]
-        link_refs = [r for r in refs if r.get("pattern",
-                     "") not in ("nextjs_filesystem",) and r.get("type") != "page"]
+        link_refs = [
+            r
+            for r in refs
+            if r.get("pattern", "") not in ("nextjs_filesystem",) and r.get("type") != "page"
+        ]
 
         icon = "📄" if page_refs else "🔗"
         lines.append(f"{indent}{prefix}{icon} {route}")
@@ -354,20 +388,33 @@ def generate_graph(all_routes: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def print_report(all_routes: list[dict], show_unused: bool = False,
-                 show_graph: bool = False, root: Path = None) -> None:
+def print_report(
+    all_routes: list[dict], show_unused: bool = False, show_graph: bool = False, root: Path = None
+) -> None:
     """Print a formatted route report."""
     # Categorize
     by_pattern = defaultdict(list)
     for r in all_routes:
         by_pattern[r["pattern"]].append(r)
 
-    route_patterns = {k for k in by_pattern.keys()
-                      if k not in ("react_router_link", "react_router_navlink",
-                                    "nextjs_link", "anchor_href", "href_attr")}
-    link_patterns = {k for k in by_pattern.keys()
-                     if k in ("react_router_link", "react_router_navlink",
-                               "nextjs_link", "anchor_href", "href_attr")}
+    route_patterns = {
+        k
+        for k in by_pattern.keys()
+        if k
+        not in (
+            "react_router_link",
+            "react_router_navlink",
+            "nextjs_link",
+            "anchor_href",
+            "href_attr",
+        )
+    }
+    link_patterns = {
+        k
+        for k in by_pattern.keys()
+        if k
+        in ("react_router_link", "react_router_navlink", "nextjs_link", "anchor_href", "href_attr")
+    }
 
     route_refs = [r for r in all_routes if r["pattern"] in route_patterns]
     link_refs = [r for r in all_routes if r["pattern"] in link_patterns]
@@ -375,9 +422,9 @@ def print_report(all_routes: list[dict], show_unused: bool = False,
 
     unique_routes = sorted(set(r["route"] for r in route_refs))
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🗺  ROUTE SCANNER")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Routes (uniek): {len(unique_routes)}")
     print(f"   Route refs:    {len(route_refs)}")
     print(f"   Link refs:     {len(link_refs)}")
@@ -432,8 +479,7 @@ def print_report(all_routes: list[dict], show_unused: bool = False,
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="route_scanner.py — Scan frontend routes in React/TS projects",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -447,10 +493,10 @@ Examples:
     )
     parser.add_argument("path", nargs="?", default=".", help="Project root")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--unused", "-u", action="store_true",
-                        help="Toon ongebruikte routes")
-    parser.add_argument("--graph", "-g", action="store_true",
-                        help="Toon ASCII route dependency graph")
+    parser.add_argument("--unused", "-u", action="store_true", help="Toon ongebruikte routes")
+    parser.add_argument(
+        "--graph", "-g", action="store_true", help="Toon ASCII route dependency graph"
+    )
     parser.add_argument("--version", action="version", version="route_scanner.py v1.0.0")
 
     args = parser.parse_args()

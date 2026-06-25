@@ -12,15 +12,16 @@ Gebruik:
     python test_runner.py <path> --verbose               # Verbose output
     python test_runner.py <path> --pattern *_test.py     # Custom pattern
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import json
 import os
 import re
 import shlex
-import subprocess
 import sys
 from collections import defaultdict
 from datetime import datetime
@@ -31,17 +32,25 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # Test file patterns per language
 TEST_PATTERNS = {
@@ -50,9 +59,16 @@ TEST_PATTERNS = {
         "dirs": ["tests", "test"],
     },
     "typescript": {
-        "patterns": ["*.test.ts", "*.test.tsx", "*.spec.ts",
-                      "*.spec.tsx", "*.test.js", "*.spec.js",
-                      "*.test.jsx", "*.spec.jsx"],
+        "patterns": [
+            "*.test.ts",
+            "*.test.tsx",
+            "*.spec.ts",
+            "*.spec.tsx",
+            "*.test.js",
+            "*.spec.js",
+            "*.test.jsx",
+            "*.spec.jsx",
+        ],
         "dirs": ["__tests__", "tests", "test"],
     },
     "rust": {
@@ -92,19 +108,19 @@ RUNNER_DETECTION = {
 # Test detection heuristics per file type
 TEST_FUNCTION_PATTERNS = {
     "python": [
-        re.compile(r'def\s+test_\w+\s*\('),
-        re.compile(r'class\s+Test\w+'),
-        re.compile(r'@pytest\.'),
-        re.compile(r'@mock\.'),
+        re.compile(r"def\s+test_\w+\s*\("),
+        re.compile(r"class\s+Test\w+"),
+        re.compile(r"@pytest\."),
+        re.compile(r"@mock\."),
     ],
     "typescript": [
-        re.compile(r'(?:describe|it|test)\s*\('),
-        re.compile(r'(?:expect|assert)\s*\('),
+        re.compile(r"(?:describe|it|test)\s*\("),
+        re.compile(r"(?:expect|assert)\s*\("),
     ],
     "rust": [
-        re.compile(r'#\[test\]'),
-        re.compile(r'#\[cfg\(test\)\]'),
-        re.compile(r'assert_eq!|assert!|assert_ne!'),
+        re.compile(r"#\[test\]"),
+        re.compile(r"#\[cfg\(test\)\]"),
+        re.compile(r"assert_eq!|assert!|assert_ne!"),
     ],
 }
 
@@ -127,22 +143,26 @@ def discover_tests(root: Path, pattern: str = None) -> list[dict]:
                 for fn in filenames:
                     if any(fnmatch_simple(fn, p) for p in patterns):
                         fp = path / fn
-                        test_files.append({
-                            "file": str(fp),
-                            "language": lang,
-                            "dir": str(path.relative_to(root)),
-                        })
+                        test_files.append(
+                            {
+                                "file": str(fp),
+                                "language": lang,
+                                "dir": str(path.relative_to(root)),
+                            }
+                        )
 
             # Also check with custom pattern if provided
             if pattern:
                 for fn in filenames:
                     if fnmatch_simple(fn, pattern):
                         fp = path / fn
-                        test_files.append({
-                            "file": str(fp),
-                            "language": lang,
-                            "dir": str(path.relative_to(root)),
-                        })
+                        test_files.append(
+                            {
+                                "file": str(fp),
+                                "language": lang,
+                                "dir": str(path.relative_to(root)),
+                            }
+                        )
 
     # Remove duplicates
     seen = set()
@@ -161,16 +181,16 @@ def fnmatch_simple(filename: str, pattern: str) -> bool:
     regex_parts = []
     i = 0
     while i < len(pattern):
-        if pattern[i] == '*':
-            regex_parts.append('.*')
-        elif pattern[i] == '?':
-            regex_parts.append('.')
-        elif pattern[i] in '.^$()+[]{}|\\':
-            regex_parts.append('\\' + pattern[i])
+        if pattern[i] == "*":
+            regex_parts.append(".*")
+        elif pattern[i] == "?":
+            regex_parts.append(".")
+        elif pattern[i] in ".^$()+[]{}|\\":
+            regex_parts.append("\\" + pattern[i])
         else:
             regex_parts.append(re.escape(pattern[i]))
         i += 1
-    return bool(re.match('^' + ''.join(regex_parts) + '$', filename))
+    return bool(re.match("^" + "".join(regex_parts) + "$", filename))
 
 
 def detect_runner(root: Path, test_info: list[dict]) -> str:
@@ -202,6 +222,7 @@ def detect_runner(root: Path, test_info: list[dict]) -> str:
         # Default: prefer pytest if available, else unittest
         try:
             import pytest
+
             return "pytest"
         except ImportError:
             return "unittest"
@@ -221,8 +242,7 @@ def detect_runner(root: Path, test_info: list[dict]) -> str:
     return best
 
 
-def run_tests(workdir: Path, runner: str, test_files: list[dict],
-              verbose: bool = False) -> dict:
+def run_tests(workdir: Path, runner: str, test_files: list[dict], verbose: bool = False) -> dict:
     """Run tests using the detected runner."""
     test_paths = [tf["file"] for tf in test_files]
     flags = "-v" if verbose else ""
@@ -243,7 +263,7 @@ def run_tests(workdir: Path, runner: str, test_files: list[dict],
 
     try:
         cmd_args = shlex.split(cmd_str)
-        result = subprocess.run(
+        result = safe_run(
             cmd_args,
             capture_output=True,
             text=True,
@@ -261,35 +281,35 @@ def run_tests(workdir: Path, runner: str, test_files: list[dict],
 
         if runner in ("pytest", "unittest"):
             # Parse pytest output
-            passed_match = re.search(r'(\d+)\s+passed', result.stdout)
+            passed_match = re.search(r"(\d+)\s+passed", result.stdout)
             if passed_match:
                 passed = int(passed_match.group(1))
 
-            failed_match = re.search(r'(\d+)\s+failed', result.stdout)
+            failed_match = re.search(r"(\d+)\s+failed", result.stdout)
             if failed_match:
                 failed = int(failed_match.group(1))
 
-            skipped_match = re.search(r'(\d+)\s+skipped', result.stdout)
+            skipped_match = re.search(r"(\d+)\s+skipped", result.stdout)
             if skipped_match:
                 skipped = int(skipped_match.group(1))
 
-            error_match = re.search(r'(\d+)\s+error', result.stdout)
+            error_match = re.search(r"(\d+)\s+error", result.stdout)
             if error_match:
                 errors = int(error_match.group(1))
 
         elif runner in ("vitest", "jest"):
-            passed_match = re.search(r'Tests:\s+(\d+)', result.stdout)
+            passed_match = re.search(r"Tests:\s+(\d+)", result.stdout)
             if passed_match and "passed" in result.stdout:
                 passed = int(passed_match.group(1))
-            failed_match = re.search(r'(\d+)\s+failed', result.stdout)
+            failed_match = re.search(r"(\d+)\s+failed", result.stdout)
             if failed_match:
                 failed = int(failed_match.group(1))
 
         elif runner == "cargo_test":
-            ok_match = re.search(r'(\d+)\s+passed', result.stdout)
+            ok_match = re.search(r"(\d+)\s+passed", result.stdout)
             if ok_match:
                 passed = int(ok_match.group(1))
-            fail_match = re.search(r'(\d+)\s+failed', result.stdout)
+            fail_match = re.search(r"(\d+)\s+failed", result.stdout)
             if fail_match:
                 failed = int(fail_match.group(1))
 
@@ -306,7 +326,7 @@ def run_tests(workdir: Path, runner: str, test_files: list[dict],
             "stderr": result.stderr[:1000],
         }
 
-    except subprocess.TimeoutExpired:
+    except TimeoutError:
         return {
             "success": False,
             "runner": runner,
@@ -320,17 +340,16 @@ def run_tests(workdir: Path, runner: str, test_files: list[dict],
         }
 
 
-def print_test_report(test_info: list[dict], results: dict = None,
-                      dry_run: bool = False) -> None:
+def print_test_report(test_info: list[dict], results: dict = None, dry_run: bool = False) -> None:
     """Print formatted test discovery and run report."""
     by_lang = defaultdict(list)
     for tf in test_info:
         by_lang[tf["language"]].append(tf)
 
     total = len(test_info)
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🧪 TEST RUNNER")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Test bestanden: {total}")
     for lang, files in sorted(by_lang.items()):
         print(f"   {lang}: {len(files)} bestand(en)")
@@ -375,8 +394,7 @@ def print_test_report(test_info: list[dict], results: dict = None,
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="test_runner.py — Discover and run tests in the project",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -390,8 +408,9 @@ Examples:
         """,
     )
     parser.add_argument("path", nargs="?", default=".", help="Project root")
-    parser.add_argument("--dry-run", "-d", action="store_true",
-                        help="Alleen test discovery, niet uitvoeren")
+    parser.add_argument(
+        "--dry-run", "-d", action="store_true", help="Alleen test discovery, niet uitvoeren"
+    )
     parser.add_argument("--verbose", "-v", action="store_true", help="Uitgebreide output")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
     parser.add_argument("--pattern", "-p", help="Custom test file pattern")

@@ -33,11 +33,11 @@ from __future__ import annotations
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 
 import argparse
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -63,7 +63,7 @@ SECTIONS = ["Added", "Fixed", "Changed", "Security", "Removed"]
 
 def _clean_title(line: str) -> str:
     """Strip common prefixes like 'feat:', 'fix:', trailing punctuation."""
-    line = re.sub(r'^[\w-]+(\s*\([\w.-]+\))?\s*:\s*', '', line, flags=re.IGNORECASE)
+    line = re.sub(r"^[\w-]+(\s*\([\w.-]+\))?\s*:\s*", "", line, flags=re.IGNORECASE)
     return line.strip().rstrip(".,;:!?")
 
 
@@ -75,7 +75,6 @@ def _categorise_conventional(commit_type: str) -> str:
         "add": "Added",
         "implement": "Added",
         "introduce": "Added",
-
         "fix": "Fixed",
         "bugfix": "Fixed",
         "bug": "Fixed",
@@ -83,7 +82,6 @@ def _categorise_conventional(commit_type: str) -> str:
         "patch": "Fixed",
         "resolve": "Fixed",
         "repair": "Fixed",
-
         "refactor": "Changed",
         "refact": "Changed",
         "update": "Changed",
@@ -105,10 +103,8 @@ def _categorise_conventional(commit_type: str) -> str:
         "dependencies": "Changed",
         "config": "Changed",
         "configuration": "Changed",
-
         "security": "Security",
         "sec": "Security",
-
         "remove": "Removed",
         "deprecate": "Removed",
         "deprecation": "Removed",
@@ -129,23 +125,35 @@ def _categorise_line(line: str) -> str:
     lower = line.strip().lower()
 
     # Added
-    if lower.startswith(("add", "new", "implement", "introduce", "support for",
-                          "added", "feature")):
+    if lower.startswith(
+        ("add", "new", "implement", "introduce", "support for", "added", "feature")
+    ):
         return "Added"
 
     # Fixed
-    if lower.startswith(("fix", "bug", "patch", "hotfix", "resolve", "repair",
-                          "correct", "fixes", "fixed")):
+    if lower.startswith(
+        ("fix", "bug", "patch", "hotfix", "resolve", "repair", "correct", "fixes", "fixed")
+    ):
         return "Fixed"
 
     # Removed
-    if lower.startswith(("remov", "deprecat", "drop", "delete", "cleanup",
-                          "revert", "removed")):
+    if lower.startswith(("remov", "deprecat", "drop", "delete", "cleanup", "revert", "removed")):
         return "Removed"
 
     # Security
-    if lower.startswith(("security", "cve", "vulnerability", "xss", "csrf",
-                          "injection", "auth bypass", "privilege", "secure")):
+    if lower.startswith(
+        (
+            "security",
+            "cve",
+            "vulnerability",
+            "xss",
+            "csrf",
+            "injection",
+            "auth bypass",
+            "privilege",
+            "secure",
+        )
+    ):
         return "Security"
 
     # Changed (default for everything else)
@@ -174,14 +182,14 @@ class Changelog:
 
     @staticmethod
     def _resolve_section(description: str) -> str:
-        """ resolve section.
+        """resolve section.
 
-            Args:
-                description: Description.
+        Args:
+            description: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         return _categorise_line(description)
 
     def merge(self, other: "Changelog") -> None:
@@ -191,13 +199,11 @@ class Changelog:
 
     @property
     def is_empty(self) -> bool:
-        """Check if empty.
-            """
+        """Check if empty."""
         return all(len(v) == 0 for v in self._data.values())
 
     def total_items(self) -> int:
-        """total items.
-            """
+        """total items."""
         return sum(len(v) for v in self._data.values())
 
     def render_text(self) -> str:
@@ -231,11 +237,12 @@ def parse_git_log(revision_range: str = "HEAD", cwd: Optional[Path] = None) -> C
     cl = Changelog()
     try:
         cmd = [
-            "git", "log",
+            "git",
+            "log",
             f"--pretty=format:%s|||%b",
             revision_range,
         ]
-        result = subprocess.run(
+        result = safe_run(
             cmd,
             capture_output=True,
             text=True,
@@ -264,7 +271,7 @@ def parse_git_log(revision_range: str = "HEAD", cwd: Optional[Path] = None) -> C
         body = parts[1].strip() if len(parts) > 1 else ""
 
         # Try to extract conventional-commit type
-        type_match = re.match(r'^(\w+)(?:\([\w.-]+\))?\s*:\s*(.*)', subject, re.IGNORECASE)
+        type_match = re.match(r"^(\w+)(?:\([\w.-]+\))?\s*:\s*(.*)", subject, re.IGNORECASE)
         if type_match:
             commit_type = type_match.group(1)
             title = type_match.group(2).strip()
@@ -282,9 +289,17 @@ def parse_git_log(revision_range: str = "HEAD", cwd: Optional[Path] = None) -> C
                 if not bline:
                     continue
                 # Skip common boilerplate
-                if bline.lower().startswith(("signed-off-by", "co-authored-by",
-                                              "reviewed-by", "acked-by", "change-id",
-                                              "refs:", "see also:")):
+                if bline.lower().startswith(
+                    (
+                        "signed-off-by",
+                        "co-authored-by",
+                        "reviewed-by",
+                        "acked-by",
+                        "change-id",
+                        "refs:",
+                        "see also:",
+                    )
+                ):
                     continue
                 # Treat as a changelog bullet if it looks descriptive
                 if len(bline) > 15:
@@ -299,11 +314,12 @@ def parse_git_diff(revision_range: str = "HEAD", cwd: Optional[Path] = None) -> 
     cl = Changelog()
     try:
         cmd = [
-            "git", "diff",
+            "git",
+            "diff",
             "--stat",
             revision_range,
         ]
-        result = subprocess.run(
+        result = safe_run(
             cmd,
             capture_output=True,
             text=True,
@@ -359,7 +375,8 @@ def parse_patches_dir(patch_dir: Path) -> Changelog:
         sys.exit(EXIT_ERROR)
 
     patch_files = sorted(
-        p for p in patch_dir.iterdir()
+        p
+        for p in patch_dir.iterdir()
         if p.is_file() and p.suffix.lower() in {".patch", ".diff", ".txt"}
     )
 
@@ -394,9 +411,21 @@ def parse_patches_dir(patch_dir: Path) -> Changelog:
                 tline = tline.strip()
                 if not tline:
                     continue
-                if tline.startswith(("---", "+++", "@@", "diff --git",
-                                      "index ", "new file", "deleted file",
-                                      "From ", "From:", "Date: ", "Subject: ")):
+                if tline.startswith(
+                    (
+                        "---",
+                        "+++",
+                        "@@",
+                        "diff --git",
+                        "index ",
+                        "new file",
+                        "deleted file",
+                        "From ",
+                        "From:",
+                        "Date: ",
+                        "Subject: ",
+                    )
+                ):
                     continue
                 title = tline.rstrip(".,;:!?")
                 break
@@ -406,7 +435,7 @@ def parse_patches_dir(patch_dir: Path) -> Changelog:
             # Also try to categorise based on title prefix
             sec = _categorise_line(title)
             # Check for conventional prefixes in the Subject line
-            subj_prefix = re.match(r'^(\w+)\s*:\s*(.*)', title)
+            subj_prefix = re.match(r"^(\w+)\s*:\s*(.*)", title)
             if subj_prefix:
                 mapped = _categorise_conventional(subj_prefix.group(1))
                 if mapped:
@@ -432,7 +461,7 @@ def parse_stdin() -> Changelog:
         if line.startswith("#"):
             continue
         # Strip leading bullet markers
-        raw = re.sub(r'^[\s*•\-–—+>]+\s*', '', line)
+        raw = re.sub(r"^[\s*•\-–—+>]+\s*", "", line)
         if raw:
             cl.add_item("", raw)
 
@@ -509,8 +538,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     # Validate that at least one source was specified
     if not any([parsed.git_log, parsed.git_diff, parsed.patches, parsed.stdin]):
         parser.error(
-            "No source specified. Use one of: --git-log, --git-diff, "
-            "--patches, or --stdin"
+            "No source specified. Use one of: --git-log, --git-diff, --patches, or --stdin"
         )
 
     return parsed

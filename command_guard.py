@@ -37,9 +37,9 @@ from pathlib import Path
 DANGEROUS_PATTERNS = [
     (
         re.compile(
-            r'\brm\s+(?:-[rR][fF]|-[fF][rR]|-[rR][fF][rR]?)\b'
-            r'|\brm\s+-[rR]f?\s+\S*[/\\*]'
-            r'|\brm\s+-[rR]f?\s+(?:--no-preserve-root|/|\*)'
+            r"\brm\s+(?:-[rR][fF]|-[fF][rR]|-[rR][fF][rR]?)\b"
+            r"|\brm\s+-[rR]f?\s+\S*[/\\*]"
+            r"|\brm\s+-[rR]f?\s+(?:--no-preserve-root|/|\*)"
         ),
         "dangerous",
         "Recursive force remove — permanently deletes files without confirmation. "
@@ -49,7 +49,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\b(?:del|erase)\s*/[sSqQfF]|\bdel/[sSqQfF]',
+            r"\b(?:del|erase)\s*/[sSqQfF]|\bdel/[sSqQfF]",
         ),
         "dangerous",
         "Recursive Windows delete — permanently removes files matching the pattern "
@@ -59,7 +59,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\b(?:rmdir|rd)\s+/[sSqQ]?\s',
+            r"\b(?:rmdir|rd)\s+/[sSqQ]?\s",
         ),
         "dangerous",
         "Recursive directory removal — deletes a directory tree permanently on Windows.",
@@ -67,7 +67,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\bformat\s+\S',
+            r"\bformat\s+\S",
         ),
         "dangerous",
         "Disk format command — erases all data on a drive partition.",
@@ -76,7 +76,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\bmkfs\.\w+\s',
+            r"\bmkfs\.\w+\s",
         ),
         "dangerous",
         "Filesystem creation tool — overwrites existing data on a partition to "
@@ -86,7 +86,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\bdd\s+if=.*\s+of=',
+            r"\bdd\s+if=.*\s+of=",
         ),
         "dangerous",
         "dd (disk destroyer) — can overwrite arbitrary disk blocks or devices. "
@@ -96,7 +96,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'(?:curl|wget)\s+.*?\s*\|\s*(?:sh|bash|zsh|dash|ksh)\b',
+            r"(?:curl|wget)\s+.*?\s*\|\s*(?:sh|bash|zsh|dash|ksh)\b",
         ),
         "dangerous",
         "Shell pipe from network — downloads and immediately executes a remote script. "
@@ -106,8 +106,8 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'(?:Invoke-WebRequest|iwr|wget|curl)\s+.*?(?:-UseBasicParsing)?.*?\s*[|]\s*'
-            r'(?:Invoke-Expression|iex|IEX)\b',
+            r"(?:Invoke-WebRequest|iwr|wget|curl)\s+.*?(?:-UseBasicParsing)?.*?\s*[|]\s*"
+            r"(?:Invoke-Expression|iex|IEX)\b",
         ),
         "dangerous",
         "PowerShell download-and-execute — downloads a remote payload and executes "
@@ -117,7 +117,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'Start-Process\s+.*?-FilePath\s+.*?(?:net\.http|webclient|download)',
+            r"Start-Process\s+.*?-FilePath\s+.*?(?:net\.http|webclient|download)",
         ),
         "dangerous",
         "PowerShell process launch from downloaded content — executes a binary "
@@ -127,11 +127,11 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'(?:chmod|chown)\s+-[Rr]\s+'
-            r'(?:\d{3,4}|[a-zA-Z][a-zA-Z0-9._-]*:[a-zA-Z][a-zA-Z0-9._-]*)\s+/|'
-            r'chmod\s+777\s|'
-            r'chmod\s+-[Rr]\s+777\s|'
-            r'chown\s+-[Rr]\s+.*?/\s',
+            r"(?:chmod|chown)\s+-[Rr]\s+"
+            r"(?:\d{3,4}|[a-zA-Z][a-zA-Z0-9._-]*:[a-zA-Z][a-zA-Z0-9._-]*)\s+/|"
+            r"chmod\s+777\s|"
+            r"chmod\s+-[Rr]\s+777\s|"
+            r"chown\s+-[Rr]\s+.*?/\s",
         ),
         "dangerous",
         "Dangerous permission change — recursive chmod 777 or chown -R on a "
@@ -141,7 +141,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\bgit\s+clean\s+-[fF][dDxX]',
+            r"\bgit\s+clean\s+-[fF][dDxX]",
         ),
         "dangerous",
         "Destructive git clean — removes untracked files AND directories from "
@@ -151,7 +151,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\bgit\s+reset\s+--hard\s+(?:HEAD|origin)',
+            r"\bgit\s+reset\s+--hard\s+(?:HEAD|origin)",
         ),
         "warning",
         "Hard git reset — discards all local changes in the working directory "
@@ -161,7 +161,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\bgit\s+push\s+.*?--force\b(?!-with-lease)',
+            r"\bgit\s+push\s+.*?--force\b(?!-with-lease)",
         ),
         "warning",
         "Force git push — overwrites remote history. Can destroy collaborators' work "
@@ -171,7 +171,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'\bnpm\s+(?:install|ci)\s+.*?(?:--unsafe-perm|--allow-root|--ignore-scripts)',
+            r"\bnpm\s+(?:install|ci)\s+.*?(?:--unsafe-perm|--allow-root|--ignore-scripts)",
         ),
         "warning",
         "Dangerous npm flags — --unsafe-perm runs install scripts as root, "
@@ -181,7 +181,7 @@ DANGEROUS_PATTERNS = [
     ),
     (
         re.compile(
-            r'(?:pip|pip3)\s+install\s+.*?(?:https?://|git\+)',
+            r"(?:pip|pip3)\s+install\s+.*?(?:https?://|git\+)",
         ),
         "warning",
         "pip install from URL — installs a package from an arbitrary URL instead of "
@@ -190,9 +190,7 @@ DANGEROUS_PATTERNS = [
         "add the private repo to requirements.txt with a hash check.",
     ),
     (
-        re.compile(
-            r'(?:pip|pip3)\s+install\s+-r\s+.*?[^/\\]'
-        ),
+        re.compile(r"(?:pip|pip3)\s+install\s+-r\s+.*?[^/\\]"),
         "safe",
         "Pip install from requirements file — generally safe, but review the "
         "requirements file first for pinned versions and trusted sources.",
@@ -204,7 +202,7 @@ DANGEROUS_PATTERNS = [
 WARNING_PATTERNS = [
     (
         re.compile(
-            r'(?:sudo|doas)\s+(?:rm|del|format|mkfs|dd|shutdown|reboot|poweroff)\b',
+            r"(?:sudo|doas)\s+(?:rm|del|format|mkfs|dd|shutdown|reboot|poweroff)\b",
         ),
         "warning",
         "Privileged destructive command — running a destructive command with "
@@ -214,7 +212,7 @@ WARNING_PATTERNS = [
     ),
     (
         re.compile(
-            r'(?:>|>>)\s*(?:/dev/sda|/dev/sdb|/dev/nvme|/dev/mmcblk|/dev/disk)',
+            r"(?:>|>>)\s*(?:/dev/sda|/dev/sdb|/dev/nvme|/dev/mmcblk|/dev/disk)",
         ),
         "dangerous",
         "Output redirection to a block device — writing output directly to a "
@@ -223,7 +221,7 @@ WARNING_PATTERNS = [
     ),
     (
         re.compile(
-            r'(?::\s*)?\{\s*,\s*\}\s*(?:;|&&|\|\|)',
+            r"(?::\s*)?\{\s*,\s*\}\s*(?:;|&&|\|\|)",
         ),
         "warning",
         "Brace expansion bomb — a single command can expand into thousands or "
@@ -233,7 +231,7 @@ WARNING_PATTERNS = [
     ),
     (
         re.compile(
-            r'\b(?:shutdown|reboot|poweroff|halt|init\s+0|init\s+6)\b',
+            r"\b(?:shutdown|reboot|poweroff|halt|init\s+0|init\s+6)\b",
         ),
         "warning",
         "System shutdown/reboot command — will terminate running processes "
@@ -243,7 +241,7 @@ WARNING_PATTERNS = [
     ),
     (
         re.compile(
-            r'(?:eval|exec)\s+\$?\(',
+            r"(?:eval|exec)\s+\$?\(",
         ),
         "dangerous",
         "Dynamic command evaluation — eval/exec with command substitution can "
@@ -253,7 +251,7 @@ WARNING_PATTERNS = [
     ),
     (
         re.compile(
-            r'>\s*/dev/null\s+2>&1\s+&&\s+curl',
+            r">\s*/dev/null\s+2>&1\s+&&\s+curl",
         ),
         "warning",
         "Silent remote execution — suppresses all output/errors then runs a "
@@ -265,49 +263,49 @@ WARNING_PATTERNS = [
 
 SAFE_PATTERNS = [
     (
-        re.compile(r'\bls\b'),
+        re.compile(r"\bls\b"),
         "safe",
         "List directory contents — no destructive potential.",
         "",
     ),
     (
-        re.compile(r'\b(?:cd|pwd)\b'),
+        re.compile(r"\b(?:cd|pwd)\b"),
         "safe",
         "Navigation commands — change directory or print working directory.",
         "",
     ),
     (
-        re.compile(r'\bgrep\b'),
+        re.compile(r"\bgrep\b"),
         "safe",
         "Text search — searches file contents without modifying anything.",
         "",
     ),
     (
-        re.compile(r'\bcp\b'),
+        re.compile(r"\bcp\b"),
         "safe",
         "File copy — duplicates files. Generally safe with normal usage.",
         "",
     ),
     (
-        re.compile(r'\bmv\b'),
+        re.compile(r"\bmv\b"),
         "safe",
         "Move/rename files. Can be destructive if overwriting existing files.",
         "Use 'mv -i' (interactive) to be prompted before overwriting.",
     ),
     (
-        re.compile(r'\bcat\b'),
+        re.compile(r"\bcat\b"),
         "safe",
         "Concatenate/display file contents — read-only operation.",
         "",
     ),
     (
-        re.compile(r'\b(?:python|python3)\s+\S+\.py\b'),
+        re.compile(r"\b(?:python|python3)\s+\S+\.py\b"),
         "safe",
         "Run a Python script — generally safe if the script is trusted.",
         "Review scripts from untrusted sources before running.",
     ),
     (
-        re.compile(r'\bgit\s+(?:status|log|diff|branch|add|commit|checkout)\b'),
+        re.compile(r"\bgit\s+(?:status|log|diff|branch|add|commit|checkout)\b"),
         "safe",
         "Git operations — standard version control commands.",
         "",
@@ -339,19 +337,33 @@ DANGEROUS_CMDS = [
     "git clean -fx",
 ]
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", "vendor",
-    "target", ".svn", ".hg", ".idea", ".vscode",
-    "bower_components", "jspm_packages", ".cache",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        "vendor",
+        "target",
+        ".svn",
+        ".hg",
+        ".idea",
+        ".vscode",
+        "bower_components",
+        "jspm_packages",
+        ".cache",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # ---------------------------------------------------------------------------
 # Detection logic
@@ -440,9 +452,8 @@ def _detect_pipe_danger(command: str) -> dict | None:
     cmd_lower = command.lower().strip()
 
     # sudo curl ... | sh (or similar sudo-pipe combos)
-    if (
-        re.search(r'sudo\s+(?:curl|wget)\b', cmd_lower)
-        and re.search(r'\|\s*(?:sh|bash)\b', cmd_lower)
+    if re.search(r"sudo\s+(?:curl|wget)\b", cmd_lower) and re.search(
+        r"\|\s*(?:sh|bash)\b", cmd_lower
     ):
         return {
             "risk": "dangerous",
@@ -454,7 +465,7 @@ def _detect_pipe_danger(command: str) -> dict | None:
         }
 
     # Multiple pipes with dangerous chaining
-    if re.search(r'\b(?:curl|wget)\b.*?\|.*?\|', cmd_lower):
+    if re.search(r"\b(?:curl|wget)\b.*?\|.*?\|", cmd_lower):
         return {
             "risk": "warning",
             "reason": "Multi-stage pipeline with network download — command contains "
@@ -478,8 +489,8 @@ def batch_classify(commands: list[str]) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 RISK_ICONS = {
-    "safe": "\U0001f7e2",       # 🟢 green circle
-    "warning": "\U0001f7e1",    # 🟡 yellow circle
+    "safe": "\U0001f7e2",  # 🟢 green circle
+    "warning": "\U0001f7e1",  # 🟡 yellow circle
     "dangerous": "\U0001f534",  # 🔴 red circle
 }
 
@@ -591,8 +602,7 @@ def print_known_dangerous() -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="command_guard.py — Check terminal commands for safety before execution.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -607,18 +617,26 @@ Examples:
         """,
     )
     parser.add_argument("commands", nargs="*", help="Command(s) to check")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output results as JSON")
-    parser.add_argument("--explain", "-e", action="store_true",
-                        help="Show extended explanation even for safe commands")
-    parser.add_argument("--batch", "-b", nargs="+", metavar="CMD",
-                        help="Check multiple commands in batch mode")
-    parser.add_argument("--stdin", "-i", action="store_true",
-                        help="Read commands from stdin (one per line)")
-    parser.add_argument("--list-patterns", "-l", action="store_true",
-                        help="List all known dangerous/warning patterns")
-    parser.add_argument("--version", "-V", action="version",
-                        version="command_guard.py v1.0.0")
+    parser.add_argument("--json", "-j", action="store_true", help="Output results as JSON")
+    parser.add_argument(
+        "--explain",
+        "-e",
+        action="store_true",
+        help="Show extended explanation even for safe commands",
+    )
+    parser.add_argument(
+        "--batch", "-b", nargs="+", metavar="CMD", help="Check multiple commands in batch mode"
+    )
+    parser.add_argument(
+        "--stdin", "-i", action="store_true", help="Read commands from stdin (one per line)"
+    )
+    parser.add_argument(
+        "--list-patterns",
+        "-l",
+        action="store_true",
+        help="List all known dangerous/warning patterns",
+    )
+    parser.add_argument("--version", "-V", action="version", version="command_guard.py v1.0.0")
 
     args = parser.parse_args()
 
@@ -634,18 +652,14 @@ Examples:
         cmds_to_check = list(args.batch)
     elif args.stdin:
         cmd_input = sys.stdin.read()
-        cmds_to_check = [
-            line.strip() for line in cmd_input.splitlines()
-            if line.strip()
-        ]
+        cmds_to_check = [line.strip() for line in cmd_input.splitlines() if line.strip()]
     elif args.commands:
         cmds_to_check = list(args.commands)
     else:
         parser.print_help()
         print(
-            "\n  \u274c Please provide a command to check, "
-            "or use --stdin / --batch.",
-            file=sys.stderr
+            "\n  \u274c Please provide a command to check, or use --stdin / --batch.",
+            file=sys.stderr,
         )
         sys.exit(1)
 

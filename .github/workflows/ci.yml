@@ -131,3 +131,29 @@ jobs:
               sys.exit(1)
           print('All required data files in wheel')
           "
+
+      # ── Ruff lint check (line-length=100) ──
+      - name: Install ruff
+        run: pip install ruff
+      - name: Ruff lint check
+        run: python -m ruff check --select E501,W291,W292 --line-length 100 .
+        continue-on-error: true  # Warning only — E501 is informational
+
+      # ── Safe-run gate: no direct subprocess.run in production code ──
+      - name: Safe-run gate (no direct subprocess.run)
+        shell: bash
+        run: |
+          violations=$(grep -rn 'subprocess\.run(' --include='*.py' . \
+            | grep -v safe_run.py \
+            | grep -v __pycache__ \
+            | grep -v '.backups/' \
+            | grep -v '.rsi_' \
+            | grep -v 'tests/' \
+            | grep -v 'scripts/' \
+            | grep -v 'import subprocess' || true)
+          if [ -n "$violations" ]; then
+            echo "FAIL: Direct subprocess.run() calls found outside safe_run.py:"
+            echo "$violations"
+            exit 1
+          fi
+          echo "OK: All subprocess calls go through safe_run"

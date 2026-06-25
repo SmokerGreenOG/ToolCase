@@ -36,129 +36,162 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    "build", "dist", ".next", "out", "coverage", ".vscode", ".idea",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        ".next",
+        "out",
+        "coverage",
+        ".vscode",
+        ".idea",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
-FRONTEND_EXTENSIONS = frozenset({
-    ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte", ".html", ".css",
-    ".scss", ".less", ".json", ".yml", ".yaml",
-})
+FRONTEND_EXTENSIONS = frozenset(
+    {
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".vue",
+        ".svelte",
+        ".html",
+        ".css",
+        ".scss",
+        ".less",
+        ".json",
+        ".yml",
+        ".yaml",
+    }
+)
 
 # Patterns that identify fake/demo indicators
 
 # Files that are mock-data or fixture names
 MOCK_FILE_PATTERNS = re.compile(
-    r'^(mock|fake|stub|sample|dummy|demo|test-data|fixture)[._-]',
+    r"^(mock|fake|stub|sample|dummy|demo|test-data|fixture)[._-]",
     re.IGNORECASE,
 )
 
 MOCK_FILE_SUFFIXES = re.compile(
-    r'[._-](mock|fake|stub|sample|dummy|demo|fixture|placeholder)s?\.',
+    r"[._-](mock|fake|stub|sample|dummy|demo|fixture|placeholder)s?\.",
     re.IGNORECASE,
 )
 
 # Directories that suggest mock/fake structure
-MOCK_DIR_NAMES = frozenset({
-    "mocks", "__mocks__", "fixtures", "stubs", "fake", "mock-data",
-    "test-fixtures", "demo", "dummy", "sample-data",
-})
+MOCK_DIR_NAMES = frozenset(
+    {
+        "mocks",
+        "__mocks__",
+        "fixtures",
+        "stubs",
+        "fake",
+        "mock-data",
+        "test-fixtures",
+        "demo",
+        "dummy",
+        "sample-data",
+    }
+)
 
 # Route patterns with demo/placeholder names
 PLACEHOLDER_ROUTE = re.compile(
     r'(?:path|to|href|route|link)\s*[:=]\s*[\'"](/?(?:demo|placeholder|'
-    r'sandbox|playground|sample|mock|stub|example|test-page|fake|'
+    r"sandbox|playground|sample|mock|stub|example|test-page|fake|"
     r'temp|wip|coming-soon|under-construction|preview))[\'"]',
     re.IGNORECASE,
 )
 
 # onClick handlers that are no-ops or purely cosmetic
 DUMMY_CLICK = re.compile(
-    r'onClick\s*=\s*\{?\s*(?:\(\s*\)\s*=>\s*\{?\s*(?:'
-    r'console\.(?:log|warn|debug)\s*\([^)]*\)'
-    r'|alert\s*\([^)]*\)'
-    r'|void\s*0'
-    r'|return\s*;?\s*'
-    r'|[a-zA-Z_]\w*\s*&&\s*(?:console\.log|alert)\s*\([^)]*\)'
-    r'|set\w+\s*\([^)]*\)'
-    r'|toggle\w*\s*\([^)]*\)'
-    r'|handle\w*\s*\([^)]*\)'
-    r'|preview\w*\s*\([^)]*\)'
-    r'))\s*\}?\s*\}',
+    r"onClick\s*=\s*\{?\s*(?:\(\s*\)\s*=>\s*\{?\s*(?:"
+    r"console\.(?:log|warn|debug)\s*\([^)]*\)"
+    r"|alert\s*\([^)]*\)"
+    r"|void\s*0"
+    r"|return\s*;?\s*"
+    r"|[a-zA-Z_]\w*\s*&&\s*(?:console\.log|alert)\s*\([^)]*\)"
+    r"|set\w+\s*\([^)]*\)"
+    r"|toggle\w*\s*\([^)]*\)"
+    r"|handle\w*\s*\([^)]*\)"
+    r"|preview\w*\s*\([^)]*\)"
+    r"))\s*\}?\s*\}",
     re.IGNORECASE,
 )
 
 # Disabled / no-action buttons
 DISABLED_BUTTON = re.compile(
-    r'<(?:button|Button)\b[^>]*disabled\b',
+    r"<(?:button|Button)\b[^>]*disabled\b",
     re.IGNORECASE,
 )
 
 NOOP_BUTTON = re.compile(
-    r'<(?:button|Button)\b[^>]*(?:'
-    r'onClick\s*=\s*\{?\s*(?:undefined|null|console\.log|'
-    r'\(\s*\)\s*=>\s*\{?\s*\}?\s*|void\s*0)\s*\}?\s*'
-    r')',
+    r"<(?:button|Button)\b[^>]*(?:"
+    r"onClick\s*=\s*\{?\s*(?:undefined|null|console\.log|"
+    r"\(\s*\)\s*=>\s*\{?\s*\}?\s*|void\s*0)\s*\}?\s*"
+    r")",
     re.IGNORECASE,
 )
 
 # Demo/mock response patterns in code comments, console.log, variables
 DEMO_MARKER = re.compile(
-    r'(?:'
-    r'(?://|#|<!--|/\*)\s*(?:TODO|FIXME|HACK|XXX|DEMO|MOCK|FAKE|STUB):?\s*'
-    r'|'
+    r"(?:"
+    r"(?://|#|<!--|/\*)\s*(?:TODO|FIXME|HACK|XXX|DEMO|MOCK|FAKE|STUB):?\s*"
+    r"|"
     r'console\.(?:log|warn|debug)\s*\(\s*[\'"][^\'"]*'
-    r'(?:demo|mock|fake|placeholder|stub|sample|dummy|simulated)'
+    r"(?:demo|mock|fake|placeholder|stub|sample|dummy|simulated)"
     r'[\'"]\s*\)'
-    r'|'
+    r"|"
     r'[\'"][^\'"]*'
-    r'(?:demo|mock|fake|placeholder|stub|sample|dummy)-?(?:data|response|api|endpoint|route|handler)'
+    r"(?:demo|mock|fake|placeholder|stub|sample|dummy)-?(?:data|response|api|endpoint|route|handler)"
     r'[\'"]\s*[:=]'
-    r')',
+    r")",
     re.IGNORECASE,
 )
 
 # API calls using mock/demo URLs
 MOCK_API_CALL = re.compile(
-    r'(?:fetch|axios|get|post|put|delete|patch|request)\s*'
+    r"(?:fetch|axios|get|post|put|delete|patch|request)\s*"
     r'\(\s*[\'\"](?:https?://)?[^\'"]*'
-    r'(?:mock|fake|demo|placeholder|stub|jsonplaceholder|reqres|'
+    r"(?:mock|fake|demo|placeholder|stub|jsonplaceholder|reqres|"
     r'httpbin|mockapi|local-json|test-api|dummyapi)[^\'"]*[\'\"]',
     re.IGNORECASE,
 )
 
 # Static JSON imported as data (suggests fake data instead of real API)
 STATIC_DATA_IMPORT = re.compile(
-    r'(?:import|require)\s+(?:\{?\s*\w+\s*,?\s*\}?\s+from\s+)?'
+    r"(?:import|require)\s+(?:\{?\s*\w+\s*,?\s*\}?\s+from\s+)?"
     r'[\'\"](?:\.\/)?(?:data|sample|mock|fixture|static|dummy)[^\'"]*\.json[\'\"]',
     re.IGNORECASE,
 )
 
 # Export of hardcoded mock data arrays/objects used as API responses
 HARDCODED_DATA_EXPORT = re.compile(
-    r'(?:export\s+(?:const|let|var|function|default)\s+|module\.exports\s*=)'
-    r'[^;]*'
-    r'(?:mock|fake|demo|sample|dummy|stub|fixture)',
+    r"(?:export\s+(?:const|let|var|function|default)\s+|module\.exports\s*=)"
+    r"[^;]*"
+    r"(?:mock|fake|demo|sample|dummy|stub|fixture)",
     re.IGNORECASE,
 )
 
 # Check for placeholders / stubs in backend calls
 TODO_BACKEND_CALL = re.compile(
-    r'(?:'
-    r'(?://|#|<!--|/\*)\s*TODO\s*:?\s*(?:connect|implement|add|replace)\s*(?:to|with|the)?\s*(?:backend|api|real|actual)\s*'
-    r'|'
+    r"(?:"
+    r"(?://|#|<!--|/\*)\s*TODO\s*:?\s*(?:connect|implement|add|replace)\s*(?:to|with|the)?\s*(?:backend|api|real|actual)\s*"
+    r"|"
     r'(?:fetch|axios|get|post)\s*\(\s*[\'\"][^\'"]*'
-    r'(?:TODO|PLACEHOLDER|FIXME|CHANGE_ME|YOUR_ENDPOINT)'
+    r"(?:TODO|PLACEHOLDER|FIXME|CHANGE_ME|YOUR_ENDPOINT)"
     r'[\'"]\s*\)'
-    r')',
+    r")",
     re.IGNORECASE,
 )
 
@@ -192,12 +225,14 @@ def scan_mock_files(root: Path) -> list[dict]:
                 rel = path.relative_to(root)
             except ValueError:
                 rel = path
-            findings.append({
-                "file": str(rel),
-                "kind": "mock_named_file",
-                "category": "Hardcoded data files",
-                "detail": f"Filename suggests mock/hardcoded data: {path.name}",
-            })
+            findings.append(
+                {
+                    "file": str(rel),
+                    "kind": "mock_named_file",
+                    "category": "Hardcoded data files",
+                    "detail": f"Filename suggests mock/hardcoded data: {path.name}",
+                }
+            )
     return findings
 
 
@@ -214,12 +249,14 @@ def scan_mock_directories(root: Path) -> list[dict]:
                 rel = path.relative_to(root)
             except ValueError:
                 rel = path
-            findings.append({
-                "file": str(rel),
-                "kind": "mock_directory",
-                "category": "Mock project tree",
-                "detail": f"Mock/fixture directory present: {path.name}",
-            })
+            findings.append(
+                {
+                    "file": str(rel),
+                    "kind": "mock_directory",
+                    "category": "Mock project tree",
+                    "detail": f"Mock/fixture directory present: {path.name}",
+                }
+            )
     return findings
 
 
@@ -227,13 +264,15 @@ def scan_placeholder_routes(content: str, filepath: str) -> list[dict]:
     """Scan file content for placeholder route definitions."""
     findings = []
     for match in PLACEHOLDER_ROUTE.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "placeholder_route",
-            "category": "Placeholder routes",
-            "detail": f"Placeholder route path: {match.group(1)}",
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "placeholder_route",
+                "category": "Placeholder routes",
+                "detail": f"Placeholder route path: {match.group(1)}",
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     return findings
 
 
@@ -241,13 +280,15 @@ def scan_dummy_onclick(content: str, filepath: str) -> list[dict]:
     """Scan for onClick handlers that do nothing real."""
     findings = []
     for match in DUMMY_CLICK.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "dummy_onclick",
-            "category": "Dummy onClick handlers",
-            "detail": "onClick handler is a no-op or purely cosmetic",
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "dummy_onclick",
+                "category": "Dummy onClick handlers",
+                "detail": "onClick handler is a no-op or purely cosmetic",
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     return findings
 
 
@@ -255,21 +296,25 @@ def scan_disabled_buttons(content: str, filepath: str) -> list[dict]:
     """Scan for disabled buttons or buttons with no real action."""
     findings = []
     for match in DISABLED_BUTTON.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "disabled_button",
-            "category": "Buttons without real action",
-            "detail": "Button is disabled (no action possible)",
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "disabled_button",
+                "category": "Buttons without real action",
+                "detail": "Button is disabled (no action possible)",
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     for match in NOOP_BUTTON.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "noop_button",
-            "category": "Buttons without real action",
-            "detail": "Button onClick is undefined, null, or a no-op",
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "noop_button",
+                "category": "Buttons without real action",
+                "detail": "Button onClick is undefined, null, or a no-op",
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     return findings
 
 
@@ -277,13 +322,15 @@ def scan_demo_markers(content: str, filepath: str) -> list[dict]:
     """Scan for demo/mock markers in comments and console.log statements."""
     findings = []
     for match in DEMO_MARKER.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "demo_marker",
-            "category": "Demo responses / markers",
-            "detail": match.group(0)[:120].strip(),
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "demo_marker",
+                "category": "Demo responses / markers",
+                "detail": match.group(0)[:120].strip(),
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     return findings
 
 
@@ -291,13 +338,15 @@ def scan_mock_api_calls(content: str, filepath: str) -> list[dict]:
     """Scan for API calls pointing to mock/demo endpoints."""
     findings = []
     for match in MOCK_API_CALL.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "mock_api_call",
-            "category": "Demo responses",
-            "detail": f"Mock API endpoint call: {match.group(0)[:110].strip()}",
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "mock_api_call",
+                "category": "Demo responses",
+                "detail": f"Mock API endpoint call: {match.group(0)[:110].strip()}",
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     return findings
 
 
@@ -305,21 +354,25 @@ def scan_static_json_data(content: str, filepath: str) -> list[dict]:
     """Scan for static JSON imported as live data source."""
     findings = []
     for match in STATIC_DATA_IMPORT.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "static_json_data",
-            "category": "Static JSON shown as real data",
-            "detail": f"Static/mock JSON imported as data: {match.group(0)[:110].strip()}",
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "static_json_data",
+                "category": "Static JSON shown as real data",
+                "detail": f"Static/mock JSON imported as data: {match.group(0)[:110].strip()}",
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     for match in HARDCODED_DATA_EXPORT.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "hardcoded_mock_export",
-            "category": "Static JSON shown as real data",
-            "detail": f"Hardcoded mock data export: {match.group(0)[:120].strip()}",
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "hardcoded_mock_export",
+                "category": "Static JSON shown as real data",
+                "detail": f"Hardcoded mock data export: {match.group(0)[:120].strip()}",
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     return findings
 
 
@@ -327,13 +380,15 @@ def scan_todo_backend_calls(content: str, filepath: str) -> list[dict]:
     """Scan for TODO comments or placeholder URLs indicating backend not connected."""
     findings = []
     for match in TODO_BACKEND_CALL.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "todo_backend_call",
-            "category": "TODO backend calls",
-            "detail": match.group(0)[:130].strip(),
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "todo_backend_call",
+                "category": "TODO backend calls",
+                "detail": match.group(0)[:130].strip(),
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     return findings
 
 
@@ -342,23 +397,25 @@ def scan_fake_terminal_output(content: str, filepath: str) -> list[dict]:
     findings = []
     # Patterns that indicate simulated terminal/log output
     fake_terminal_pattern = re.compile(
-        r'(?:'
+        r"(?:"
         r'console\.(?:log|warn|debug)\s*\(\s*[\'"]'
-        r'\[(?:DEMO|MOCK|SIMULATED|FAKE|PREVIEW|DEV|SANDBOX)\]'
-        r'|'
-        r'(?://|#|<!--)\s*(?:SIMULATED|FAKE|MOCK)\s+'
-        r'(?:OUTPUT|RESPONSE|TERMINAL|CONSOLE|LOG)'
-        r')',
+        r"\[(?:DEMO|MOCK|SIMULATED|FAKE|PREVIEW|DEV|SANDBOX)\]"
+        r"|"
+        r"(?://|#|<!--)\s*(?:SIMULATED|FAKE|MOCK)\s+"
+        r"(?:OUTPUT|RESPONSE|TERMINAL|CONSOLE|LOG)"
+        r")",
         re.IGNORECASE,
     )
     for match in fake_terminal_pattern.finditer(content):
-        findings.append({
-            "file": filepath,
-            "kind": "fake_terminal_output",
-            "category": "Fake terminal output",
-            "detail": f"Simulated terminal/log output: {match.group(0)[:110].strip()}",
-            "line": content[:match.start()].count("\n") + 1,
-        })
+        findings.append(
+            {
+                "file": filepath,
+                "kind": "fake_terminal_output",
+                "category": "Fake terminal output",
+                "detail": f"Simulated terminal/log output: {match.group(0)[:110].strip()}",
+                "line": content[: match.start()].count("\n") + 1,
+            }
+        )
     return findings
 
 
@@ -500,15 +557,15 @@ def print_report(result: dict, root: Path, verbose: bool = False) -> None:
     # Severity colors (ASCII)
     sev_color = {
         "CRITICAL": "\033[91m",  # red
-        "HIGH": "\033[93m",      # yellow
-        "MEDIUM": "\033[96m",    # cyan
-        "LOW": "\033[94m",       # blue
-        "NONE": "\033[92m",      # green
+        "HIGH": "\033[93m",  # yellow
+        "MEDIUM": "\033[96m",  # cyan
+        "LOW": "\033[94m",  # blue
+        "NONE": "\033[92m",  # green
     }.get(severity, "")
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  🔍 Fake UI Detector — scanning {root}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(f"  Fake/demo score: {sev_color}{score:.1%}\033[0m  ({severity})")
     print(f"  Total indicators found: {total}")
     print()
@@ -549,25 +606,17 @@ def print_report(result: dict, root: Path, verbose: bool = False) -> None:
             "  🔴 Replace mock data files with real API endpoints or dynamic data sources."
         )
     if categories.get("TODO backend calls", 0) > 0:
-        recommendations.append(
-            "  🔴 Implement real backend connections for TODO-marked API calls."
-        )
+        recommendations.append("  🔴 Implement real backend connections for TODO-marked API calls.")
     if categories.get("Placeholder routes", 0) > 0:
-        recommendations.append(
-            "  🟡 Remove or replace placeholder/demo routes with real content."
-        )
+        recommendations.append("  🟡 Remove or replace placeholder/demo routes with real content.")
     if categories.get("Dummy onClick handlers", 0) > 0:
-        recommendations.append(
-            "  🟡 Replace dummy onClick handlers with real business logic."
-        )
+        recommendations.append("  🟡 Replace dummy onClick handlers with real business logic.")
     if categories.get("Static JSON shown as real data", 0) > 0:
         recommendations.append(
             "  🟡 Serve data from real APIs instead of importing static JSON as data."
         )
     if categories.get("Mock project tree", 0) > 0:
-        recommendations.append(
-            "  🟢 Clean up mock/fixture directories if no longer needed."
-        )
+        recommendations.append("  🟢 Clean up mock/fixture directories if no longer needed.")
     if categories.get("Buttons without real action", 0) > 0:
         recommendations.append(
             "  🟢 Wire up disabled/no-op buttons or remove them from production."
@@ -584,8 +633,7 @@ def print_report(result: dict, root: Path, verbose: bool = False) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="fake_ui_detector.py — Detect fake/demo UIs with no real backend",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -599,12 +647,17 @@ Examples:
     )
     parser.add_argument("path", nargs="?", default=".", help="Project root to scan")
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
-    parser.add_argument("--threshold", "-t", type=float, default=0.0,
-                        help="Minimum score threshold to exit with code 1 (default: 0.0)")
-    parser.add_argument("--verbose", "-v", action="store_true",
-                        help="Show per-file scanning progress")
-    parser.add_argument("--version", action="version",
-                        version="fake_ui_detector.py v1.0.0")
+    parser.add_argument(
+        "--threshold",
+        "-t",
+        type=float,
+        default=0.0,
+        help="Minimum score threshold to exit with code 1 (default: 0.0)",
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show per-file scanning progress"
+    )
+    parser.add_argument("--version", action="version", version="fake_ui_detector.py v1.0.0")
 
     args = parser.parse_args()
 

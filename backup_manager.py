@@ -37,6 +37,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from safe_delete import safe_rmtree
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -116,14 +118,27 @@ def do_snapshot(base: Path, target: str, *, json_out: bool) -> int:
         if src.is_dir():
             dest_path.parent.mkdir(parents=True, exist_ok=True)
             # Exclude backup dir, build artifacts, and generated reports from snapshots
-            _SNAPSHOT_EXCLUDE = frozenset({
-                BACKUP_DIR_NAME, ".rsi_reports", ".rsi_backups",
-                ".self_improve_reports", ".rsi_fix_queue",
-                "build", "dist", ".git", "__pycache__", ".venv", "venv",
-                ".pytest_cache", ".egg-info",
-            })
+            _SNAPSHOT_EXCLUDE = frozenset(
+                {
+                    BACKUP_DIR_NAME,
+                    ".rsi_reports",
+                    ".rsi_backups",
+                    ".self_improve_reports",
+                    ".rsi_fix_queue",
+                    "build",
+                    "dist",
+                    ".git",
+                    "__pycache__",
+                    ".venv",
+                    "venv",
+                    ".pytest_cache",
+                    ".egg-info",
+                }
+            )
+
             def _ignore(dirname: str, names: list[str]) -> set[str]:
                 return {n for n in names if n in _SNAPSHOT_EXCLUDE or n.endswith(".egg-info")}
+
             shutil.copytree(src, dest_path, dirs_exist_ok=True, ignore=_ignore)
         else:
             dest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -195,11 +210,13 @@ def do_list(base: Path, target: str | None, *, json_out: bool) -> int:
             contents = list(sd.rglob("*"))
             total_files = sum(1 for p in contents if p.is_file())
             total_dirs = sum(1 for p in contents if p.is_dir())
-            entries.append({
-                "snapshot_id": snap_id,
-                "total_files": total_files,
-                "total_dirs": total_dirs,
-            })
+            entries.append(
+                {
+                    "snapshot_id": snap_id,
+                    "total_files": total_files,
+                    "total_dirs": total_dirs,
+                }
+            )
 
         if json_out:
             print(json.dumps({"status": "ok", "snapshots": entries}))
@@ -235,11 +252,13 @@ def do_list(base: Path, target: str | None, *, json_out: bool) -> int:
                     total_dirs = sum(1 for p in contents if p.is_dir())
                 else:
                     total_files = 1
-                entries.append({
-                    "snapshot_id": sd.name,
-                    "total_files": total_files,
-                    "total_dirs": total_dirs,
-                })
+                entries.append(
+                    {
+                        "snapshot_id": sd.name,
+                        "total_files": total_files,
+                        "total_dirs": total_dirs,
+                    }
+                )
 
         if json_out:
             print(json.dumps({"status": "ok", "target": str(target_path), "snapshots": entries}))
@@ -315,20 +334,24 @@ def do_diff(base: Path, snapshot_id: str, file_path: str | None, *, json_out: bo
             current_file = base / rel
 
             if not current_file.exists():
-                diffs.append({
-                    "file": str(rel),
-                    "status": "deleted",
-                    "diff": None,
-                })
+                diffs.append(
+                    {
+                        "file": str(rel),
+                        "status": "deleted",
+                        "diff": None,
+                    }
+                )
                 continue
 
             file_diff = _compute_diff(current_file, sp)
             if file_diff:
-                diffs.append({
-                    "file": str(rel),
-                    "status": "modified",
-                    "diff": file_diff,
-                })
+                diffs.append(
+                    {
+                        "file": str(rel),
+                        "status": "modified",
+                        "diff": file_diff,
+                    }
+                )
 
         # Also check for new files that don't exist in snapshot
         # (we only report what's in the snapshot vs current)
@@ -352,11 +375,15 @@ def _diff_files(current: Path, snapshot: Path, *, json_out: bool) -> int:
     diff = _compute_diff(current, snapshot)
 
     if json_out:
-        print(json.dumps({
-            "status": "ok",
-            "file": str(current),
-            "diff": diff,
-        }))
+        print(
+            json.dumps(
+                {
+                    "status": "ok",
+                    "file": str(current),
+                    "diff": diff,
+                }
+            )
+        )
     else:
         if diff:
             print(f"diff for {current}:")
@@ -480,7 +507,9 @@ def do_restore(base: Path, snapshot_id: str, *, json_out: bool, force: bool = Fa
 # ---------------------------------------------------------------------------
 
 
-def do_restore_file(base: Path, snapshot_id: str, file_path: str, *, json_out: bool, force: bool = False) -> int:
+def do_restore_file(
+    base: Path, snapshot_id: str, file_path: str, *, json_out: bool, force: bool = False
+) -> int:
     """Restore a single file from a snapshot."""
     if not force:
         msg = "error: restore-file requires --force (destructive operation)"
@@ -594,7 +623,7 @@ def do_prune(base: Path, keep: int, *, json_out: bool, force: bool = False) -> i
 
     for sd in to_prune:
         try:
-            shutil.rmtree(sd)
+            safe_rmtree(sd, workspace=base, force=True)
             pruned_ids.append(sd.name)
         except Exception as exc:
             msg = f"error: failed to prune {sd.name}: {exc}"
@@ -624,8 +653,7 @@ def do_prune(base: Path, keep: int, *, json_out: bool, force: bool = False) -> i
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build parser.
-        """
+    """Build parser."""
     parser = argparse.ArgumentParser(
         description="Create, list, diff, restore, and prune timestamped snapshots.",
     )
@@ -654,15 +682,17 @@ def build_parser() -> argparse.ArgumentParser:
     # restore
     res = sub.add_parser("restore", help="Restore entire snapshot.")
     res.add_argument("snapshot_id", help="Snapshot ID (YYYY-MM-DD-HHMMSS).")
-    res.add_argument("--force", action="store_true",
-                     help="Skip confirmation prompt for destructive restore.")
+    res.add_argument(
+        "--force", action="store_true", help="Skip confirmation prompt for destructive restore."
+    )
 
     # restore-file
     rf = sub.add_parser("restore-file", help="Restore a single file from snapshot.")
     rf.add_argument("snapshot_id", help="Snapshot ID (YYYY-MM-DD-HHMMSS).")
     rf.add_argument("file", help="File to restore.")
-    rf.add_argument("--force", action="store_true",
-                     help="Skip confirmation prompt for destructive restore.")
+    rf.add_argument(
+        "--force", action="store_true", help="Skip confirmation prompt for destructive restore."
+    )
 
     # prune
     prn = sub.add_parser("prune", help="Remove old backups, keeping N most recent.")
@@ -672,15 +702,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_KEEP,
         help=f"Number of recent snapshots to keep (default: {DEFAULT_KEEP}).",
     )
-    prn.add_argument("--force", action="store_true",
-                     help="Skip confirmation prompt for destructive prune.")
+    prn.add_argument(
+        "--force", action="store_true", help="Skip confirmation prompt for destructive prune."
+    )
 
     return parser
 
 
 def main() -> int:
-    """main.
-        """
+    """main."""
     parser = build_parser()
     args = parser.parse_args()
 
@@ -701,14 +731,21 @@ def main() -> int:
         case "diff":
             return do_diff(base, args.snapshot_id, args.file, json_out=args.json)
         case "restore":
-            return do_restore(base, args.snapshot_id, json_out=args.json,
-                              force=getattr(args, "force", False))
+            return do_restore(
+                base, args.snapshot_id, json_out=args.json, force=getattr(args, "force", False)
+            )
         case "restore-file":
-            return do_restore_file(base, args.snapshot_id, args.file, json_out=args.json,
-                                   force=getattr(args, "force", False))
+            return do_restore_file(
+                base,
+                args.snapshot_id,
+                args.file,
+                json_out=args.json,
+                force=getattr(args, "force", False),
+            )
         case "prune":
-            return do_prune(base, args.keep, json_out=args.json,
-                            force=getattr(args, "force", False))
+            return do_prune(
+                base, args.keep, json_out=args.json, force=getattr(args, "force", False)
+            )
         case _:
             parser.print_help()
             return EXIT_ERROR

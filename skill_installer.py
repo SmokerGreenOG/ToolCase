@@ -19,9 +19,12 @@ Gebruik:
     python skill_installer.py --help                          # Dit help scherm
     python skill_installer.py --json                          # JSON output
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
+from safe_delete import safe_rmtree
 
 import argparse
 import json
@@ -29,7 +32,6 @@ import os
 import re
 import shutil
 import stat
-import subprocess
 import sys
 import textwrap
 from collections import defaultdict
@@ -64,15 +66,28 @@ METADATA_FILENAMES = {"metadata.json", "skill.yaml", "skill.yml"}
 COMMAND_EXTENSIONS = {".py", ".sh", ".ps1", ".bat", ".js", ".ts", ".lua"}
 
 # Directories/files to skip during traversal
-EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", ".pytest_cache",
-    ".mypy_cache", ".ruff_cache", ".cursor",
-    ".backups",
-    ".rsi_backups",
-    ".rsi_reports",
-    ".self_improve_reports",
-})
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".cursor",
+        ".backups",
+        ".rsi_backups",
+        ".rsi_reports",
+        ".self_improve_reports",
+    }
+)
 
 # Generated report files to skip in security scans and other tools
 GENERATED_REPORT_GLOBS = (
@@ -85,18 +100,42 @@ GENERATED_REPORT_GLOBS = (
 )
 
 # ToolCase tools available for dependency checking
-TOOLCASE_TOOLS = frozenset({
-    "improve.py", "security_scan.py", "env_check.py", "project_doctor.py",
-    "route_scanner.py", "frontend_backend_linker.py", "dead_code_finder.py",
-    "todo_tracker.py", "test_runner.py", "patch_preview.py", "rollback.py",
-    "dependency_audit.py", "workspace_indexer.py", "agent_memory.py",
-    "ui_consistency.py", "feature_gap_analyzer.py", "multiscan.py",
-    "complexity.py", "depgraph.py", "command_guard.py", "file_guard.py",
-    "permission_audit.py", "api_contract_checker.py", "fake_ui_detector.py",
-    "button_action_scanner.py", "state_inspector.py", "build_doctor.py",
-    "log_viewer.py", "error_explainer.py", "release_packager.py",
-    "changelog_generator.py", "skill_installer.py",
-})
+TOOLCASE_TOOLS = frozenset(
+    {
+        "improve.py",
+        "security_scan.py",
+        "env_check.py",
+        "project_doctor.py",
+        "route_scanner.py",
+        "frontend_backend_linker.py",
+        "dead_code_finder.py",
+        "todo_tracker.py",
+        "test_runner.py",
+        "patch_preview.py",
+        "rollback.py",
+        "dependency_audit.py",
+        "workspace_indexer.py",
+        "agent_memory.py",
+        "ui_consistency.py",
+        "feature_gap_analyzer.py",
+        "multiscan.py",
+        "complexity.py",
+        "depgraph.py",
+        "command_guard.py",
+        "file_guard.py",
+        "permission_audit.py",
+        "api_contract_checker.py",
+        "fake_ui_detector.py",
+        "button_action_scanner.py",
+        "state_inspector.py",
+        "build_doctor.py",
+        "log_viewer.py",
+        "error_explainer.py",
+        "release_packager.py",
+        "changelog_generator.py",
+        "skill_installer.py",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
@@ -280,19 +319,23 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
     issues: list[dict] = []
 
     if not skill_path.exists():
-        issues.append({
-            "severity": "ERROR",
-            "type": "exists",
-            "message": f"Skill pad bestaat niet: {skill_path}",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "exists",
+                "message": f"Skill pad bestaat niet: {skill_path}",
+            }
+        )
         return issues
 
     if not skill_path.is_dir():
-        issues.append({
-            "severity": "ERROR",
-            "type": "exists",
-            "message": f"Skill pad is geen directory: {skill_path}",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "exists",
+                "message": f"Skill pad is geen directory: {skill_path}",
+            }
+        )
         return issues
 
     # ── Check 1: Metadata file ────────────────────────────────────
@@ -304,125 +347,156 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
             break
 
     if metadata_file is None:
-        issues.append({
-            "severity": "ERROR",
-            "type": "metadata",
-            "message": f"Geen metadata bestand gevonden. Verwacht: {', '.join(sorted(METADATA_FILENAMES))}",
-            "fix": f"Maak {skill_path / 'metadata.json'} aan met minimaal 'name', 'description' en 'version'",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "metadata",
+                "message": f"Geen metadata bestand gevonden. Verwacht: {', '.join(sorted(METADATA_FILENAMES))}",
+                "fix": f"Maak {skill_path / 'metadata.json'} aan met minimaal 'name', 'description' en 'version'",
+            }
+        )
     elif metadata is None:
-        issues.append({
-            "severity": "ERROR",
-            "type": "metadata",
-            "message": f"{metadata_file.name} is ongeldig (parse fout of leeg)",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "metadata",
+                "message": f"{metadata_file.name} is ongeldig (parse fout of leeg)",
+            }
+        )
     else:
         # Validate metadata content
         required_fields = {"name", "description", "version"}
         missing = required_fields - set(metadata.keys())
         if missing:
-            issues.append({
-                "severity": "ERROR",
-                "type": "metadata",
-                "message": f"Verplichte velden ontbreken in {metadata_file.name}: {', '.join(sorted(missing))}",
-            })
+            issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "metadata",
+                    "message": f"Verplichte velden ontbreken in {metadata_file.name}: {', '.join(sorted(missing))}",
+                }
+            )
 
         # Check recommended fields
         recommended = {"author", "commands", "permissions"}
         missing_rec = recommended - set(metadata.keys())
         if missing_rec:
-            issues.append({
-                "severity": "WARN",
-                "type": "metadata",
-                "message": f"Aanbevolen velden ontbreken in {metadata_file.name}: {', '.join(sorted(missing_rec))}",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "metadata",
+                    "message": f"Aanbevolen velden ontbreken in {metadata_file.name}: {', '.join(sorted(missing_rec))}",
+                }
+            )
 
         # Check version format (semver-ish)
         version = metadata.get("version", "")
         if version and not re.match(r"^\d+\.\d+\.\d+", str(version)):
-            issues.append({
-                "severity": "WARN",
-                "type": "metadata",
-                "message": f"Versie '{version}' lijkt geen semver formaat (x.y.z)",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "metadata",
+                    "message": f"Versie '{version}' lijkt geen semver formaat (x.y.z)",
+                }
+            )
 
     # ── Check 2: Required directories ─────────────────────────────
     for req_dir in REQUIRED_SKILL_DIRS:
         d = skill_path / req_dir
         if not d.exists():
-            issues.append({
-                "severity": "ERROR",
-                "type": "structure",
-                "message": f"Verplichte directory '{req_dir}/' ontbreekt",
-                "fix": f"mkdir -p {d}",
-            })
+            issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "structure",
+                    "message": f"Verplichte directory '{req_dir}/' ontbreekt",
+                    "fix": f"mkdir -p {d}",
+                }
+            )
         elif not d.is_dir():
-            issues.append({
-                "severity": "ERROR",
-                "type": "structure",
-                "message": f"'{req_dir}' bestaat maar is geen directory",
-            })
+            issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "structure",
+                    "message": f"'{req_dir}' bestaat maar is geen directory",
+                }
+            )
 
     # ── Check 3: Command files ────────────────────────────────────
     commands_dir = skill_path / "commands"
     if commands_dir.exists() and commands_dir.is_dir():
-        cmd_files = [f for f in commands_dir.iterdir()
-                     if f.is_file() and f.suffix.lower() in COMMAND_EXTENSIONS]
+        cmd_files = [
+            f
+            for f in commands_dir.iterdir()
+            if f.is_file() and f.suffix.lower() in COMMAND_EXTENSIONS
+        ]
         if not cmd_files:
-            issues.append({
-                "severity": "WARN",
-                "type": "commands",
-                "message": f"Geen command bestanden (*.py, *.sh, *.js, etc.) in commands/",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "commands",
+                    "message": f"Geen command bestanden (*.py, *.sh, *.js, etc.) in commands/",
+                }
+            )
         else:
             for cmd_file in cmd_files:
                 if cmd_file.stat().st_size == 0:
-                    issues.append({
-                        "severity": "WARN",
-                        "type": "commands",
-                        "message": f"Command bestand is leeg: commands/{cmd_file.name}",
-                    })
+                    issues.append(
+                        {
+                            "severity": "WARN",
+                            "type": "commands",
+                            "message": f"Command bestand is leeg: commands/{cmd_file.name}",
+                        }
+                    )
                 # Check shebang for script files
                 if cmd_file.suffix in {".sh", ".py", ".js", ".lua"}:
                     content = cmd_file.read_text(encoding="utf-8", errors="replace")
                     if not content.startswith("#!"):
-                        issues.append({
-                            "severity": "INFO",
-                            "type": "commands",
-                            "message": f"Command '{cmd_file.name}' mist shebang (#!) regel",
-                        })
+                        issues.append(
+                            {
+                                "severity": "INFO",
+                                "type": "commands",
+                                "message": f"Command '{cmd_file.name}' mist shebang (#!) regel",
+                            }
+                        )
     else:
         if not any(i["type"] == "structure" and "commands" in i["message"] for i in issues):
-            issues.append({
-                "severity": "ERROR",
-                "type": "commands",
-                "message": "commands/ directory ontbreekt of is ongeldig",
-            })
+            issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "commands",
+                    "message": "commands/ directory ontbreekt of is ongeldig",
+                }
+            )
 
     # ── Check 4: Prompt files ─────────────────────────────────────
     prompts_dir = skill_path / "prompts"
     if prompts_dir.exists() and prompts_dir.is_dir():
         prompt_files = [f for f in prompts_dir.iterdir() if f.is_file()]
         if not prompt_files:
-            issues.append({
-                "severity": "INFO",
-                "type": "prompts",
-                "message": f"Geen prompt bestanden in prompts/",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "type": "prompts",
+                    "message": f"Geen prompt bestanden in prompts/",
+                }
+            )
         else:
             for pf in prompt_files:
                 if pf.stat().st_size == 0:
-                    issues.append({
-                        "severity": "WARN",
-                        "type": "prompts",
-                        "message": f"Prompt bestand is leeg: prompts/{pf.name}",
-                    })
+                    issues.append(
+                        {
+                            "severity": "WARN",
+                            "type": "prompts",
+                            "message": f"Prompt bestand is leeg: prompts/{pf.name}",
+                        }
+                    )
     else:
-        issues.append({
-            "severity": "WARN",
-            "type": "prompts",
-            "message": "prompts/ directory ontbreekt (optioneel maar aanbevolen)",
-        })
+        issues.append(
+            {
+                "severity": "WARN",
+                "type": "prompts",
+                "message": "prompts/ directory ontbreekt (optioneel maar aanbevolen)",
+            }
+        )
 
     # ── Check 5: Permissions ──────────────────────────────────────
     if metadata:
@@ -432,12 +506,15 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
             needs_approval = permissions.get("needs_approval", None)
 
             if read_only is None and needs_approval is None:
-                issues.append({
-                    "severity": "INFO",
-                    "type": "permissions",
-                    "message": ("Geen permissions gespecificeerd in metadata (read_only,"
-                           "needs_approval)"),
-                })
+                issues.append(
+                    {
+                        "severity": "INFO",
+                        "type": "permissions",
+                        "message": (
+                            "Geen permissions gespecificeerd in metadata (read_only,needs_approval)"
+                        ),
+                    }
+                )
 
             # Check file permissions on command files
             if commands_dir.exists():
@@ -447,12 +524,14 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
                             fmode = cmd_file.stat().st_mode
                             is_exec = bool(fmode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
                             if not is_exec and cmd_file.suffix in {".sh", ".py", ".js"}:
-                                issues.append({
-                                    "severity": "WARN",
-                                    "type": "permissions",
-                                    "message": f"Command '{cmd_file.name}' heeft geen execute permissie",
-                                    "fix": f"chmod +x {cmd_file}",
-                                })
+                                issues.append(
+                                    {
+                                        "severity": "WARN",
+                                        "type": "permissions",
+                                        "message": f"Command '{cmd_file.name}' heeft geen execute permissie",
+                                        "fix": f"chmod +x {cmd_file}",
+                                    }
+                                )
                         except OSError:
                             pass
 
@@ -470,23 +549,29 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
                 if dep_in_toolcase:
                     continue
                 if dep in TOOLCASE_TOOLS:
-                    issues.append({
-                        "severity": "WARN",
-                        "type": "dependencies",
-                        "message": f"Tool dependency '{dep}' is een ToolCase tool maar niet gevonden in {toolcase_dir}",
-                    })
+                    issues.append(
+                        {
+                            "severity": "WARN",
+                            "type": "dependencies",
+                            "message": f"Tool dependency '{dep}' is een ToolCase tool maar niet gevonden in {toolcase_dir}",
+                        }
+                    )
                 elif not dep_in_path:
-                    issues.append({
-                        "severity": "ERROR",
-                        "type": "dependencies",
-                        "message": f"Tool dependency '{dep}' is niet geïnstalleerd (niet in PATH of ToolCase)",
-                    })
+                    issues.append(
+                        {
+                            "severity": "ERROR",
+                            "type": "dependencies",
+                            "message": f"Tool dependency '{dep}' is niet geïnstalleerd (niet in PATH of ToolCase)",
+                        }
+                    )
         elif isinstance(tool_deps, list) and not tool_deps:
-            issues.append({
-                "severity": "INFO",
-                "type": "dependencies",
-                "message": "Geen tool_dependencies gespecificeerd (optioneel)",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "type": "dependencies",
+                    "message": "Geen tool_dependencies gespecificeerd (optioneel)",
+                }
+            )
 
     # ── Check 7: Test command ─────────────────────────────────────
     if metadata:
@@ -500,17 +585,21 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
                 if not test_path.exists():
                     test_in_path = shutil.which(test_target)
                     if not test_in_path:
-                        issues.append({
-                            "severity": "WARN",
-                            "type": "tests",
-                            "message": f"Test command '{test_target}' niet gevonden ({test_target} bestaat niet in skill of PATH)",
-                        })
+                        issues.append(
+                            {
+                                "severity": "WARN",
+                                "type": "tests",
+                                "message": f"Test command '{test_target}' niet gevonden ({test_target} bestaat niet in skill of PATH)",
+                            }
+                        )
         else:
-            issues.append({
-                "severity": "INFO",
-                "type": "tests",
-                "message": "Geen test_command in metadata (optioneel maar aanbevolen)",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "type": "tests",
+                    "message": "Geen test_command in metadata (optioneel maar aanbevolen)",
+                }
+            )
 
     # ── Check 8: Registry registration ────────────────────────────
     if metadata:
@@ -521,18 +610,22 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
             if not skill_reg_path.exists() and not any(
                 skill_path.samefile(p) for p in registry.iterdir() if p.is_dir()
             ):
-                issues.append({
+                issues.append(
+                    {
+                        "severity": "INFO",
+                        "type": "registry",
+                        "message": f"Skill '{skill_name}' is niet geregistreerd in skill registry ({registry})",
+                        "fix": f"python skill_installer.py install {skill_path}",
+                    }
+                )
+        else:
+            issues.append(
+                {
                     "severity": "INFO",
                     "type": "registry",
-                    "message": f"Skill '{skill_name}' is niet geregistreerd in skill registry ({registry})",
-                    "fix": f"python skill_installer.py install {skill_path}",
-                })
-        else:
-            issues.append({
-                "severity": "INFO",
-                "type": "registry",
-                "message": "Geen skill registry gevonden. Skills worden alleen lokaal gevalideerd.",
-            })
+                    "message": "Geen skill registry gevonden. Skills worden alleen lokaal gevalideerd.",
+                }
+            )
 
     return issues
 
@@ -542,8 +635,9 @@ def validate_skill(skill_path: Path, fix: bool = False) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 
-def install_skill(source: str, force: bool = False,
-                  trust_executables: bool = False) -> dict[str, Any]:
+def install_skill(
+    source: str, force: bool = False, trust_executables: bool = False
+) -> dict[str, Any]:
     """
     Install a skill from a source path or name.
 
@@ -568,7 +662,9 @@ def install_skill(source: str, force: bool = False,
         # Check if it's an installed skill name
         installed = _find_installed_skills()
         if source in installed:
-            result["messages"].append(f"Skill '{source}' is al geïnstalleerd op {installed[source]}")
+            result["messages"].append(
+                f"Skill '{source}' is al geïnstalleerd op {installed[source]}"
+            )
             result["success"] = True
             result["path"] = str(installed[source])
             return result
@@ -584,10 +680,14 @@ def install_skill(source: str, force: bool = False,
                         result["messages"].append(
                             f"'{source}' is een ToolCase tool, geen skill package. Gebruik: python improve.py --{source.replace('_', '-')}"
                         )
-                        result["warnings"].append("ToolCase tools worden niet via de skill installer beheerd")
+                        result["warnings"].append(
+                            "ToolCase tools worden niet via de skill installer beheerd"
+                        )
                         return result
 
-        result["messages"].append(f"❌ Skill niet gevonden: '{source}' bestaat niet als pad of geïnstalleerde skill")
+        result["messages"].append(
+            f"❌ Skill niet gevonden: '{source}' bestaat niet als pad of geïnstalleerde skill"
+        )
         return result
 
     if not src_path.is_dir():
@@ -638,10 +738,12 @@ def install_skill(source: str, force: bool = False,
 
     if target_dir.exists():
         if force:
-            shutil.rmtree(target_dir)
+            safe_rmtree(target_dir, workspace=target_dir.parent, force=True)
             result["messages"].append(f"🔄 Bestaande skill '{skill_name}' overschreven")
         else:
-            result["messages"].append(f"⚠ Skill '{skill_name}' bestaat al in registry. Gebruik --force om te overschrijven.")
+            result["messages"].append(
+                f"⚠ Skill '{skill_name}' bestaat al in registry. Gebruik --force om te overschrijven."
+            )
             result["path"] = str(target_dir)
             result["success"] = True
             return result
@@ -662,18 +764,22 @@ def install_skill(source: str, force: bool = False,
 
     if symlinks_found:
         symlink_list = "\n    ".join(symlinks_found[:10])
-        msg = (f"⚠ Security: {len(symlinks_found)} symlink(s) gevonden in "
-               f"skill package. Symlinks kunnen buiten de target directory wijzen "
-               f"en zijn een supply-chain risico.\n  Symlinks:\n    {symlink_list}")
+        msg = (
+            f"⚠ Security: {len(symlinks_found)} symlink(s) gevonden in "
+            f"skill package. Symlinks kunnen buiten de target directory wijzen "
+            f"en zijn een supply-chain risico.\n  Symlinks:\n    {symlink_list}"
+        )
         if force:
             result["warnings"].append(msg)
             result["warnings"].append(
                 "Symlinks worden toch gekopieerd vanwege --force. "
-                "Controleer handmatig of alle symlink-targets binnen de skill registry blijven.")
+                "Controleer handmatig of alle symlink-targets binnen de skill registry blijven."
+            )
         else:
             result["messages"].append(
                 f"❌ {msg}\n  Gebruik --force om symlinks toch toe te staan "
-                f"(niet aanbevolen voor untrusted packages).")
+                f"(niet aanbevolen voor untrusted packages)."
+            )
             result["success"] = False
             return result
 
@@ -726,7 +832,9 @@ def install_skill(source: str, force: bool = False,
     result["path"] = str(target_dir.resolve())
     result["messages"].append(f"✅ Skill '{skill_name}' geïnstalleerd naar {target_dir}")
     if errors:
-        result["warnings"].append(f"Geïnstalleerd met {len(errors)} validatiefout(en) — gebruik --force om te negeren")
+        result["warnings"].append(
+            f"Geïnstalleerd met {len(errors)} validatiefout(en) — gebruik --force om te negeren"
+        )
     else:
         result["messages"].append("✅ Validatie: geslaagd")
 
@@ -744,15 +852,18 @@ def install_skill(source: str, force: bool = False,
                 else:
                     result["warnings"].append(
                         f"Command '{cmd_file.name}' is NIET uitvoerbaar gemaakt. "
-                        f"Gebruik --trust-executables om dit toe te staan.")
+                        f"Gebruik --trust-executables om dit toe te staan."
+                    )
 
     if not trust_executables and commands_dir.exists():
-        cmd_count = len([f for f in commands_dir.iterdir()
-                        if f.is_file() and f.suffix in {".sh", ".py", ".js"}])
+        cmd_count = len(
+            [f for f in commands_dir.iterdir() if f.is_file() and f.suffix in {".sh", ".py", ".js"}]
+        )
         if cmd_count > 0:
             result["messages"].append(
                 f"ℹ {cmd_count} command bestand(en) niet uitvoerbaar. "
-                f"Gebruik --trust-executables om uitvoerbaar te maken.")
+                f"Gebruik --trust-executables om uitvoerbaar te maken."
+            )
 
     return result
 
@@ -766,8 +877,7 @@ def _verify_containment(target_dir: Path, result: dict[str, Any]) -> None:
             try:
                 resolved = full.resolve()
                 if not str(resolved).startswith(str(target_dir.resolve())):
-                    issues.append(
-                        f"⚠ Path containment violation: {full} → {resolved}")
+                    issues.append(f"⚠ Path containment violation: {full} → {resolved}")
             except OSError:
                 issues.append(f"⚠ Cannot resolve path: {full}")
 
@@ -778,7 +888,8 @@ def _verify_containment(target_dir: Path, result: dict[str, Any]) -> None:
             result["warnings"].append(f"... en nog {len(issues) - 5} containment issues")
         result["warnings"].append(
             "Path containment check gefaald. Deze skill kan toegang hebben "
-            "tot bestanden buiten zijn eigen directory.")
+            "tot bestanden buiten zijn eigen directory."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -839,7 +950,7 @@ def test_skill(name: str) -> dict[str, Any]:
             return result
 
     try:
-        proc = subprocess.run(
+        proc = safe_run(
             test_parts,
             cwd=str(skill_path),
             capture_output=True,
@@ -859,7 +970,7 @@ def test_skill(name: str) -> dict[str, Any]:
 
     except FileNotFoundError:
         result["errors"].append(f"❌ Kan test command niet uitvoeren: {test_cmd_str}")
-    except subprocess.TimeoutExpired:
+    except TimeoutError:
         result["errors"].append("❌ Test timeout (120s)")
     except OSError as e:
         result["errors"].append(f"❌ Test fout: {e}")
@@ -888,13 +999,23 @@ def list_skills(json_output: bool = False) -> dict[str, Any]:
         skills_data[name] = {
             "name": name,
             "path": str(path.resolve()),
-            "version": str(metadata.get("version", reg_info.get("version", "?"))) if metadata else "?",
-            "description": str(metadata.get("description", reg_info.get("description", ""))) if metadata else "",
-            "commands_count": len(list((path / "commands").iterdir())) if (path / "commands").exists() else 0,
-            "prompts_count": len(list((path / "prompts").iterdir())) if (path / "prompts").exists() else 0,
+            "version": str(metadata.get("version", reg_info.get("version", "?")))
+            if metadata
+            else "?",
+            "description": str(metadata.get("description", reg_info.get("description", "")))
+            if metadata
+            else "",
+            "commands_count": len(list((path / "commands").iterdir()))
+            if (path / "commands").exists()
+            else 0,
+            "prompts_count": len(list((path / "prompts").iterdir()))
+            if (path / "prompts").exists()
+            else 0,
             "installed_at": reg_info.get("installed_at", ""),
             "has_metadata": metadata is not None,
-            "has_tests": bool(metadata.get("test_command") or metadata.get("test")) if metadata else False,
+            "has_tests": bool(metadata.get("test_command") or metadata.get("test"))
+            if metadata
+            else False,
         }
 
     result = {
@@ -992,7 +1113,9 @@ def print_list(result: dict[str, Any]) -> None:
         print(f"   {meta_icon} {test_icon}  {name:<25s} v{info['version']:<10s}")
         print(f"       📁 {info['path']}")
         if info["description"]:
-            wrapped = textwrap.fill(info["description"], width=70, initial_indent="       ", subsequent_indent="       ")
+            wrapped = textwrap.fill(
+                info["description"], width=70, initial_indent="       ", subsequent_indent="       "
+            )
             print(wrapped)
         print(f"       📄 {info['commands_count']} commands, {info['prompts_count']} prompts")
         if info["installed_at"]:
@@ -1076,14 +1199,25 @@ def main() -> None:
     # ── validate ──────────────────────────────────────────────────
     val_parser = subparsers.add_parser("validate", help="Valideer skill structuur")
     val_parser.add_argument("skill_path", help="Pad naar de skill directory")
-    val_parser.add_argument("--fix", "-f", action="store_true", help="Probeer auto-fixes (indien van toepassing)")
+    val_parser.add_argument(
+        "--fix", "-f", action="store_true", help="Probeer auto-fixes (indien van toepassing)"
+    )
     val_parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
 
     # ── install ───────────────────────────────────────────────────
     inst_parser = subparsers.add_parser("install", help="Installeer een skill")
     inst_parser.add_argument("source", help="Skill naam of pad naar skill directory")
-    inst_parser.add_argument("--force", "-f", action="store_true", help="Forceer installatie (overschrijf bestaand, negeer fouten, sta symlinks toe)")
-    inst_parser.add_argument("--trust-executables", action="store_true", help="Maak command bestanden uitvoerbaar (alleen voor vertrouwde skill packages)")
+    inst_parser.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help="Forceer installatie (overschrijf bestaand, negeer fouten, sta symlinks toe)",
+    )
+    inst_parser.add_argument(
+        "--trust-executables",
+        action="store_true",
+        help="Maak command bestanden uitvoerbaar (alleen voor vertrouwde skill packages)",
+    )
     inst_parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
 
     # ── test ──────────────────────────────────────────────────────
@@ -1096,7 +1230,9 @@ def main() -> None:
     list_parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
 
     # ── Global ────────────────────────────────────────────────────
-    parser.add_argument("--json", "-j", action="store_true", help="Output als JSON (global, voor subcommands)")
+    parser.add_argument(
+        "--json", "-j", action="store_true", help="Output als JSON (global, voor subcommands)"
+    )
 
     args = parser.parse_args()
 
@@ -1121,14 +1257,16 @@ def main() -> None:
         issues = validate_skill(skill_path, fix=args.fix)
 
         if use_json:
-            _print_json({
-                "skill_path": str(skill_path),
-                "total": len(issues),
-                "errors": len([i for i in issues if i["severity"] == "ERROR"]),
-                "warnings": len([i for i in issues if i["severity"] == "WARN"]),
-                "infos": len([i for i in issues if i["severity"] == "INFO"]),
-                "issues": issues,
-            })
+            _print_json(
+                {
+                    "skill_path": str(skill_path),
+                    "total": len(issues),
+                    "errors": len([i for i in issues if i["severity"] == "ERROR"]),
+                    "warnings": len([i for i in issues if i["severity"] == "WARN"]),
+                    "infos": len([i for i in issues if i["severity"] == "INFO"]),
+                    "issues": issues,
+                }
+            )
         else:
             print_validation_report(issues)
 
@@ -1138,8 +1276,7 @@ def main() -> None:
     # ── Handle install ────────────────────────────────────────────
     elif args.command == "install":
         trust_exec = getattr(args, "trust_executables", False)
-        result = install_skill(args.source, force=args.force,
-                               trust_executables=trust_exec)
+        result = install_skill(args.source, force=args.force, trust_executables=trust_exec)
 
         if use_json:
             _print_json(result)

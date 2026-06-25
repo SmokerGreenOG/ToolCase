@@ -17,6 +17,7 @@ Gebruik:
     python workspace_indexer.py <path> --duplicates    # Find duplicate filenames
     python workspace_indexer.py <path> --search *.py   # Search by glob
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -34,23 +35,42 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", ".husky/_",
-    ".git2", ".svn", ".hg",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        ".husky/_",
+        ".git2",
+        ".svn",
+        ".hg",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
-EXCLUDE_EXTENSIONS = frozenset({
-    ".pyc", ".pyo", ".so", ".dll", ".dylib", ".exe",
-    ".lock", ".sum",
-})
+EXCLUDE_EXTENSIONS = frozenset(
+    {
+        ".pyc",
+        ".pyo",
+        ".so",
+        ".dll",
+        ".dylib",
+        ".exe",
+        ".lock",
+        ".sum",
+    }
+)
 
 ICON_MAP = {
     ".py": "🐍",
@@ -117,10 +137,12 @@ def index_workspace(root: Path) -> dict:
 
         index["total_dirs"] += 1
         rel_dir = path.relative_to(root)
-        index["dirs"].append({
-            "path": str(rel_dir),
-            "files": len(filenames),
-        })
+        index["dirs"].append(
+            {
+                "path": str(rel_dir),
+                "files": len(filenames),
+            }
+        )
 
         for fn in filenames:
             ext = Path(fn).suffix.lower()
@@ -168,8 +190,7 @@ def index_workspace(root: Path) -> dict:
     for f in index["files"]:
         name_map[f["name"]].append(f["path"])
     index["duplicates"] = [
-        {"name": name, "paths": paths}
-        for name, paths in name_map.items() if len(paths) > 1
+        {"name": name, "paths": paths} for name, paths in name_map.items() if len(paths) > 1
     ]
 
     return index
@@ -191,9 +212,9 @@ def find_by_glob(index: dict, pattern: str) -> list[dict]:
 def print_tree(index: dict, max_depth: int = 3) -> None:
     """Print an ASCII directory tree."""
     root = index["root"]
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 📁 WORKSPACE TREE — {root}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Build tree structure
     tree = defaultdict(lambda: {"files": [], "dirs": set()})
@@ -247,14 +268,15 @@ def _format_size(size: int) -> str:
         return f"{size / (1024 * 1024):.1f} MB"
 
 
-def print_report(index: dict, show_tree: bool = False,
-                 duplicates: bool = False, search_pattern: str = None) -> None:
+def print_report(
+    index: dict, show_tree: bool = False, duplicates: bool = False, search_pattern: str = None
+) -> None:
     """Print a formatted workspace index report."""
     total_size_str = _format_size(index["total_size"])
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 📊 WORKSPACE INDEX — {index['root']}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   📁 Directories: {index['total_dirs']}")
     print(f"   📄 Files:       {index['total_files']}")
     print(f"   💾 Total size:  {total_size_str}")
@@ -308,8 +330,7 @@ def print_report(index: dict, show_tree: bool = False,
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="workspace_indexer.py — Index and analyze project workspace",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -325,8 +346,7 @@ Examples:
     parser.add_argument("path", nargs="?", default=".", help="Project root")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
     parser.add_argument("--tree", "-t", action="store_true", help="ASCII directory tree")
-    parser.add_argument("--duplicates", "-d", action="store_true",
-                        help="Find duplicate filenames")
+    parser.add_argument("--duplicates", "-d", action="store_true", help="Find duplicate filenames")
     parser.add_argument("--search", "-s", help="Search by glob pattern")
     parser.add_argument("--version", action="version", version="workspace_indexer.py v1.0.0")
 

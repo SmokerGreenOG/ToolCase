@@ -8,6 +8,7 @@ Checkt:
   - Category ↔ tool mappings kloppen
   - Verplichte velden per tool
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -50,9 +51,7 @@ def validate() -> dict:
     ok.append(f"manifest.json: {len(mf_tools)} tools")
 
     if len(cfg_tools) != len(mf_tools):
-        errors.append(
-            f"Tool count mismatch: cfg={len(cfg_tools)}, manifest={len(mf_tools)}"
-        )
+        errors.append(f"Tool count mismatch: cfg={len(cfg_tools)}, manifest={len(mf_tools)}")
     else:
         ok.append("Tool counts: MATCH ✅")
 
@@ -85,9 +84,7 @@ def validate() -> dict:
     config_tools_set = cfg_set | mf_set
     unregistered = all_py - config_tools_set
     if unregistered:
-        warnings.append(
-            f"Tools on disk NOT in config: {', '.join(sorted(unregistered))}"
-        )
+        warnings.append(f"Tools on disk NOT in config: {', '.join(sorted(unregistered))}")
     else:
         ok.append("All .py tools registered in config ✅")
 
@@ -107,21 +104,22 @@ def validate() -> dict:
     for tool in cfg.get("tools", []):
         missing = [f for f in required if f not in tool]
         if missing:
-            warnings.append(
-                f"{tool.get('name', '?')}: missing fields {missing}"
-            )
+            warnings.append(f"{tool.get('name', '?')}: missing fields {missing}")
 
     return {"errors": errors, "warnings": warnings, "ok": ok}
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="Config Validator — Controleer ToolCase config files"
     )
-    parser.add_argument("target", nargs="?", default=None,
-                        help="Optional target path (default: ToolCase project root)")
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="Optional target path (default: ToolCase project root)",
+    )
     parser.add_argument("--json", "-j", action="store_true", help="JSON output")
     args = parser.parse_args()
 

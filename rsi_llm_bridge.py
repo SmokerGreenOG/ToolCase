@@ -61,43 +61,47 @@ MAX_QUEUE_SIZE = 50
 REQUEST_VERSION = "2.0"
 
 # Issue types die de LLM kan fixen
-LLM_FIXABLE = frozenset({
-    "docs",         # Docstrings schrijven
-    "types",        # Type hints toevoegen
-    "refactor",     # Code refactoring
-    "security",     # Security fixes
-    "dead_code",    # Dead code removal
-    "tests",        # Test generatie
-    "complexity",   # Complexiteit verlagen
-    "naming",       # Naming conventions fixen
-    "imports",      # Import optimalisatie
-    "error_handling",  # Error handling toevoegen
-    "performance",  # Performance verbeteringen
-    "bugfix",       # Bug fixes
-})
+LLM_FIXABLE = frozenset(
+    {
+        "docs",  # Docstrings schrijven
+        "types",  # Type hints toevoegen
+        "refactor",  # Code refactoring
+        "security",  # Security fixes
+        "dead_code",  # Dead code removal
+        "tests",  # Test generatie
+        "complexity",  # Complexiteit verlagen
+        "naming",  # Naming conventions fixen
+        "imports",  # Import optimalisatie
+        "error_handling",  # Error handling toevoegen
+        "performance",  # Performance verbeteringen
+        "bugfix",  # Bug fixes
+    }
+)
 
 # Issue types die de RSI zelf kan fixen (geen LLM nodig)
-AUTO_FIXABLE = frozenset({
-    "e501",         # Lange regels wrappen
-    "e302",         # Blank lines
-    "trailing_ws",  # Trailing whitespace
-    "newline_eof",  # Newline at EOF
-})
+AUTO_FIXABLE = frozenset(
+    {
+        "e501",  # Lange regels wrappen
+        "e302",  # Blank lines
+        "trailing_ws",  # Trailing whitespace
+        "newline_eof",  # Newline at EOF
+    }
+)
 
 
 # ── Data Classes ──────────────────────────────────────────────
 
+
 @dataclass
-
-
 class FixRequest:
     """Een fix-request voor Hermes om te verwerken."""
+
     id: str = ""
     timestamp: str = ""
     file_path: str = ""
-    issue_type: str = ""          # docs, types, refactor, security, etc.
-    description: str = ""         # Wat moet er gefixt worden
-    priority: float = 0.0         # Prioriteit (hogere = belangrijker)
+    issue_type: str = ""  # docs, types, refactor, security, etc.
+    description: str = ""  # Wat moet er gefixt worden
+    priority: float = 0.0  # Prioriteit (hogere = belangrijker)
     context: dict = field(default_factory=dict)
     # context kan bevatten:
     #   - function_name: str
@@ -107,73 +111,93 @@ class FixRequest:
     #   - expected_behavior: str
     #   - current_metrics: dict
     #   - dependencies: list[str]
-    status: str = "pending"      # pending | done | failed
+    status: str = "pending"  # pending | done | failed
 
     def to_dict(self) -> dict:
-        """to dict.
-            """
+        """to dict."""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> "FixRequest":
         """from dict.
 
-            Args:
-                data: Description.
+        Args:
+            data: Description.
 
-            Returns:
-                Description.
-            """
-        return cls(**{k: data.get(k) for k in [
-            "id", "timestamp", "file_path", "issue_type",
-            "description", "priority", "context", "status"
-        ]})
+        Returns:
+            Description.
+        """
+        return cls(
+            **{
+                k: data.get(k)
+                for k in [
+                    "id",
+                    "timestamp",
+                    "file_path",
+                    "issue_type",
+                    "description",
+                    "priority",
+                    "context",
+                    "status",
+                ]
+            }
+        )
 
 
 @dataclass
-
-
 class FixResult:
     """Resultaat van een door Hermes uitgevoerde fix."""
+
     request_id: str = ""
     timestamp: str = ""
     success: bool = False
     file_path: str = ""
-    changes_made: str = ""         # Beschrijving van wat er veranderd is
-    diff_summary: str = ""         # Samenvatting van de diff
+    changes_made: str = ""  # Beschrijving van wat er veranderd is
+    diff_summary: str = ""  # Samenvatting van de diff
     metrics_before: dict = field(default_factory=dict)
     metrics_after: dict = field(default_factory=dict)
-    error: str = ""               # Eventuele foutmelding
-    tokens_used: int = 0           # Schatting van token gebruik
+    error: str = ""  # Eventuele foutmelding
+    tokens_used: int = 0  # Schatting van token gebruik
     duration_ms: int = 0
 
     def to_dict(self) -> dict:
-        """to dict.
-            """
+        """to dict."""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict) -> "FixResult":
         """from dict.
 
-            Args:
-                data: Description.
+        Args:
+            data: Description.
 
-            Returns:
-                Description.
-            """
-        return cls(**{k: data.get(k) for k in [
-            "request_id", "timestamp", "success", "file_path",
-            "changes_made", "diff_summary", "metrics_before",
-            "metrics_after", "error", "tokens_used", "duration_ms"
-        ]})
+        Returns:
+            Description.
+        """
+        return cls(
+            **{
+                k: data.get(k)
+                for k in [
+                    "request_id",
+                    "timestamp",
+                    "success",
+                    "file_path",
+                    "changes_made",
+                    "diff_summary",
+                    "metrics_before",
+                    "metrics_after",
+                    "error",
+                    "tokens_used",
+                    "duration_ms",
+                ]
+            }
+        )
 
 
 @dataclass
-
-
 class QueueState:
     """Meta-informatie over de fix queue."""
+
     total_requests: int = 0
     total_done: int = 0
     total_failed: int = 0
@@ -185,8 +209,7 @@ class QueueState:
     version: str = REQUEST_VERSION
 
     def to_dict(self) -> dict:
-        """to dict.
-            """
+        """to dict."""
         return asdict(self)
 
 
@@ -231,9 +254,14 @@ class LLMBridge:
             raise ValueError(f"Path traversal blocked: {request_id}")
         return target
 
-    def submit_fix(self, file_path: str, issue_type: str,
-                   description: str, context: dict = None,
-                   priority: float = 1.0) -> Optional[str]:
+    def submit_fix(
+        self,
+        file_path: str,
+        issue_type: str,
+        description: str,
+        context: dict = None,
+        priority: float = 1.0,
+    ) -> Optional[str]:
         """Submit een fix-request naar de queue.
 
         Returns het request ID, of None als de queue vol is.
@@ -371,9 +399,7 @@ class LLMBridge:
             total_failed=len(failed),
             total_success=sum(1 for d in done if d.success),
             total_tokens=sum(d.tokens_used for d in done),
-            avg_duration_ms=(
-                sum(d.duration_ms for d in done) / max(1, len(done))
-            ),
+            avg_duration_ms=(sum(d.duration_ms for d in done) / max(1, len(done))),
             last_activity=datetime.now().isoformat(),
             issues_fixed_by_type=issues_by_type,
         )
@@ -432,9 +458,9 @@ class LLMBridge:
                 ids.append(rid)
         return ids
 
-    def wait_for_results(self, request_ids: list[str],
-                         timeout_s: float = 300,
-                         poll_interval_s: float = 2.0) -> dict[str, FixResult]:
+    def wait_for_results(
+        self, request_ids: list[str], timeout_s: float = 300, poll_interval_s: float = 2.0
+    ) -> dict[str, FixResult]:
         """Wacht tot alle requests verwerkt zijn (polling).
 
         In productie zou dit via een event systeem gaan, maar
@@ -474,13 +500,22 @@ def cmd_list_pending(bridge: LLMBridge, args) -> None:
         print("✅ Geen pending fix-requests.")
         return
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  ⏳ PENDING FIX-REQUESTS ({len(pending)})")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     type_icons = {
-        "docs": "📝", "types": "🏷️", "refactor": "🔧", "security": "🔒",
-        "dead_code": "🗑️", "tests": "🧪", "complexity": "📊", "naming": "✏️",
-        "imports": "📦", "error_handling": "🛡️", "performance": "⚡", "bugfix": "🐛",
+        "docs": "📝",
+        "types": "🏷️",
+        "refactor": "🔧",
+        "security": "🔒",
+        "dead_code": "🗑️",
+        "tests": "🧪",
+        "complexity": "📊",
+        "naming": "✏️",
+        "imports": "📦",
+        "error_handling": "🛡️",
+        "performance": "⚡",
+        "bugfix": "🐛",
     }
     for req in pending:
         icon = type_icons.get(req.issue_type, "❓")
@@ -504,9 +539,9 @@ def cmd_show(bridge: LLMBridge, args) -> None:
         return
 
     data = json.loads(req_file.read_text(encoding="utf-8"))
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  Fix-Request: {data.get('id', '?')}")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(f"  Status:     {data.get('status', '?')}")
     print(f"  Type:       {data.get('issue_type', '?')}")
     print(f"  Bestand:    {data.get('file_path', '?')}")
@@ -514,16 +549,16 @@ def cmd_show(bridge: LLMBridge, args) -> None:
     print(f"  Prioriteit: {data.get('priority', 1.0)}")
     print(f"\n  Beschrijving:")
     print(f"  {data.get('description', '?')}")
-    if data.get('context'):
+    if data.get("context"):
         print(f"\n  Context:")
-        ctx = data['context']
+        ctx = data["context"]
         for k, v in ctx.items():
             if isinstance(v, str) and len(v) > 100:
                 v = v[:100] + "..."
             print(f"    {k}: {v}")
-    if data.get('error'):
+    if data.get("error"):
         print(f"\n  ❌ Error: {data['error']}")
-    if data.get('changes_made'):
+    if data.get("changes_made"):
         print(f"\n  ✅ Changes: {data['changes_made']}")
     print()
 
@@ -537,9 +572,9 @@ def cmd_list_done(bridge: LLMBridge, args) -> None:
         return
 
     all_results = [(r, "✅") for r in done] + [(r, "❌") for r in failed]
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print(f"  AFGEWERKTE FIXES ({len(done)} ok, {len(failed)} gefaald)")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     for result, icon in all_results:
         print(f"  {icon} [{result.request_id}] {result.file_path}")
         if result.success:
@@ -553,9 +588,9 @@ def cmd_stats(bridge: LLMBridge, args) -> None:
     """CLI: Toon queue statistieken."""
     stats = bridge.get_stats()
     pending = bridge.count_pending()
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"  RSI FIX QUEUE STATS")
-    print(f"{'='*50}")
+    print(f"{'=' * 50}")
     print(f"  Pending:  {pending}")
     print(f"  Done:     {stats.total_done} ({stats.total_success} success)")
     print(f"  Failed:   {stats.total_failed}")
@@ -586,14 +621,12 @@ def cmd_clear(bridge: LLMBridge, args) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="RSI LLM Bridge — Brug tussen RSI en Hermes voor code fixes",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--workspace", "-w", default=".",
-                        help="ToolCase workspace directory")
+    parser.add_argument("--workspace", "-w", default=".", help="ToolCase workspace directory")
 
     sub = parser.add_subparsers(dest="command", help="Commando's")
 
@@ -611,8 +644,7 @@ def main() -> None:
     mark_p.add_argument("--message", help="Beschrijving van de fix")
     mark_p.add_argument("--failed", action="store_true", help="Markeer als gefaald")
 
-    parser.add_argument("--version", action="version",
-                        version=f"rsi_llm_bridge.py v{__version__}")
+    parser.add_argument("--version", action="version", version=f"rsi_llm_bridge.py v{__version__}")
 
     args = parser.parse_args()
     workspace = Path(args.workspace).resolve()

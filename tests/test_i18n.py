@@ -1,6 +1,8 @@
 """Tests for i18n.py — Translation module."""
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
@@ -15,8 +17,7 @@ class TestI18n(unittest.TestCase):
         for key, translations in TRANS.items():
             with self.subTest(key=key):
                 if isinstance(translations, dict):
-                    self.assertIn("en", translations,
-                                  f"Key '{key}' missing English translation")
+                    self.assertIn("en", translations, f"Key '{key}' missing English translation")
                 # skip non-standard entries (e.g. lists)
 
     def test_translation_exists_nl(self) -> None:
@@ -24,16 +25,14 @@ class TestI18n(unittest.TestCase):
         for key, translations in TRANS.items():
             with self.subTest(key=key):
                 if isinstance(translations, dict):
-                    self.assertIn("nl", translations,
-                                  f"Key '{key}' missing Dutch translation")
+                    self.assertIn("nl", translations, f"Key '{key}' missing Dutch translation")
 
     def test_translation_exists_de(self) -> None:
         """All defined keys should have German translations."""
         for key, translations in TRANS.items():
             with self.subTest(key=key):
                 if isinstance(translations, dict):
-                    self.assertIn("de", translations,
-                                  f"Key '{key}' missing German translation")
+                    self.assertIn("de", translations, f"Key '{key}' missing German translation")
 
     def test_t_function_returns_string(self) -> None:
         """t() should always return a string."""

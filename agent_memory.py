@@ -17,6 +17,7 @@ Gebruik:
     python agent_memory.py --session                    # Show session info
     python agent_memory.py --json                       # JSON output
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -53,9 +54,17 @@ def get_config_info() -> dict:
         try:
             content = HERMES_CONFIG.read_text(encoding="utf-8")
             # Extract provider names
-            skip_keys = {"default", "profiles", "memory", "skills",
-                         "plugins", "cron", "logging", "session"}
-            for m in re.finditer(r'^(\w+):', content, re.MULTILINE):
+            skip_keys = {
+                "default",
+                "profiles",
+                "memory",
+                "skills",
+                "plugins",
+                "cron",
+                "logging",
+                "session",
+            }
+            for m in re.finditer(r"^(\w+):", content, re.MULTILINE):
                 provider = m.group(1)
                 if provider not in skip_keys:
                     info["providers"].append(provider)
@@ -87,16 +96,20 @@ def get_skills_info() -> list[dict]:
                     try:
                         content = skill_md.read_text(encoding="utf-8")
                         # Extract name and description from frontmatter
-                        name_match = re.search(r'^name:\s*(.+)$', content, re.MULTILINE)
-                        desc_match = re.search(r'^description:\s*(.+)$', content, re.MULTILINE)
+                        name_match = re.search(r"^name:\s*(.+)$", content, re.MULTILINE)
+                        desc_match = re.search(r"^description:\s*(.+)$", content, re.MULTILINE)
                         skill_name = name_match.group(1).strip() if name_match else path.name
                         description = desc_match.group(1).strip() if desc_match else ""
-                        skills.append({
-                            "name": skill_name,
-                            "path": str(path),
-                            "description": description,
-                            "size": sum(f.stat().st_size for f in path.rglob("*") if f.is_file()),
-                        })
+                        skills.append(
+                            {
+                                "name": skill_name,
+                                "path": str(path),
+                                "description": description,
+                                "size": sum(
+                                    f.stat().st_size for f in path.rglob("*") if f.is_file()
+                                ),
+                            }
+                        )
                     except Exception:
                         skills.append({"name": path.name, "path": str(path)})
     except Exception:
@@ -151,7 +164,7 @@ def get_plugins_info() -> list[dict]:
                 if plugin_yaml.exists():
                     try:
                         content = plugin_yaml.read_text(encoding="utf-8")
-                        name_match = re.search(r'^name:\s*(.+)$', content, re.MULTILINE)
+                        name_match = re.search(r"^name:\s*(.+)$", content, re.MULTILINE)
                         plugin_name = name_match.group(1).strip() if name_match else path.name
                         plugins.append({"name": plugin_name, "path": str(path)})
                     except Exception:
@@ -182,12 +195,18 @@ def get_cron_info() -> list[dict]:
     return jobs
 
 
-def print_report(config: dict, skills: list[dict], memory: dict,
-                 session: dict, plugins: list[dict], cron: list[dict]) -> None:
+def print_report(
+    config: dict,
+    skills: list[dict],
+    memory: dict,
+    session: dict,
+    plugins: list[dict],
+    cron: list[dict],
+) -> None:
     """Print a formatted agent state report."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🧠 AGENT MEMORY TRACKER")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Hermes home: {HERMES_HOME}")
     print(f"   Timestamp:   {session.get('timestamp', '?')}")
     print()
@@ -241,8 +260,7 @@ def print_report(config: dict, skills: list[dict], memory: dict,
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="agent_memory.py — Track Hermes agent configuration and state",
         formatter_class=argparse.RawDescriptionHelpFormatter,

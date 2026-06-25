@@ -7,6 +7,7 @@ Checkt:
   - Onnodige I/O (open() in loops)
   - Langzame functiepatronen (os.walk)
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -50,12 +51,12 @@ PATTERNS = {
 def analyze_file(filepath: Path) -> list[dict]:
     """analyze file.
 
-        Args:
-            filepath: Description.
+    Args:
+        filepath: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     findings = []
     try:
         tree = ast.parse(filepath.read_text(encoding="utf-8", errors="replace"))
@@ -68,29 +69,38 @@ def analyze_file(filepath: Path) -> list[dict]:
             for child in ast.walk(node):
                 # import inside loop
                 if isinstance(child, ast.Import):
-                    findings.append(dict(
-                        PATTERNS["import_in_loop"],
-                        file=str(filepath),
-                        line=child.lineno,
-                        code="import ...",
-                    ))
+                    findings.append(
+                        dict(
+                            PATTERNS["import_in_loop"],
+                            file=str(filepath),
+                            line=child.lineno,
+                            code="import ...",
+                        )
+                    )
                 elif isinstance(child, ast.ImportFrom):
-                    findings.append(dict(
-                        PATTERNS["import_in_loop"],
-                        file=str(filepath),
-                        line=child.lineno,
-                        code=f"from {child.module or '?'} import ...",
-                    ))
+                    findings.append(
+                        dict(
+                            PATTERNS["import_in_loop"],
+                            file=str(filepath),
+                            line=child.lineno,
+                            code=f"from {child.module or '?'} import ...",
+                        )
+                    )
                 # open() inside loop
                 elif isinstance(child, ast.Call):
                     if isinstance(child.func, ast.Name) and child.func.id == "open":
-                        findings.append(dict(
-                            PATTERNS["open_in_loop"],
-                            file=str(filepath),
-                            line=child.lineno,
-                            code="open(...)",
-                        ))
-                    elif isinstance(child.func, ast.Name) and child.func.id in ("re_compile", "compile"):
+                        findings.append(
+                            dict(
+                                PATTERNS["open_in_loop"],
+                                file=str(filepath),
+                                line=child.lineno,
+                                code="open(...)",
+                            )
+                        )
+                    elif isinstance(child.func, ast.Name) and child.func.id in (
+                        "re_compile",
+                        "compile",
+                    ):
                         pass  # Not usually in loops
 
     return findings
@@ -99,12 +109,12 @@ def analyze_file(filepath: Path) -> list[dict]:
 def scan_workspace(workspace: Path) -> list[dict]:
     """Scan workspace.
 
-        Args:
-            workspace: Description.
+    Args:
+        workspace: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     all_findings = []
     for fp in sorted(workspace.glob("*.py")):
         if fp.name.startswith("_") or fp.name.startswith("test_"):
@@ -114,8 +124,7 @@ def scan_workspace(workspace: Path) -> list[dict]:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="Performance Profiler")
     parser.add_argument("path", nargs="?", default=".", help="Workspace")
     parser.add_argument("--json", "-j", action="store_true")
@@ -125,10 +134,20 @@ def main() -> None:
     findAllFindings = scan_workspace(target)
 
     if args.json:
-        print(json.dumps([{
-            "file": Path(f["file"]).name, "line": f["line"],
-            "desc": f["desc"], "severity": f["severity"]
-        } for f in findAllFindings], indent=2))
+        print(
+            json.dumps(
+                [
+                    {
+                        "file": Path(f["file"]).name,
+                        "line": f["line"],
+                        "desc": f["desc"],
+                        "severity": f["severity"],
+                    }
+                    for f in findAllFindings
+                ],
+                indent=2,
+            )
+        )
     else:
         print()
         print("=" * 60)

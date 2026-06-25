@@ -7,6 +7,7 @@ Output:
   - Circular dependency detectie
   - Per-module grouping
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -17,12 +18,22 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", "__pycache__", ".venv", "venv",
-    ".backups", ".rsi_reports", ".rsi_backups", "release",
-    "build", "dist",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".backups",
+        ".rsi_reports",
+        ".rsi_backups",
+        "release",
+        "build",
+        "dist",
         ".self_improve_reports",
-        })
+    }
+)
 
 
 def extract_imports(filepath: Path) -> list[str]:
@@ -66,8 +77,7 @@ def build_graph(workspace: Path) -> dict:
             if imp in all_files and imp != source:
                 graph[source].add(imp)
 
-    return {"graph": {k: sorted(v) for k, v in graph.items()},
-            "files": all_files}
+    return {"graph": {k: sorted(v) for k, v in graph.items()}, "files": all_files}
 
 
 def find_circular(graph: dict[str, set[str]]) -> list[list[str]]:
@@ -79,13 +89,13 @@ def find_circular(graph: dict[str, set[str]]) -> list[list[str]]:
     def dfs(node: str, path: list[str]) -> None:
         """dfs.
 
-            Args:
-                node: Description.
-                path: Description.
+        Args:
+            node: Description.
+            path: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         if node in stack:
             cycle_start = path.index(node)
             cycle = path[cycle_start:] + [node]
@@ -161,23 +171,19 @@ def print_report(data: dict) -> None:
 
     # Mermaid
     print()
-    print(f"   {'─'*56}")
+    print(f"   {'─' * 56}")
     print(f"   MERMAID DIAGRAM (plak in README.md):")
-    print(f"   {'─'*56}")
+    print(f"   {'─' * 56}")
     print()
     print(generate_mermaid(graph))
 
 
 def main() -> None:
-    """main.
-        """
-    parser = argparse.ArgumentParser(
-        description="Dependency Visualizer — Mermaid.js diagrams"
-    )
+    """main."""
+    parser = argparse.ArgumentParser(description="Dependency Visualizer — Mermaid.js diagrams")
     parser.add_argument("path", nargs="?", default=".", help="Workspace")
     parser.add_argument("--json", "-j", action="store_true")
-    parser.add_argument("--mermaid-only", "-m", action="store_true",
-                        help="Alleen Mermaid output")
+    parser.add_argument("--mermaid-only", "-m", action="store_true", help="Alleen Mermaid output")
     parser.add_argument("--version", action="version", version="1.0.0")
 
     args = parser.parse_args()
@@ -194,13 +200,18 @@ def main() -> None:
     if args.mermaid_only:
         print(generate_mermaid(graph))
     elif args.json:
-        print(json.dumps({
-            "nodes": len(graph),
-            "edges": sum(len(v) for v in graph.values()),
-            "circular": len(cycles),
-            "cycles": cycles,
-            "graph": graph,
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "nodes": len(graph),
+                    "edges": sum(len(v) for v in graph.values()),
+                    "circular": len(cycles),
+                    "cycles": cycles,
+                    "graph": graph,
+                },
+                indent=2,
+            )
+        )
     else:
         print_report(data)
 

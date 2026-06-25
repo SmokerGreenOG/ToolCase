@@ -12,6 +12,7 @@ Gebruik:
     python php_version_audit.py <path> --target 8.1
     python php_version_audit.py <path> --target 8.2 --json
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -22,7 +23,18 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", "tests/fixtures", ".venv", "venv", "dist", "build", ".cache"}
+EXCLUDE_DIRS = {
+    "node_modules",
+    "vendor",
+    ".git",
+    "__pycache__",
+    "tests/fixtures",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".cache",
+}
 
 # Deprecated/removed functions per version
 DEPRECATED = {
@@ -76,16 +88,14 @@ DEPRECATED = {
         "deprecated": [],
     },
     "7.2": {
-        "removed": [
-        ],
+        "removed": [],
         "deprecated": [
             ("create_function", "Use anonymous functions"),
             ("each", "Use foreach"),
         ],
     },
     "7.3": {
-        "removed": [
-        ],
+        "removed": [],
         "deprecated": [
             ("image2wbmp", "Use imagewbmp()"),
             ("FILTER_FLAG_SCHEME_REQUIRED", "Removed flag"),
@@ -93,8 +103,7 @@ DEPRECATED = {
         ],
     },
     "7.4": {
-        "removed": [
-        ],
+        "removed": [],
         "deprecated": [
             ("real", "Use float"),
             ("magic_quotes_runtime", "Already removed"),
@@ -142,20 +151,24 @@ DEPRECATED = {
         ],
     },
     "8.2": {
-        "removed": [
-        ],
+        "removed": [],
         "deprecated": [
             ("utf8_encode", "Use mb_convert_encoding() or UConverter"),
             ("utf8_decode", "Use mb_convert_encoding() or UConverter"),
-            ("Dynamic properties", "Declare properties explicitly or use #[AllowDynamicProperties]"),
+            (
+                "Dynamic properties",
+                "Declare properties explicitly or use #[AllowDynamicProperties]",
+            ),
             ("${} string interpolation", "Use {$var} instead"),
             ("Mbstring: Base64, Uuencode, QPrint", "Use base64_encode/decode"),
-            ("Partially supported callables", "Use $callable() closure or first-class callable syntax"),
+            (
+                "Partially supported callables",
+                "Use $callable() closure or first-class callable syntax",
+            ),
         ],
     },
     "8.3": {
-        "removed": [
-        ],
+        "removed": [],
         "deprecated": [
             ("assert_options", "Use ini_set() for assert.* INI settings"),
             ("get_class() without args", "Use __CLASS__ or get_class($this)"),
@@ -170,12 +183,12 @@ VERSION_ORDER = ["7.0", "7.1", "7.2", "7.3", "7.4", "8.0", "8.1", "8.2", "8.3"]
 def discover_php_files(root: Path) -> list[Path]:
     """discover php files.
 
-        Args:
-            root: Description.
+    Args:
+        root: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     files = []
     for f in root.rglob("*.php"):
         try:
@@ -191,13 +204,13 @@ def discover_php_files(root: Path) -> list[Path]:
 def audit_file(filepath: Path, target_version: str) -> dict:
     """audit file.
 
-        Args:
-            filepath: Description.
-            target_version: Description.
+    Args:
+        filepath: Description.
+        target_version: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except (OSError, UnicodeDecodeError):
@@ -214,31 +227,37 @@ def audit_file(filepath: Path, target_version: str) -> dict:
         # Check removed
         for func_name, replacement in info["removed"]:
             # Match function calls: func_name(
-            pattern = re.compile(r'\b' + re.escape(func_name) + r'\s*\(')
+            pattern = re.compile(r"\b" + re.escape(func_name) + r"\s*\(")
             for match in pattern.finditer(source):
-                line = source[:match.start()].count('\n') + 1
-                findings.append({
-                    "line": line, "severity": "ERROR",
-                    "function": func_name,
-                    "version": version,
-                    "type": "removed",
-                    "message": f"Removed in PHP {version}: {func_name}()",
-                    "fix": replacement,
-                })
+                line = source[: match.start()].count("\n") + 1
+                findings.append(
+                    {
+                        "line": line,
+                        "severity": "ERROR",
+                        "function": func_name,
+                        "version": version,
+                        "type": "removed",
+                        "message": f"Removed in PHP {version}: {func_name}()",
+                        "fix": replacement,
+                    }
+                )
 
         # Check deprecated
         for func_name, replacement in info["deprecated"]:
-            pattern = re.compile(r'\b' + re.escape(func_name) + r'\s*\(')
+            pattern = re.compile(r"\b" + re.escape(func_name) + r"\s*\(")
             for match in pattern.finditer(source):
-                line = source[:match.start()].count('\n') + 1
-                findings.append({
-                    "line": line, "severity": "WARNING",
-                    "function": func_name,
-                    "version": version,
-                    "type": "deprecated",
-                    "message": f"Deprecated in PHP {version}: {func_name}()",
-                    "fix": replacement,
-                })
+                line = source[: match.start()].count("\n") + 1
+                findings.append(
+                    {
+                        "line": line,
+                        "severity": "WARNING",
+                        "function": func_name,
+                        "version": version,
+                        "type": "deprecated",
+                        "message": f"Deprecated in PHP {version}: {func_name}()",
+                        "fix": replacement,
+                    }
+                )
 
     return {"file": str(filepath), "findings": findings}
 
@@ -246,13 +265,13 @@ def audit_file(filepath: Path, target_version: str) -> dict:
 def print_report(results: list[dict], target_version: str) -> None:
     """Print report.
 
-        Args:
-            results: Description.
-            target_version: Description.
+    Args:
+        results: Description.
+        target_version: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     all_findings = []
     for r in results:
         all_findings.extend(r["findings"])
@@ -292,13 +311,13 @@ def print_report(results: list[dict], target_version: str) -> None:
 def print_json(results: list[dict], target_version: str) -> None:
     """Print json.
 
-        Args:
-            results: Description.
-            target_version: Description.
+    Args:
+        results: Description.
+        target_version: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     all_findings = []
     for r in results:
         all_findings.extend(r["findings"])
@@ -316,8 +335,7 @@ def print_json(results: list[dict], target_version: str) -> None:
 
 
 def main():
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="php_version_audit.py - PHP version compatibility")
     parser.add_argument("path", help="PHP file or directory")
     parser.add_argument("--recursive", "-r", action="store_true")
@@ -328,14 +346,22 @@ def main():
     args = parser.parse_args()
     target_path = Path(args.path)
     if not target_path.exists():
-        print(f"Not found", file=sys.stderr); sys.exit(1)
+        print(f"Not found", file=sys.stderr)
+        sys.exit(1)
 
     print(f"\n📅 PHP Version Audit v1.0.0 — target: PHP {args.target}")
     print(f"{'=' * 70}")
 
-    files = [target_path] if target_path.is_file() else (discover_php_files(target_path) if args.recursive else sorted(target_path.glob("*.php")))
+    files = (
+        [target_path]
+        if target_path.is_file()
+        else (
+            discover_php_files(target_path) if args.recursive else sorted(target_path.glob("*.php"))
+        )
+    )
     if not files:
-        print("No PHP files"); sys.exit(0)
+        print("No PHP files")
+        sys.exit(0)
 
     print(f"   {len(files)} PHP file(s)")
     results = [audit_file(f, args.target) for f in files]

@@ -41,56 +41,67 @@ from typing import Any
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", "__pycache__", ".venv", "venv", "build",
-    "dist", ".next", "out", "coverage", ".vscode", ".idea", "release",
-    ".pytest_cache", ".cache", ".backups", "_test_contract", "_test_patches",
-    "demo", "logs", "tests",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        ".next",
+        "out",
+        "coverage",
+        ".vscode",
+        ".idea",
+        "release",
+        ".pytest_cache",
+        ".cache",
+        ".backups",
+        "_test_contract",
+        "_test_patches",
+        "demo",
+        "logs",
+        "tests",
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
-EXCLUDE_FILES = frozenset({
-    "__init__.py", "_test_changelog.py", "_test_extract.py",
-    "tools_config.json",
-})
+EXCLUDE_FILES = frozenset(
+    {
+        "__init__.py",
+        "_test_changelog.py",
+        "_test_extract.py",
+        "tools_config.json",
+    }
+)
 
 SUPPORT_MODULES = frozenset({"__init__", "_protect", "i18n"})
 
 # Patterns for extracting importable/executable names from source
-TOOL_IMPORT_PATTERN = re.compile(
-    r'from\s+(\S+)\s+import\s+(\S+)'
-)
+TOOL_IMPORT_PATTERN = re.compile(r"from\s+(\S+)\s+import\s+(\S+)")
 
-FUNCTION_DEF_PATTERN = re.compile(
-    r'^async?\s+def\s+(\w+)'
-)
+FUNCTION_DEF_PATTERN = re.compile(r"^async?\s+def\s+(\w+)")
 
-CLASS_DEF_PATTERN = re.compile(
-    r'^class\s+(\w+)'
-)
+CLASS_DEF_PATTERN = re.compile(r"^class\s+(\w+)")
 
 # Flag names mentioned in argparse definitions
-ARGPARSE_FLAG_PATTERN = re.compile(
-    r'--([a-z][a-z0-9_-]*)'
-)
+ARGPARSE_FLAG_PATTERN = re.compile(r"--([a-z][a-z0-9_-]*)")
 
 # Look for "add_argument" calls that define tool flags
-ADD_ARGUMENT_PATTERN = re.compile(
-    r'add_argument\s*\([\s\S]*?--([a-z][a-z0-9_-]*)'
-)
+ADD_ARGUMENT_PATTERN = re.compile(r"add_argument\s*\([\s\S]*?--([a-z][a-z0-9_-]*)")
 
 # Terminal endpoint pattern (Flask/FastAPI/Django route decorators)
 TERMINAL_ENDPOINT_PATTERN = re.compile(
-    r'@(?:app|router|blueprint)\.(?:route|get|post|put|delete|patch)\('
+    r"@(?:app|router|blueprint)\.(?:route|get|post|put|delete|patch)\("
 )
 
 # Command definition patterns
 COMMAND_DEF_PATTERN = re.compile(
-    r'(?:python\s+\S+\.py\s+|--[a-z][a-z0-9_-]+\s+)',
+    r"(?:python\s+\S+\.py\s+|--[a-z][a-z0-9_-]+\s+)",
     re.IGNORECASE,
 )
 
@@ -163,17 +174,19 @@ def extract_features_from_source(files: list[Path]) -> dict[str, Any]:
             has_terminal_endpoint = True
 
         # Check for file editing patterns (open with write, file I/O operations)
-        if re.search(r'\bopen\s*\([^)]*["\']w["\']', source) or \
-           re.search(r'\.write\s*\(', source) or \
-           re.search(r'(?:shutil|os)\.(?:copy|move|rename|remove)', source):
+        if (
+            re.search(r'\bopen\s*\([^)]*["\']w["\']', source)
+            or re.search(r"\.write\s*\(", source)
+            or re.search(r"(?:shutil|os)\.(?:copy|move|rename|remove)", source)
+        ):
             has_file_editor = True
 
         # Extract function definitions
-        for match in re.finditer(r'^async?\s+def\s+(\w+)', source, re.MULTILINE):
+        for match in re.finditer(r"^async?\s+def\s+(\w+)", source, re.MULTILINE):
             functions.add(match.group(1))
 
         # Extract class definitions
-        for match in re.finditer(r'^class\s+(\w+)', source, re.MULTILINE):
+        for match in re.finditer(r"^class\s+(\w+)", source, re.MULTILINE):
             classes.add(match.group(1))
 
         # Extract argparse --flags
@@ -183,19 +196,31 @@ def extract_features_from_source(files: list[Path]) -> dict[str, Any]:
         # Also check for --flag in string literals
         for match in ARGPARSE_FLAG_PATTERN.finditer(source):
             flag = match.group(1)
-            if flag not in ("help", "json", "verbose", "recursive", "version",
-                            "auto-fix", "list-tools", "json-config", "all",
-                            "code", "threshold", "min-severity", "exclude"):
+            if flag not in (
+                "help",
+                "json",
+                "verbose",
+                "recursive",
+                "version",
+                "auto-fix",
+                "list-tools",
+                "json-config",
+                "all",
+                "code",
+                "threshold",
+                "min-severity",
+                "exclude",
+            ):
                 flags.add(flag)
 
         # Check for import of tool modules
-        for match in re.finditer(r'^import\s+(\w+)', source, re.MULTILINE):
+        for match in re.finditer(r"^import\s+(\w+)", source, re.MULTILINE):
             imported_tools.add(match.group(1))
-        for match in re.finditer(r'^from\s+(\w+)', source, re.MULTILINE):
+        for match in re.finditer(r"^from\s+(\w+)", source, re.MULTILINE):
             imported_tools.add(match.group(1))
 
         # Extract CLI command patterns
-        for match in re.finditer(r'python\s+(\S+\.py)\s+', source):
+        for match in re.finditer(r"python\s+(\S+\.py)\s+", source):
             cli_commands.add(match.group(1))
 
     return {
@@ -236,12 +261,12 @@ def extract_features_from_readme(content: str) -> dict[str, Any]:
     mentions_file_editor = False
 
     # Only explicit backticked Python filenames are tool claims.
-    for match in re.finditer(r'`([\w.-]+\.py)`', content):
+    for match in re.finditer(r"`([\w.-]+\.py)`", content):
         mentioned_tools.add(match.group(1).removesuffix(".py"))
 
     # Extract tool names from bold markers in the format **name.py**
     for match in re.finditer(
-        r'\*\*([\w.-]+\.py)\*\*',
+        r"\*\*([\w.-]+\.py)\*\*",
         content,
     ):
         name = match.group(1).replace(".py", "")
@@ -249,34 +274,34 @@ def extract_features_from_readme(content: str) -> dict[str, Any]:
             mentioned_tools.add(name)
 
     # Extract commands (python some_tool.py ...)
-    for match in re.finditer(r'python\s+([\w.-]+\.py)', content):
+    for match in re.finditer(r"python\s+([\w.-]+\.py)", content):
         mentioned_commands.add(match.group(1).replace(".py", ""))
 
     # Extract flags only from ToolCase Python command examples. This avoids
     # treating badge fragments and external commands as ToolCase CLI flags.
-    for block in re.findall(r'```[^\n]*\n(.*?)```', content, re.DOTALL):
+    for block in re.findall(r"```[^\n]*\n(.*?)```", content, re.DOTALL):
         for line in block.splitlines():
-            if not re.search(r'python\s+[\w.-]+\.py\b', line):
+            if not re.search(r"python\s+[\w.-]+\.py\b", line):
                 continue
-            for match in re.finditer(r'--([\w-]+)\b', line):
+            for match in re.finditer(r"--([\w-]+)\b", line):
                 flag = match.group(1)
                 if flag not in ("help", "recursive", "all", "json", "version"):
                     mentioned_commands.add(f"--{flag}")
 
     # Check feature claims
     terminal_patterns = [
-        r'terminal\s+(support|endpoint|api|command)',
-        r'\bCLI\b',
-        r'command[-\s]line',
+        r"terminal\s+(support|endpoint|api|command)",
+        r"\bCLI\b",
+        r"command[-\s]line",
     ]
     for pat in terminal_patterns:
         if re.search(pat, content, re.IGNORECASE):
             mentions_terminal = True
 
     file_editor_patterns = [
-        r'file\s+editor',
-        r'file\s+(write|edit|modify)',
-        r'\beditor\b',
+        r"file\s+editor",
+        r"file\s+(write|edit|modify)",
+        r"\beditor\b",
     ]
     for pat in file_editor_patterns:
         if re.search(pat, content, re.IGNORECASE):
@@ -285,21 +310,31 @@ def extract_features_from_readme(content: str) -> dict[str, Any]:
     # Extract install dependencies
     install_section = ""
     install_match = re.search(
-        (r'(?:##\s*(?:Install|Installatie|Setup|Getting'
-               r'Started|Quick Start|Snel starten)[^\n]*)(.*?)(?=##\s|\Z)'),
+        (
+            r"(?:##\s*(?:Install|Installatie|Setup|Getting"
+            r"Started|Quick Start|Snel starten)[^\n]*)(.*?)(?=##\s|\Z)"
+        ),
         content,
         re.DOTALL | re.IGNORECASE,
     )
     if install_match:
         install_section = install_match.group(1)
         # Look for pip/apt/brew/cargo etc.
-        for dep in re.finditer(r'(pip|npm|yarn|pnpm|apt|brew|choco|cargo)\s+(install|add)\s+(\S+)', install_section, re.IGNORECASE):
+        for dep in re.finditer(
+            r"(pip|npm|yarn|pnpm|apt|brew|choco|cargo)\s+(install|add)\s+(\S+)",
+            install_section,
+            re.IGNORECASE,
+        ):
             install_deps.add(dep.group(3).strip())
-        for dep in re.finditer(r'requires?\s+(Python\s*[\d.]+|Node\.js\s*[\d.]+|Rust\s*[\d.]+)', install_section, re.IGNORECASE):
+        for dep in re.finditer(
+            r"requires?\s+(Python\s*[\d.]+|Node\.js\s*[\d.]+|Rust\s*[\d.]+)",
+            install_section,
+            re.IGNORECASE,
+        ):
             install_deps.add(dep.group(1).strip())
 
     # Extract feature claims from list items
-    for match in re.finditer(r'[-*]\s+\*\*([^*]+)\*\*', content):
+    for match in re.finditer(r"[-*]\s+\*\*([^*]+)\*\*", content):
         claim = match.group(1).strip()
         if claim and len(claim) < 100:
             feature_claims.append(claim)
@@ -388,32 +423,45 @@ def check_docs_sync(
             continue  # improve.py is the main entry point, always present
         if tool not in actual_tools:
             # Check if it's a filename reference
-            found_similar = [t for t in actual_tools if tool.replace("-", "_") in t or t in tool.replace("_", "-")]
-            detail = f"Similar tools: {', '.join(found_similar)}" if found_similar else "Not found in source code"
-            issues.append({
-                "type": "doc_claims_missing_tool",
-                "severity": "error",
-                "message": f"Docs mention tool '{tool}' but no corresponding source file exists",
-                "detail": detail,
-            })
+            found_similar = [
+                t
+                for t in actual_tools
+                if tool.replace("-", "_") in t or t in tool.replace("_", "-")
+            ]
+            detail = (
+                f"Similar tools: {', '.join(found_similar)}"
+                if found_similar
+                else "Not found in source code"
+            )
+            issues.append(
+                {
+                    "type": "doc_claims_missing_tool",
+                    "severity": "error",
+                    "message": f"Docs mention tool '{tool}' but no corresponding source file exists",
+                    "detail": detail,
+                }
+            )
 
     # 1b. Actual tools not mentioned in docs
     # Build list of tools the docs DO mention (from README tool tables)
     readme_tool_list = _extract_tool_table_names(readme_content)
     tools_not_in_docs = [
-        t for t in sorted(actual_tools)
+        t
+        for t in sorted(actual_tools)
         if t not in readme_tool_list
         and t not in SUPPORT_MODULES
         and t not in ("_test_changelog", "_test_extract", "improve", "tools_config")
         and not t.startswith("_")
     ]
     for tool in tools_not_in_docs:
-        issues.append({
-            "type": "code_has_undocumented_tool",
-            "severity": "warning",
-            "message": f"Source file '{tool}.py' exists but is not mentioned in README/docs",
-            "detail": "Consider adding it to the documentation",
-        })
+        issues.append(
+            {
+                "type": "code_has_undocumented_tool",
+                "severity": "warning",
+                "message": f"Source file '{tool}.py' exists but is not mentioned in README/docs",
+                "detail": "Consider adding it to the documentation",
+            }
+        )
 
     # 2. Check terminal support claim
     # CLI support is provided by argparse-based tools. It does not imply an
@@ -421,13 +469,17 @@ def check_docs_sync(
 
     # 3. Check file editor claim
     if readme_feats["mentions_file_editor"] and not has_file_editor:
-        issues.append({
-            "type": "file_editor_claim_mismatch",
-            "severity": "error",
-            "message": ("README mentions file editing capability but source has no file write/modify"
-                   "operations"),
-            "detail": "No open(..., 'w') or file write patterns found in source code",
-        })
+        issues.append(
+            {
+                "type": "file_editor_claim_mismatch",
+                "severity": "error",
+                "message": (
+                    "README mentions file editing capability but source has no file write/modify"
+                    "operations"
+                ),
+                "detail": "No open(..., 'w') or file write patterns found in source code",
+            }
+        )
 
     # 4. Check commands mentioned in docs exist in source
     for cmd in sorted(all_doc_commands):
@@ -435,27 +487,37 @@ def check_docs_sync(
             flag_name = cmd[2:]
             # Check if this flag exists in any argparse definition
             if flag_name not in actual_flags and flag_name not in (
-                "help", "recursive", "version", "json", "verbose",
-                "auto-fix", "list-tools", "json-config",
+                "help",
+                "recursive",
+                "version",
+                "json",
+                "verbose",
+                "auto-fix",
+                "list-tools",
+                "json-config",
             ):
                 # Check improve.py specifically (the dispatcher)
                 improve_content = read_text_file(root / "improve.py")
                 if f"--{flag_name}" not in improve_content:
-                    issues.append({
-                        "type": "doc_mentions_missing_command",
-                        "severity": "error",
-                        "message": f"Docs mention command '--{flag_name}' but it's not defined in any source file",
-                        "detail": "No argparse add_argument found for this flag",
-                    })
+                    issues.append(
+                        {
+                            "type": "doc_mentions_missing_command",
+                            "severity": "error",
+                            "message": f"Docs mention command '--{flag_name}' but it's not defined in any source file",
+                            "detail": "No argparse add_argument found for this flag",
+                        }
+                    )
         elif cmd.endswith(".py") and cmd != "improve.py":
             cmd_name = cmd.replace(".py", "")
             if cmd_name not in actual_tools:
-                issues.append({
-                    "type": "doc_mentions_missing_command",
-                    "severity": "error",
-                    "message": f"Docs mention command 'python {cmd}' but '{cmd_name}.py' does not exist",
-                    "detail": "Command referenced in documentation but file not found",
-                })
+                issues.append(
+                    {
+                        "type": "doc_mentions_missing_command",
+                        "severity": "error",
+                        "message": f"Docs mention command 'python {cmd}' but '{cmd_name}.py' does not exist",
+                        "detail": "Command referenced in documentation but file not found",
+                    }
+                )
 
     # 5. Check install deps (if README mentions dependencies)
     install_deps_mentioned = readme_feats["install_deps"]
@@ -467,12 +529,14 @@ def check_docs_sync(
         for dep in install_deps_mentioned:
             dep_clean = dep.lower().replace("-", "_").replace(".", "_")
             if dep_clean not in all_source.lower():
-                issues.append({
-                    "type": "install_dep_not_found",
-                    "severity": "warning",
-                    "message": f"Install docs mention '{dep}' as a dependency but it's not imported/used in source",
-                    "detail": "Possible outdated install instructions",
-                })
+                issues.append(
+                    {
+                        "type": "install_dep_not_found",
+                        "severity": "warning",
+                        "message": f"Install docs mention '{dep}' as a dependency but it's not imported/used in source",
+                        "detail": "Possible outdated install instructions",
+                    }
+                )
 
     # 6. Check for feature claims that don't match code patterns
     feature_to_code_check = {
@@ -497,8 +561,10 @@ def check_docs_sync(
     for claim in all_doc_feature_claims:
         claim_lower = claim.lower()
         for feature_key, code_pattern in feature_to_code_check.items():
-            if feature_key.replace(".", " ") in claim_lower or \
-               feature_key.replace(".", "_") in claim_lower:
+            if (
+                feature_key.replace(".", " ") in claim_lower
+                or feature_key.replace(".", "_") in claim_lower
+            ):
                 # Verify this feature exists in code
                 code_found = False
                 for fp in collect_python_files(root):
@@ -507,12 +573,14 @@ def check_docs_sync(
                         code_found = True
                         break
                 if not code_found:
-                    issues.append({
-                        "type": "feature_claim_mismatch",
-                        "severity": "warning",
-                        "message": f"Docs claim '{claim}' but no corresponding code pattern found",
-                        "detail": f"Searched for '{code_pattern}' in all source files",
-                    })
+                    issues.append(
+                        {
+                            "type": "feature_claim_mismatch",
+                            "severity": "warning",
+                            "message": f"Docs claim '{claim}' but no corresponding code pattern found",
+                            "detail": f"Searched for '{code_pattern}' in all source files",
+                        }
+                    )
 
     # Deduplicate issues
     seen: set[tuple[str, str]] = set()
@@ -545,15 +613,15 @@ def _extract_tool_table_names(readme_content: str) -> set[str]:
             continue
         # Extract .py filenames from second (Command) column
         if ".py" in cells[1]:
-            m = re.search(r'\*\*([\w.-]+\.py)\*\*', cells[1])
+            m = re.search(r"\*\*([\w.-]+\.py)\*\*", cells[1])
             if m:
                 names.add(m.group(1).replace(".py", ""))
             else:
-                m = re.search(r'([\w-]+\.py)', cells[1])
+                m = re.search(r"([\w-]+\.py)", cells[1])
                 if m:
                     names.add(m.group(1).replace(".py", ""))
         # First column: extract a backticked or bold Python filename.
-        m = re.search(r'(?:`|\*\*)([\w.-]+\.py)(?:`|\*\*)', cells[0])
+        m = re.search(r"(?:`|\*\*)([\w.-]+\.py)(?:`|\*\*)", cells[0])
         if m:
             names.add(m.group(1).removesuffix(".py"))
     return names
@@ -610,21 +678,21 @@ def _print_human(report: dict[str, Any]) -> None:
     src = report["source"]
     doc = report["documentation"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  📚  Docs Sync Check — Summary")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Total issues:       {s['total']}")
     print(f"  Errors:             {s['errors']}")
     print(f"  Warnings:           {s['warnings']}")
     print(f"  Info:               {s['info']}")
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
     print(f"  Source:    {src['total_tools']} tools, {src['total_commands']} CLI flags")
     print(f"            terminal endpoint: {'✅' if src['has_terminal_endpoint'] else '❌'}")
     print(f"            file editor:       {'✅' if src['has_file_editor'] else '❌'}")
     print(f"  Docs:      {doc['total_tools_mentioned']} tools mentioned")
     print(f"            terminal claim:   {'✅' if doc['mentions_terminal'] else 'Not claimed'}")
     print(f"            file editor claim:{'✅' if doc['mentions_file_editor'] else 'Not claimed'}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     if not s["total"]:
         print(f"\n  ✅  Documentation is in sync with source code!\n")
@@ -638,7 +706,7 @@ def _print_human(report: dict[str, Any]) -> None:
         icon = {"error": "❌", "warning": "⚠️", "info": "ℹ️"}.get(severity, "•")
         label = severity.upper()
         print(f"\n  {icon}  {label} ({len(items)}):")
-        print(f"  {'─'*56}")
+        print(f"  {'─' * 56}")
         for issue in items:
             print(f"    [{issue['type']}]")
             print(f"    {issue['message']}")
@@ -646,7 +714,7 @@ def _print_human(report: dict[str, Any]) -> None:
                 print(f"    → {issue['detail']}")
             print()
 
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
     print()
 
 
@@ -658,22 +726,20 @@ def _print_human(report: dict[str, Any]) -> None:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse args.
 
-        Args:
-            argv: Description.
+    Args:
+        argv: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     parser = argparse.ArgumentParser(
         description="Check whether README/docs match the actual code.",
-        epilog=(
-            "Exit codes: 0 = docs match code, "
-            "1 = issues found (out of sync), "
-            "2 = error"
-        ),
+        epilog=("Exit codes: 0 = docs match code, 1 = issues found (out of sync), 2 = error"),
     )
     parser.add_argument(
-        "path", nargs="?", default=".",
+        "path",
+        nargs="?",
+        default=".",
         help="Project root directory to check (default: current directory)",
     )
     parser.add_argument(
@@ -682,7 +748,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Output results as JSON (machine-readable)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Show detailed diagnostic information",
     )
@@ -692,12 +759,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     """main.
 
-        Args:
-            argv: Description.
+    Args:
+        argv: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     args = parse_args(argv)
 
     root = Path(args.path).resolve()
@@ -732,10 +799,16 @@ def main(argv: list[str] | None = None) -> int:
         readme_content = read_text_file(readme_path)
     else:
         print(f"  ⚠️  No README.md found in {root}", file=sys.stderr)
-        print(json.dumps({
-            "error": "No README.md found",
-            "source_tools": source_features["tools"],
-        }) if args.json else "  No README.md to check against code.\n")
+        print(
+            json.dumps(
+                {
+                    "error": "No README.md found",
+                    "source_tools": source_features["tools"],
+                }
+            )
+            if args.json
+            else "  No README.md to check against code.\n"
+        )
         return 1
 
     # 4. Read docs/ folder
@@ -750,9 +823,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.verbose:
         report["source"]["files"] = [str(p.relative_to(root)) for p in py_files]
-        report["documentation"]["docs_files"] = [
-            d.get("file", "") for d in docs_features
-        ]
+        report["documentation"]["docs_files"] = [d.get("file", "") for d in docs_features]
 
     # 7. Output
     if args.json:

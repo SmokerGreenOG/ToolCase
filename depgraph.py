@@ -13,6 +13,7 @@ Parses Python, TypeScript, and Rust source files to build a dependency
 graph. Supports depth-limited tree rendering, JSON output, external
 dependency listing, and circular dependency (cycle) detection.
 """
+
 from __future__ import annotations
 
 __maker__ = "SmokerGreenOG"
@@ -31,31 +32,30 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 DEFAULT_MAX_DEPTH = 3
 
 # Regex patterns per language
-PYTHON_IMPORT_RE = re.compile(
-    r'^\s*(?:from\s+([\w.]+)\s+)?import\s+(.+)$', re.MULTILINE
-)
+PYTHON_IMPORT_RE = re.compile(r"^\s*(?:from\s+([\w.]+)\s+)?import\s+(.+)$", re.MULTILINE)
 TS_IMPORT_RE = re.compile(
     r"""import\s+(?:(?:type\s+)?\{[^}]*\}\s+from\s+["']([^"']+)["']"""
     r"""|(?:\w+(?:\s*,\s*\{[^}]*\})?)\s+from\s+["']([^"']+)["']"""
     r"""|["']([^"']+)["'])""",
     re.MULTILINE,
 )
-RUST_USE_RE = re.compile(
-    r'^\s*use\s+(.+?)\s*(?:::\{|;|as\s+|$)', re.MULTILINE
-)
-RUST_MOD_RE = re.compile(r'^\s*mod\s+(\w+)\s*(?:;|\{)', re.MULTILINE)
+RUST_USE_RE = re.compile(r"^\s*use\s+(.+?)\s*(?:::\{|;|as\s+|$)", re.MULTILINE)
+RUST_MOD_RE = re.compile(r"^\s*mod\s+(\w+)\s*(?:;|\{)", re.MULTILINE)
 
 # Language detection by file extension
 EXT_MAP = {
@@ -122,30 +122,32 @@ def parse_python(content: str, filepath: Path, project_files: set) -> list:
         raw_targets = match.group(2)
         if from_mod:
             # from X import Y, Z
-            targets = [t.strip().split(" as ")[0].strip()
-                       for t in raw_targets.split(",")]
+            targets = [t.strip().split(" as ")[0].strip() for t in raw_targets.split(",")]
             for t in targets:
                 full = f"{from_mod}.{t}" if "." not in t and t else from_mod
-                imports.append({
-                    "module": _normalise_module_name(full),
-                    "source": "python",
-                    "external": _is_external_import(
-                        _normalise_module_name(from_mod), project_files
-                    ),
-                })
-        else:
-            # import X, Y
-            targets = [t.strip().split(" as ")[0].strip()
-                       for t in raw_targets.split(",")]
-            for t in targets:
-                if t:
-                    imports.append({
-                        "module": _normalise_module_name(t),
+                imports.append(
+                    {
+                        "module": _normalise_module_name(full),
                         "source": "python",
                         "external": _is_external_import(
-                            _normalise_module_name(t), project_files
+                            _normalise_module_name(from_mod), project_files
                         ),
-                    })
+                    }
+                )
+        else:
+            # import X, Y
+            targets = [t.strip().split(" as ")[0].strip() for t in raw_targets.split(",")]
+            for t in targets:
+                if t:
+                    imports.append(
+                        {
+                            "module": _normalise_module_name(t),
+                            "source": "python",
+                            "external": _is_external_import(
+                                _normalise_module_name(t), project_files
+                            ),
+                        }
+                    )
     return imports
 
 
@@ -158,11 +160,13 @@ def parse_typescript(content: str, filepath: Path, project_files: set) -> list:
             mod = _normalise_module_name(module)
             # Relative imports are internal
             is_external = not (mod.startswith(".") or mod.startswith("/"))
-            imports.append({
-                "module": mod,
-                "source": "typescript",
-                "external": is_external,
-            })
+            imports.append(
+                {
+                    "module": mod,
+                    "source": "typescript",
+                    "external": is_external,
+                }
+            )
     return imports
 
 
@@ -181,34 +185,36 @@ def parse_rust(content: str, filepath: Path, project_files: set) -> list:
                 item = item.strip().rstrip("}").strip()
                 if item:
                     full = f"{base}::{item}"
-                    imports.append({
-                        "module": full,
-                        "source": "rust",
-                        "external": _is_external_import(
-                            base.split("::")[0], project_files
-                        ),
-                    })
+                    imports.append(
+                        {
+                            "module": full,
+                            "source": "rust",
+                            "external": _is_external_import(base.split("::")[0], project_files),
+                        }
+                    )
         else:
             # Strip trailing semicolon, `as alias`, `use X::Y`
             mod = raw.rstrip(";").split(" as ")[0].strip()
             if mod:
-                imports.append({
-                    "module": mod,
-                    "source": "rust",
-                    "external": _is_external_import(
-                        mod.split("::")[0], project_files
-                    ),
-                })
+                imports.append(
+                    {
+                        "module": mod,
+                        "source": "rust",
+                        "external": _is_external_import(mod.split("::")[0], project_files),
+                    }
+                )
 
     # mod X; — crate-level mod declarations
     for match in RUST_MOD_RE.finditer(content):
         mod_name = match.group(1)
         full = f"crate::{mod_name}"
-        imports.append({
-            "module": full,
-            "source": "rust",
-            "external": False,
-        })
+        imports.append(
+            {
+                "module": full,
+                "source": "rust",
+                "external": False,
+            }
+        )
 
     return imports
 
@@ -256,10 +262,7 @@ def build_graph(root: Path, show_external: bool = False) -> tuple[dict, set]:
 
     for dirpath, dirnames, filenames in os.walk(root):
         # Prune excluded directories in-place
-        dirnames[:] = [
-            d for d in dirnames
-            if d not in EXCLUDE_DIRS
-        ]
+        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
         for fn in filenames:
             fp = Path(dirpath) / fn
             ext = fp.suffix.lower()
@@ -272,10 +275,16 @@ def build_graph(root: Path, show_external: bool = False) -> tuple[dict, set]:
     for fp in all_files:
         try:
             rel = fp.relative_to(root)
-            project_names.add(rel.parts[0].removesuffix(".py")
-                              .removesuffix(".rs").removesuffix(".ts")
-                              .removesuffix(".tsx").removesuffix(".js")
-                              .removesuffix(".jsx").removesuffix(".mjs"))
+            project_names.add(
+                rel.parts[0]
+                .removesuffix(".py")
+                .removesuffix(".rs")
+                .removesuffix(".ts")
+                .removesuffix(".tsx")
+                .removesuffix(".js")
+                .removesuffix(".jsx")
+                .removesuffix(".mjs")
+            )
         except Exception:
             pass
     # Also add top-level directory names
@@ -346,9 +355,7 @@ def render_tree(
             # Try to resolve module to a file for recursive traversal
             resolved = _resolve_import(start_path, imp["module"], graph)
             if resolved and resolved in graph and resolved not in seen:
-                subtree = render_tree(
-                    graph, resolved, depth, seen, _current_depth + 2
-                )
+                subtree = render_tree(graph, resolved, depth, seen, _current_depth + 2)
                 # Adjust prefix for subtree continuation
                 for j, subline in enumerate(subtree):
                     if j == 0:
@@ -420,12 +427,12 @@ def find_cycles(graph: dict, show_external: bool = False) -> list:
     def dfs(u: str) -> None:
         """dfs.
 
-            Args:
-                u: Description.
+        Args:
+            u: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         color[u] = GRAY
         for v in adj[u]:
             if color.get(v) == GRAY:
@@ -482,20 +489,19 @@ def compute_stats(graph: dict, show_external: bool = False) -> dict:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="Import/export dependency graph for JS/TS/Python/Rust."
     )
     parser.add_argument("path", help="Root directory or file to analyse")
-    parser.add_argument("--depth", type=int, default=DEFAULT_MAX_DEPTH,
-                        help="Maximum tree depth (default: 3)")
-    parser.add_argument("--json", action="store_true",
-                        help="Output as JSON instead of tree")
-    parser.add_argument("--external", action="store_true",
-                        help="Include external library imports")
-    parser.add_argument("--cycles", action="store_true",
-                        help="Detect and report circular dependencies")
+    parser.add_argument(
+        "--depth", type=int, default=DEFAULT_MAX_DEPTH, help="Maximum tree depth (default: 3)"
+    )
+    parser.add_argument("--json", action="store_true", help="Output as JSON instead of tree")
+    parser.add_argument("--external", action="store_true", help="Include external library imports")
+    parser.add_argument(
+        "--cycles", action="store_true", help="Detect and report circular dependencies"
+    )
     args = parser.parse_args()
 
     root = Path(args.path).resolve()
@@ -531,9 +537,7 @@ def main() -> None:
             "files": list(graph.values()),
         }
         if args.cycles:
-            output["cycles"] = [
-                {"start": c[0], "path": c[1]} for c in cycles
-            ]
+            output["cycles"] = [{"start": c[0], "path": c[1]} for c in cycles]
 
         print(json.dumps(output, indent=2, default=str))
         return
@@ -541,9 +545,9 @@ def main() -> None:
     # --- Tree output ---
     # Find entry point(s) — treat top-level files as roots
     top_level = sorted(
-        fp for fp in graph
-        if os.path.dirname(fp) == str(root)
-        or os.path.dirname(fp) == str(root).replace("\\", "/")
+        fp
+        for fp in graph
+        if os.path.dirname(fp) == str(root) or os.path.dirname(fp) == str(root).replace("\\", "/")
     )
 
     if not top_level:
@@ -561,7 +565,7 @@ def main() -> None:
     if args.cycles:
         cycles = find_cycles(graph, show_external=args.external)
         if cycles:
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             label = "y" if len(cycles) == 1 else "ies"
             print(f"⚠  {len(cycles)} circular {label} detected\n")
             for start, path in cycles:
@@ -572,7 +576,7 @@ def main() -> None:
 
     # --- Stats summary ---
     stats = compute_stats(graph, show_external=args.external)
-    print(f"\n{'─'*40}")
+    print(f"\n{'─' * 40}")
     print(f"  Files analysed:     {stats['total_files']}")
     print(f"  Total imports:      {stats['total_imports']}")
     print(f"  Unique modules:     {stats['unique_modules']}")

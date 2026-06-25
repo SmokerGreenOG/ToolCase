@@ -18,9 +18,11 @@ Gebruik:
     python project_doctor.py <path> --json
     python project_doctor.py <path> --deep
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import json
 import os
@@ -30,22 +32,41 @@ from collections import defaultdict
 from pathlib import Path
 
 # Ensure UTF-8 output on all platforms (Windows cp1252 can't handle emoji/unicode)
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", ".husky/_",
-    ".git2", ".svn", ".hg", ".backups", ".self_improve_reports",
-    ".rsi_reports", ".rsi_backups", ".pytest_cache", ".cache",
-})
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        ".husky/_",
+        ".git2",
+        ".svn",
+        ".hg",
+        ".backups",
+        ".self_improve_reports",
+        ".rsi_reports",
+        ".rsi_backups",
+        ".pytest_cache",
+        ".cache",
+    }
+)
 
 PYTHON_PACKAGE_MARKERS = {"__init__.py", "__init__.pyi"}
 ORPHANED_EXTENSIONS = {".bak", ".pyc", ".pyo", ".orig", ".rej", ".swp", ".swo"}
@@ -69,15 +90,15 @@ EXPECTED_FILES = {
 
 NAMED_CONVENTIONS = {
     "python": {
-        "pattern": re.compile(r'^[a-z][a-z0-9_]*\.py$'),
+        "pattern": re.compile(r"^[a-z][a-z0-9_]*\.py$"),
         "desc": "snake_case",
     },
     "typescript": {
-        "pattern": re.compile(r'^[A-Z][A-Za-z0-9]*\.tsx?$|^[a-z][a-z0-9-]*\.tsx?$'),
+        "pattern": re.compile(r"^[A-Z][A-Za-z0-9]*\.tsx?$|^[a-z][a-z0-9-]*\.tsx?$"),
         "desc": "PascalCase (components) or kebab-case (utilities)",
     },
     "rust": {
-        "pattern": re.compile(r'^[a-z][a-z0-9_]*\.rs$'),
+        "pattern": re.compile(r"^[a-z][a-z0-9_]*\.rs$"),
         "desc": "snake_case",
     },
 }
@@ -91,32 +112,38 @@ def diagnose_structure(root: Path) -> list[dict]:
     has_tests = (root / "tests").exists()
 
     if has_src and not has_tests:
-        issues.append({
-            "severity": "WARN",
-            "type": "structure",
-            "message": "Tests map ontbreekt (src/ bestaat wel, tests/ niet)",
-            "fix": "mkdir tests",
-        })
+        issues.append(
+            {
+                "severity": "WARN",
+                "type": "structure",
+                "message": "Tests map ontbreekt (src/ bestaat wel, tests/ niet)",
+                "fix": "mkdir tests",
+            }
+        )
 
     has_flat_sources = any(
         path.name != "__init__.py" and not path.name.startswith("test_")
         for path in root.glob("*.py")
     )
     if has_tests and not has_src and not has_flat_sources:
-        issues.append({
-            "severity": "INFO",
-            "type": "structure",
-            "message": "Source map ontbreekt (tests/ bestaat, src/ niet)",
-            "fix": "mkdir src",
-        })
+        issues.append(
+            {
+                "severity": "INFO",
+                "type": "structure",
+                "message": "Source map ontbreekt (tests/ bestaat, src/ niet)",
+                "fix": "mkdir src",
+            }
+        )
 
     if not (root / "docs").exists():
-        issues.append({
-            "severity": "INFO",
-            "type": "structure",
-            "message": "Documentatie map (docs/) ontbreekt",
-            "fix": "mkdir docs",
-        })
+        issues.append(
+            {
+                "severity": "INFO",
+                "type": "structure",
+                "message": "Documentatie map (docs/) ontbreekt",
+                "fix": "mkdir docs",
+            }
+        )
 
     return issues
 
@@ -135,12 +162,14 @@ def find_missing_init_files(root: Path) -> list[dict]:
         if has_py and not has_init:
             # Check if this is a namespace package (PEP 420)
             rel = path.relative_to(root)
-            issues.append({
-                "severity": "WARN",
-                "type": "init",
-                "message": f"Geen __init__.py in Python directory: {rel}",
-                "fix": f"touch {rel / '__init__.py'}",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "init",
+                    "message": f"Geen __init__.py in Python directory: {rel}",
+                    "fix": f"touch {rel / '__init__.py'}",
+                }
+            )
 
     return issues
 
@@ -155,12 +184,14 @@ def find_orphaned_files(root: Path) -> list[dict]:
             ext = Path(fn).suffix.lower()
             if ext in ORPHANED_EXTENSIONS:
                 fp = Path(dirpath) / fn
-                issues.append({
-                    "severity": "INFO",
-                    "type": "orphaned",
-                    "message": f"Orphaned file: {fp.relative_to(root)}",
-                    "fix": f"rm '{fp}'",
-                })
+                issues.append(
+                    {
+                        "severity": "INFO",
+                        "type": "orphaned",
+                        "message": f"Orphaned file: {fp.relative_to(root)}",
+                        "fix": f"rm '{fp}'",
+                    }
+                )
 
     return issues
 
@@ -176,12 +207,14 @@ def find_empty_dirs(root: Path) -> list[dict]:
         if not filenames and not dirnames:
             rel = path.relative_to(root)
             if str(rel) != ".":
-                issues.append({
-                    "severity": "INFO",
-                    "type": "empty_dir",
-                    "message": f"Lege directory: {rel}",
-                    "fix": f"rmdir '{path}'  # of voeg bestanden toe",
-                })
+                issues.append(
+                    {
+                        "severity": "INFO",
+                        "type": "empty_dir",
+                        "message": f"Lege directory: {rel}",
+                        "fix": f"rmdir '{path}'  # of voeg bestanden toe",
+                    }
+                )
 
     return issues
 
@@ -198,26 +231,54 @@ def find_large_files(root: Path) -> list[dict]:
                 size = fp.stat().st_size
                 if size > MAX_FILE_SIZE_WARN:
                     ext = fp.suffix.lower()
-                    binary_exts = {".png", ".jpg", ".jpeg", ".gif", ".mp3", ".mp4",
-                                   ".zip", ".tar", ".gz", ".7z", ".pdf", ".exe", ".dll"}
+                    binary_exts = {
+                        ".png",
+                        ".jpg",
+                        ".jpeg",
+                        ".gif",
+                        ".mp3",
+                        ".mp4",
+                        ".zip",
+                        ".tar",
+                        ".gz",
+                        ".7z",
+                        ".pdf",
+                        ".exe",
+                        ".dll",
+                    }
                     if ext not in binary_exts:
-                        issues.append({
-                            "severity": "WARN",
-                            "type": "large_file",
-                            "message": f"Groot bestand ({size // 1024} KB): {fp.relative_to(root)}",
-                            "fix": "Overweeg .gitignore of git LFS",
-                        })
+                        issues.append(
+                            {
+                                "severity": "WARN",
+                                "type": "large_file",
+                                "message": f"Groot bestand ({size // 1024} KB): {fp.relative_to(root)}",
+                                "fix": "Overweeg .gitignore of git LFS",
+                            }
+                        )
                 elif size > LARGE_FILE_THRESHOLD:
                     ext = fp.suffix.lower()
-                    binary_exts = {".png", ".jpg", ".jpeg", ".gif", ".mp3", ".mp4",
-                                   ".zip", ".tar", ".gz", ".7z", ".pdf"}
+                    binary_exts = {
+                        ".png",
+                        ".jpg",
+                        ".jpeg",
+                        ".gif",
+                        ".mp3",
+                        ".mp4",
+                        ".zip",
+                        ".tar",
+                        ".gz",
+                        ".7z",
+                        ".pdf",
+                    }
                     if ext not in binary_exts:
-                        issues.append({
-                            "severity": "INFO",
-                            "type": "large_file",
-                            "message": f"Vrij groot bestand ({size // 1024} KB): {fp.relative_to(root)}",
-                            "fix": "Overweeg of dit bestand zo groot moet zijn",
-                        })
+                        issues.append(
+                            {
+                                "severity": "INFO",
+                                "type": "large_file",
+                                "message": f"Vrij groot bestand ({size // 1024} KB): {fp.relative_to(root)}",
+                                "fix": "Overweeg of dit bestand zo groot moet zijn",
+                            }
+                        )
             except Exception:
                 continue
 
@@ -244,13 +305,15 @@ def check_naming_conventions(root: Path) -> list[dict]:
 
             if not convention["pattern"].match(fn):
                 fp = Path(dirpath) / fn
-                issues.append({
-                    "severity": "INFO",
-                    "type": "naming",
-                    "message": f"Naamgeving mogelijk inconsistent: {fp.relative_to(root)}",
-                    "detail": f"Verwacht: {convention['desc']}",
-                    "fix": f"Hernoem volgens {convention['desc']}",
-                })
+                issues.append(
+                    {
+                        "severity": "INFO",
+                        "type": "naming",
+                        "message": f"Naamgeving mogelijk inconsistent: {fp.relative_to(root)}",
+                        "detail": f"Verwacht: {convention['desc']}",
+                        "fix": f"Hernoem volgens {convention['desc']}",
+                    }
+                )
 
     return issues
 
@@ -261,77 +324,98 @@ def check_git_status(root: Path) -> list[dict]:
     git_dir = root / ".git"
 
     if not git_dir.exists():
-        issues.append({
-            "severity": "WARN",
-            "type": "git",
-            "message": "Geen git repository — niet versiebeheerd",
-            "fix": "git init  # of git clone",
-        })
+        issues.append(
+            {
+                "severity": "WARN",
+                "type": "git",
+                "message": "Geen git repository — niet versiebeheerd",
+                "fix": "git init  # of git clone",
+            }
+        )
         return issues
 
     try:
         import subprocess
+
         # Check branch
-        result = subprocess.run(
+        result = safe_run(
             ["git", "-C", str(root), "branch", "--show-current"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         branch = result.stdout.strip()
         if branch:
-            issues.append({
-                "severity": "INFO",
-                "type": "git",
-                "message": f"Huidige branch: {branch}",
-                "detail": "Git repo is actief",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "type": "git",
+                    "message": f"Huidige branch: {branch}",
+                    "detail": "Git repo is actief",
+                }
+            )
         else:
             # Detached HEAD
-            result = subprocess.run(
+            result = safe_run(
                 ["git", "-C", str(root), "rev-parse", "--short", "HEAD"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             sha = result.stdout.strip()
-            issues.append({
-                "severity": "WARN",
-                "type": "git",
-                "message": f"Detached HEAD op {sha} — niet op een branch",
-                "fix": "git checkout <branch>  # of git switch -c <nieuwe-branch>",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "git",
+                    "message": f"Detached HEAD op {sha} — niet op een branch",
+                    "fix": "git checkout <branch>  # of git switch -c <nieuwe-branch>",
+                }
+            )
 
         # Check uncommitted changes
-        result = subprocess.run(
+        result = safe_run(
             ["git", "-C", str(root), "status", "--porcelain"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         uncommitted = [l for l in result.stdout.split("\n") if l.strip()]
         if uncommitted:
-            issues.append({
-                "severity": "INFO",
-                "type": "git",
-                "message": f"{len(uncommitted)} uncommitted change(s)",
-                "fix": "git add . && git commit  # of git stash",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "type": "git",
+                    "message": f"{len(uncommitted)} uncommitted change(s)",
+                    "fix": "git add . && git commit  # of git stash",
+                }
+            )
 
         # Check unpushed commits
-        result = subprocess.run(
+        result = safe_run(
             ["git", "-C", str(root), "log", "--oneline", "@{u}..HEAD", "--"],
-            capture_output=True, text=True, timeout=10
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         unpushed = [l for l in result.stdout.split("\n") if l.strip()]
         if unpushed:
-            issues.append({
-                "severity": "INFO",
-                "type": "git",
-                "message": f"{len(unpushed)} unpushed commit(s)",
-                "fix": "git push",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "type": "git",
+                    "message": f"{len(unpushed)} unpushed commit(s)",
+                    "fix": "git push",
+                }
+            )
 
     except Exception as e:
-        issues.append({
-            "severity": "INFO",
-            "type": "git",
-            "message": f"Git check mislukt: {e}",
-        })
+        issues.append(
+            {
+                "severity": "INFO",
+                "type": "git",
+                "message": f"Git check mislukt: {e}",
+            }
+        )
 
     return issues
 
@@ -341,12 +425,14 @@ def check_project_files(root: Path) -> list[dict]:
     issues = []
     for filename, description in EXPECTED_FILES.items():
         if not (root / filename).exists():
-            issues.append({
-                "severity": "WARN",
-                "type": "project_file",
-                "message": f"Ontbrekend bestand: {filename} ({description})",
-                "fix": f"touch {filename}  # en vul de inhoud",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "project_file",
+                    "message": f"Ontbrekend bestand: {filename} ({description})",
+                    "fix": f"touch {filename}  # en vul de inhoud",
+                }
+            )
     return issues
 
 
@@ -388,9 +474,9 @@ def print_report(all_issues: list[dict], fixed: list[dict] = None) -> None:
     warnings = [i for i in all_issues if i["severity"] == "WARN"]
     infos = [i for i in all_issues if i["severity"] == "INFO"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🩺 PROJECT DOCTOR — {len(all_issues)} bevinding(en)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   ⚠  Warnings: {len(warnings)}")
     print(f"   💡 Info:     {len(infos)}")
     print()
@@ -428,8 +514,7 @@ def print_report(all_issues: list[dict], fixed: list[dict] = None) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="project_doctor.py — Diagnose project health and structure",
         formatter_class=argparse.RawDescriptionHelpFormatter,

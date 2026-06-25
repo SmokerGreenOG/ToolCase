@@ -56,8 +56,9 @@ def _load_metrics(workspace: Path) -> dict:
     return {}
 
 
-def generate_html(report_data: list[dict], memory_data: dict = None,
-                  output_path: Path = DEFAULT_OUTPUT) -> str:
+def generate_html(
+    report_data: list[dict], memory_data: dict = None, output_path: Path = DEFAULT_OUTPUT
+) -> str:
     """Genereer een compleet HTML rapport."""
 
     memory_data = memory_data or {}
@@ -90,7 +91,7 @@ def generate_html(report_data: list[dict], memory_data: dict = None,
     top_patterns = sorted(
         patterns_list,
         key=lambda p: p.get("times_success", 0) / max(1, p.get("times_tried", 1)),
-        reverse=True
+        reverse=True,
     )[:8]
 
     # Weight bars data
@@ -441,12 +442,12 @@ tr:hover td {{ background: rgba(255,255,255,0.02); }}
 <div class="header glow-purple">
   <div class="header-left">
     <h1>⚡ RSI v2.0 — Recursive Self-Improvement</h1>
-    <div class="subtitle">ToolCase · SmokerGreenOG · {datetime.now().strftime('%Y-%m-%d %H:%M')}</div>
+    <div class="subtitle">ToolCase · SmokerGreenOG · {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>
   </div>
   <div class="header-right">
     <span class="badge badge-active">v2.0</span>
     <span class="badge badge-active">{cycles} cycli</span>
-    <span class="badge badge-{'active' if last.get('status','') != 'failed' else 'failed'}">{last.get('status', '?').upper()}</span>
+    <span class="badge badge-{"active" if last.get("status", "") != "failed" else "failed"}">{last.get("status", "?").upper()}</span>
   </div>
 </div>
 
@@ -454,13 +455,13 @@ tr:hover td {{ background: rgba(255,255,255,0.02); }}
 <div class="stats-grid">
   <div class="stat-card glow-purple">
     <div class="icon">📊</div>
-    <div class="value">{last.get('quality_after', 0):.4f}</div>
+    <div class="value">{last.get("quality_after", 0):.4f}</div>
     <div class="label">Kwaliteitsscore</div>
-    <div class="delta {'up' if last.get('improvement', 0) > 0 else 'down'}">{last.get('improvement', 0):+.4f}</div>
+    <div class="delta {"up" if last.get("improvement", 0) > 0 else "down"}">{last.get("improvement", 0):+.4f}</div>
   </div>
   <div class="stat-card glow-blue">
     <div class="icon">📁</div>
-    <div class="value blue">{last.get('files_analyzed', 0)}</div>
+    <div class="value blue">{last.get("files_analyzed", 0)}</div>
     <div class="label">Bestanden geanalyseerd</div>
   </div>
   <div class="stat-card glow-pink">
@@ -533,18 +534,22 @@ tr:hover td {{ background: rgba(255,255,255,0.02); }}
     <tbody>"""
 
     for r in report_data:
-        cyc = r.get('cycle', '?')
-        focus = r.get('focus', 'all')
-        qb = r.get('quality_before', 0)
-        qa = r.get('quality_after', 0)
-        delta = r.get('improvement', 0)
-        auto = r.get('succeeded', 0)
-        llm = r.get('queued', 0)
-        cross = r.get('cross_file_issues', 0)
-        dur = r.get('duration_s', 0)
-        status = r.get('status', '?')
-        delta_class = 'status-ok' if delta > 0 else ('status-err' if delta < 0 else '')
-        status_class = 'status-ok' if status == 'completed' else ('status-warn' if status == 'pending_llm' else 'status-err')
+        cyc = r.get("cycle", "?")
+        focus = r.get("focus", "all")
+        qb = r.get("quality_before", 0)
+        qa = r.get("quality_after", 0)
+        delta = r.get("improvement", 0)
+        auto = r.get("succeeded", 0)
+        llm = r.get("queued", 0)
+        cross = r.get("cross_file_issues", 0)
+        dur = r.get("duration_s", 0)
+        status = r.get("status", "?")
+        delta_class = "status-ok" if delta > 0 else ("status-err" if delta < 0 else "")
+        status_class = (
+            "status-ok"
+            if status == "completed"
+            else ("status-warn" if status == "pending_llm" else "status-err")
+        )
 
         html += f"""
       <tr>
@@ -576,13 +581,15 @@ tr:hover td {{ background: rgba(255,255,255,0.02); }}
 
     if top_patterns:
         for p in top_patterns:
-            desc = p.get('description', '?')[:80]
-            cat = p.get('category', '?')
-            times = p.get('times_tried', 0)
-            succ = p.get('times_success', 0)
+            desc = p.get("description", "?")[:80]
+            cat = p.get("category", "?")
+            times = p.get("times_tried", 0)
+            succ = p.get("times_success", 0)
             rate = succ / max(1, times) * 100
-            avg_imp = p.get('avg_improvement', 0)
-            rate_color = 'var(--green)' if rate > 70 else ('var(--yellow)' if rate > 40 else 'var(--red)')
+            avg_imp = p.get("avg_improvement", 0)
+            rate_color = (
+                "var(--green)" if rate > 70 else ("var(--yellow)" if rate > 40 else "var(--red)")
+            )
             html += f"""
       <tr>
         <td>{desc}</td>
@@ -608,7 +615,9 @@ tr:hover td {{ background: rgba(255,255,255,0.02); }}
         max_weight = max(weight_values) if weight_values else 1
         for label, value in zip(weight_labels, weight_values):
             pct = (value / max_weight) * 100
-            color = "var(--purple)" if value > 5 else ("var(--blue)" if value > 3 else "var(--cyan)")
+            color = (
+                "var(--purple)" if value > 5 else ("var(--blue)" if value > 3 else "var(--cyan)")
+            )
             html += f"""
     <div class="pattern-bar">
       <span class="bar-label">{label}</span>
@@ -740,17 +749,20 @@ new Chart(document.getElementById('weightChart'), {{
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="RSI HTML Report Generator — Dark-themed dashboard",
     )
-    parser.add_argument("--input", "-i",
-                        help="Input JSON rapport (default: laatste in .rsi_reports/)")
-    parser.add_argument("--output", "-o", default=str(DEFAULT_OUTPUT),
-                        help=f"Output HTML path (default: {DEFAULT_OUTPUT})")
-    parser.add_argument("--open", action="store_true",
-                        help="Open in browser na generatie")
+    parser.add_argument(
+        "--input", "-i", help="Input JSON rapport (default: laatste in .rsi_reports/)"
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        default=str(DEFAULT_OUTPUT),
+        help=f"Output HTML path (default: {DEFAULT_OUTPUT})",
+    )
+    parser.add_argument("--open", action="store_true", help="Open in browser na generatie")
 
     args = parser.parse_args()
 

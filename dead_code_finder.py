@@ -16,6 +16,7 @@ Gebruik:
     python dead_code_finder.py <path> --min-confidence 0.5
     python dead_code_finder.py <path> --threshold 5
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -27,23 +28,32 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from toolcase_core.utils import collect_source_files
 
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # Patterns for code that should always be considered "used"
 ENTRY_POINT_PATTERNS = {
@@ -52,43 +62,53 @@ ENTRY_POINT_PATTERNS = {
         "decorators": {"app", "router", "blueprint", "cli", "click"},
     },
     "ts": {
-        "entry_names": {"main", "run", "start", "setup", "init", "handler",
-                        "default", "getStaticProps", "getServerSideProps",
-                        "getStaticPaths", "GET", "POST", "PUT", "DELETE", "PATCH"},
-        "decorators": {"@Component", "@NgModule", "@Injectable", "@Directive",
-                       "@Pipe", "@override"},
+        "entry_names": {
+            "main",
+            "run",
+            "start",
+            "setup",
+            "init",
+            "handler",
+            "default",
+            "getStaticProps",
+            "getServerSideProps",
+            "getStaticPaths",
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+        },
+        "decorators": {
+            "@Component",
+            "@NgModule",
+            "@Injectable",
+            "@Directive",
+            "@Pipe",
+            "@override",
+        },
     },
     "rs": {
         "entry_names": {"main", "run", "start", "setup"},
-        "decorators": {"#[tokio::main", "#[actix_web::", "#[get", "#[post",
-                       "#[put", "#[delete", "#[patch"},
+        "decorators": {
+            "#[tokio::main",
+            "#[actix_web::",
+            "#[get",
+            "#[post",
+            "#[put",
+            "#[delete",
+            "#[patch",
+        },
     },
 }
 
 # Commented-out code detection
 COMMENTED_CODE_PATTERN = re.compile(
-    r'^\s*#\s*(?:def|class|if|for|while|try|with|import|from|return|print|'
-    r'async|await|@|self\.|const|let|var|function|fn|pub\s+fn)',
+    r"^\s*#\s*(?:def|class|if|for|while|try|with|import|from|return|print|"
+    r"async|await|@|self\.|const|let|var|function|fn|pub\s+fn)",
     re.MULTILINE,
 )
 
-
-def collect_source_files(root: Path) -> list[Path]:
-    """Collect source files to analyze."""
-    files = []
-    exts = {".py", ".ts", ".tsx", ".js", ".jsx", ".rs", ".mjs", ".cjs"}
-
-    if root.is_file():
-        return [root]
-
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
-        for fn in filenames:
-            ext = Path(fn).suffix.lower()
-            if ext in exts:
-                files.append(Path(dirpath) / fn)
-
-    return sorted(files)
 
 
 def get_all_names(content: str, lang: str) -> set[str]:
@@ -96,18 +116,19 @@ def get_all_names(content: str, lang: str) -> set[str]:
     names = set()
     if lang in ("py",):
         # Python identifiers
-        names.update(re.findall(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\b', content))
+        names.update(re.findall(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\b", content))
     elif lang in ("ts", "js"):
-        names.update(re.findall(r'\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b', content))
+        names.update(re.findall(r"\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b", content))
     elif lang == "rs":
-        names.update(re.findall(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\b', content))
+        names.update(re.findall(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\b", content))
         # Also Rust snake_case identifiers with ::
-        names.update(re.findall(r'\b([a-z_][a-z0-9_]*(?:::))', content))
+        names.update(re.findall(r"\b([a-z_][a-z0-9_]*(?:::))", content))
     return names
 
 
-def find_unused_python_imports(filepath: Path, content: str,
-                                all_names_in_project: set[str]) -> list[dict]:
+def find_unused_python_imports(
+    filepath: Path, content: str, all_names_in_project: set[str]
+) -> list[dict]:
     """Find unused imports in a Python file using AST."""
     issues = []
     try:
@@ -156,20 +177,23 @@ def find_unused_python_imports(filepath: Path, content: str,
         if name in all_names_in_project:
             continue
 
-        issues.append({
-            "file": str(filepath),
-            "line": line,
-            "type": "unused_import",
-            "name": name,
-            "import_source": import_source,
-            "confidence": 0.9,
-        })
+        issues.append(
+            {
+                "file": str(filepath),
+                "line": line,
+                "type": "unused_import",
+                "name": name,
+                "import_source": import_source,
+                "confidence": 0.9,
+            }
+        )
 
     return issues
 
 
-def find_unused_functions(content: str, filepath: Path,
-                           lang: str, all_names: set[str]) -> list[dict]:
+def find_unused_functions(
+    content: str, filepath: Path, lang: str, all_names: set[str]
+) -> list[dict]:
     """Find functions that are defined but never called."""
     issues = []
 
@@ -203,9 +227,8 @@ def find_unused_functions(content: str, filepath: Path,
                 function_defs[node.name] = {
                     "line": node.lineno,
                     "decorators": decorators,
-                    "is_method": len(node.args.args) > 0 and any(
-                        a.arg == "self" or a.arg == "cls" for a in node.args.args
-                    ),
+                    "is_method": len(node.args.args) > 0
+                    and any(a.arg == "self" or a.arg == "cls" for a in node.args.args),
                     "is_dunder": node.name.startswith("__") and node.name.endswith("__"),
                 }
 
@@ -230,44 +253,52 @@ def find_unused_functions(content: str, filepath: Path,
             if name in all_names:
                 continue
 
-            issues.append({
-                "file": str(filepath),
-                "line": info["line"],
-                "type": "unused_function",
-                "name": name,
-                "confidence": 0.7,
-            })
+            issues.append(
+                {
+                    "file": str(filepath),
+                    "line": info["line"],
+                    "type": "unused_function",
+                    "name": name,
+                    "confidence": 0.7,
+                }
+            )
 
     elif lang in ("ts", "js"):
         # Find function definitions
-        fn_pat = (r'(?:function\s+(\w+)|'
-                  r'(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\()')
+        fn_pat = (
+            r"(?:function\s+(\w+)|"
+            r"(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\()"
+        )
         for m in re.finditer(fn_pat, content):
             name = m.group(1) or m.group(2)
             if name and name not in entry_names:
-                line = content[:m.start()].count("\n") + 1
+                line = content[: m.start()].count("\n") + 1
                 if name not in all_names:
-                    issues.append({
-                        "file": str(filepath),
-                        "line": line,
-                        "type": "unused_function",
-                        "name": name,
-                        "confidence": 0.6,
-                    })
+                    issues.append(
+                        {
+                            "file": str(filepath),
+                            "line": line,
+                            "type": "unused_function",
+                            "name": name,
+                            "confidence": 0.6,
+                        }
+                    )
 
     elif lang == "rs":
-        for m in re.finditer(r'(?:pub\s+)?(?:unsafe\s+)?fn\s+(\w+)', content):
+        for m in re.finditer(r"(?:pub\s+)?(?:unsafe\s+)?fn\s+(\w+)", content):
             name = m.group(1)
             if name and name not in entry_names:
-                line = content[:m.start()].count("\n") + 1
+                line = content[: m.start()].count("\n") + 1
                 if name not in all_names:
-                    issues.append({
-                        "file": str(filepath),
-                        "line": line,
-                        "type": "unused_function",
-                        "name": name,
-                        "confidence": 0.6,
-                    })
+                    issues.append(
+                        {
+                            "file": str(filepath),
+                            "line": line,
+                            "type": "unused_function",
+                            "name": name,
+                            "confidence": 0.6,
+                        }
+                    )
 
     return issues
 
@@ -291,14 +322,16 @@ def find_commented_out_code(filepath: Path, content: str) -> list[dict]:
                 i += 1
 
             if len(block_lines) >= 3:  # 3+ commented-out code lines
-                issues.append({
-                    "file": str(filepath),
-                    "line": block_start + 1,
-                    "type": "commented_code",
-                    "lines": len(block_lines),
-                    "snippet": "\n".join(block_lines[:3]),
-                    "confidence": 0.8,
-                })
+                issues.append(
+                    {
+                        "file": str(filepath),
+                        "line": block_start + 1,
+                        "type": "commented_code",
+                        "lines": len(block_lines),
+                        "snippet": "\n".join(block_lines[:3]),
+                        "confidence": 0.8,
+                    }
+                )
             continue
         i += 1
 
@@ -350,17 +383,19 @@ def print_report(all_issues: list[dict]) -> None:
 
     total = len(all_issues)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 💀 DEAD CODE FINDER — {total} finding(s)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Ongebruikte imports:    {len(by_type.get('unused_import', []))}")
     print(f"   Ongebruikte functies:   {len(by_type.get('unused_function', []))}")
     print(f"   Commented-out code:     {len(by_type.get('commented_code', []))}")
     print()
 
-    for type_name, label in [("unused_import", "Ongebruikte Imports"),
-                              ("unused_function", "Ongebruikte Functies"),
-                              ("commented_code", "Commented-Out Code")]:
+    for type_name, label in [
+        ("unused_import", "Ongebruikte Imports"),
+        ("unused_function", "Ongebruikte Functies"),
+        ("commented_code", "Commented-Out Code"),
+    ]:
         items = by_type.get(type_name, [])
         if not items:
             continue
@@ -382,8 +417,7 @@ def print_report(all_issues: list[dict]) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="dead_code_finder.py — Find unused imports, functions, and dead code",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -396,8 +430,9 @@ Examples:
     )
     parser.add_argument("path", nargs="?", default=".", help="Bestand of directory")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--threshold", "-t", type=int, default=3,
-                        help="Min regels commented code (default: 3)")
+    parser.add_argument(
+        "--threshold", "-t", type=int, default=3, help="Min regels commented code (default: 3)"
+    )
     parser.add_argument("--version", action="version", version="dead_code_finder.py v1.0.0")
 
     args = parser.parse_args()
@@ -435,21 +470,99 @@ Examples:
                     continue
             names = get_all_names(content, lang)
             # Filter to reasonable names (>2 chars, not keywords)
-            keywords = {"if", "for", "while", "try", "def", "class", "import",
-                        "from", "return", "yield", "with", "as", "in", "is",
-                        "and", "or", "not", "True", "False", "None", "self",
-                        "cls", "the", "and", "are", "var", "let", "const",
-                        "type", "new", "this", "fn", "pub", "use", "mod",
-                        "let", "mut", "ref", "impl", "trait", "enum", "struct",
-                        "pub", "crate", "self", "super", "where", "as",
-                        "async", "await", "move", "box", "if", "for", "while",
-                        "loop", "match", "break", "continue", "return", "in",
-                        "else", "try", "catch", "throw", "finally", "switch",
-                        "case", "default", "function", "export", "import",
-                        "from", "class", "extends", "implements", "interface",
-                        "typeof", "instanceof", "void", "null", "undefined",
-                        "any", "never", "unknown", "string", "number",
-                        "boolean", "bigint", "symbol", "object"}
+            keywords = {
+                "if",
+                "for",
+                "while",
+                "try",
+                "def",
+                "class",
+                "import",
+                "from",
+                "return",
+                "yield",
+                "with",
+                "as",
+                "in",
+                "is",
+                "and",
+                "or",
+                "not",
+                "True",
+                "False",
+                "None",
+                "self",
+                "cls",
+                "the",
+                "and",
+                "are",
+                "var",
+                "let",
+                "const",
+                "type",
+                "new",
+                "this",
+                "fn",
+                "pub",
+                "use",
+                "mod",
+                "let",
+                "mut",
+                "ref",
+                "impl",
+                "trait",
+                "enum",
+                "struct",
+                "pub",
+                "crate",
+                "self",
+                "super",
+                "where",
+                "as",
+                "async",
+                "await",
+                "move",
+                "box",
+                "if",
+                "for",
+                "while",
+                "loop",
+                "match",
+                "break",
+                "continue",
+                "return",
+                "in",
+                "else",
+                "try",
+                "catch",
+                "throw",
+                "finally",
+                "switch",
+                "case",
+                "default",
+                "function",
+                "export",
+                "import",
+                "from",
+                "class",
+                "extends",
+                "implements",
+                "interface",
+                "typeof",
+                "instanceof",
+                "void",
+                "null",
+                "undefined",
+                "any",
+                "never",
+                "unknown",
+                "string",
+                "number",
+                "boolean",
+                "bigint",
+                "symbol",
+                "object",
+            }
             all_names.update(n for n in names if len(n) > 2 and n not in keywords)
         except Exception:
             continue

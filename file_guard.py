@@ -199,6 +199,7 @@ def _is_protected(path: Union[str, Path]) -> bool:
 
     # 2. Check pattern matches (using fnmatch-style)
     import fnmatch
+
     for pattern in PROTECTED_PATTERNS:
         # Check against full relative path and basename
         if fnmatch.fnmatch(name, pattern):
@@ -231,8 +232,16 @@ def _is_protected(path: Union[str, Path]) -> bool:
     # e.g., files inside .git, .ssh, .aws, etc.
     parent_lower = parent.lower()
     sensitive_dirs = [
-        ".ssh", ".aws", ".azure", ".gcp", ".kube", ".gnupg",
-        ".config", ".gradle", ".m2", ".nuget",
+        ".ssh",
+        ".aws",
+        ".azure",
+        ".gcp",
+        ".kube",
+        ".gnupg",
+        ".config",
+        ".gradle",
+        ".m2",
+        ".nuget",
     ]
     for sdir in sensitive_dirs:
         if f"/{sdir}/" in f"/{parent_lower}/":
@@ -353,12 +362,14 @@ _change_log: List[Dict[str, Any]] = []
 
 def _track_change(file_path: Path, action: str, approved: bool) -> None:
     """Record a file change for mass-edit detection."""
-    _change_log.append({
-        "path": str(file_path),
-        "action": action,
-        "approved": approved,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
+    _change_log.append(
+        {
+            "path": str(file_path),
+            "action": action,
+            "approved": approved,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
 
 
 def _detect_mass_edit(window_seconds: int = 60) -> Tuple[bool, int]:
@@ -368,7 +379,8 @@ def _detect_mass_edit(window_seconds: int = 60) -> Tuple[bool, int]:
     """
     now = time.time()
     recent = [
-        c for c in _change_log
+        c
+        for c in _change_log
         if c["approved"] and now - _parse_timestamp(c["timestamp"]) < window_seconds
     ]
     count = len(recent)
@@ -478,8 +490,9 @@ def action_diff(path: str, new_content: Optional[str] = None, json_mode: bool = 
     return 0
 
 
-def action_protect(path: str, new_content: Optional[str] = None, force: bool = False,
-                   json_mode: bool = False) -> int:
+def action_protect(
+    path: str, new_content: Optional[str] = None, force: bool = False, json_mode: bool = False
+) -> int:
     """
     Protect a file from being overwritten.
     Shows diff, requires approval, creates backup before writing.
@@ -491,13 +504,15 @@ def action_protect(path: str, new_content: Optional[str] = None, force: bool = F
     # If not protected, allow directly
     if not protected:
         if json_mode:
-            _emit_json({
-                "path": str(p.resolve()),
-                "protected": False,
-                "action": "protect",
-                "status": "allowed",
-                "message": "File is not protected — allowed.",
-            })
+            _emit_json(
+                {
+                    "path": str(p.resolve()),
+                    "protected": False,
+                    "action": "protect",
+                    "status": "allowed",
+                    "message": "File is not protected — allowed.",
+                }
+            )
         else:
             print("File is not protected — allowed.")
         return 0
@@ -669,8 +684,7 @@ def action_delete(path: str, force: bool = False, json_mode: bool = False) -> in
     # Require approval
     if not force:
         approved = _prompt_user(
-            f"Are you sure you want to DELETE protected file '{p.name}'?",
-            default="n"
+            f"Are you sure you want to DELETE protected file '{p.name}'?", default="n"
         )
         result["approved"] = approved
 
@@ -765,7 +779,7 @@ def action_rename(src: str, dst: str, force: bool = False, json_mode: bool = Fal
     if not force:
         approved = _prompt_user(
             f"Are you sure you want to RENAME protected file '{src_path.name}' to '{dst_path.name}'?",
-            default="n"
+            default="n",
         )
         result["approved"] = approved
 
@@ -819,11 +833,13 @@ def action_mass_check(paths: List[str], json_mode: bool = False) -> int:
         protected = _is_protected(p)
         if protected:
             protected_count += 1
-        results.append({
-            "path": str(p.resolve()),
-            "protected": protected,
-            "exists": p.exists(),
-        })
+        results.append(
+            {
+                "path": str(p.resolve()),
+                "protected": protected,
+                "exists": p.exists(),
+            }
+        )
 
     detected, recent_count = _detect_mass_edit()
 
@@ -918,8 +934,7 @@ def action_status(path: Optional[str] = None, json_mode: bool = False) -> int:
             rel_root = ""
         # Skip hidden dirs that aren't the root
         if rel_root and any(
-            part.startswith(".") and part not in (".", "")
-            for part in Path(rel_root).parts
+            part.startswith(".") and part not in (".", "") for part in Path(rel_root).parts
         ):
             # Only skip if it's not .file_guard_backups (we want to show our own)
             if ".file_guard_backups" not in rel_root:
@@ -936,19 +951,23 @@ def action_status(path: Optional[str] = None, json_mode: bool = False) -> int:
             if _is_protected(p):
                 try:
                     stat = p.stat()
-                    protected_files.append({
-                        "path": str(p.resolve()),
-                        "size": stat.st_size,
-                        "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                        "backups": len(_list_backups(p)),
-                    })
+                    protected_files.append(
+                        {
+                            "path": str(p.resolve()),
+                            "size": stat.st_size,
+                            "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                            "backups": len(_list_backups(p)),
+                        }
+                    )
                 except (OSError, IOError):
-                    protected_files.append({
-                        "path": str(p.resolve()),
-                        "size": 0,
-                        "modified": None,
-                        "backups": 0,
-                    })
+                    protected_files.append(
+                        {
+                            "path": str(p.resolve()),
+                            "size": 0,
+                            "modified": None,
+                            "backups": 0,
+                        }
+                    )
 
         # Limit scan depth
         current_depth = len(Path(rel_root).parts) if rel_root else 0
@@ -970,7 +989,13 @@ def action_status(path: Optional[str] = None, json_mode: bool = False) -> int:
         print()
         if protected_files:
             for pf in protected_files:
-                size_str = f"{pf['size']:,} bytes" if pf['size'] < 1024 else f"{pf['size']/1024:,.1f} KB" if pf['size'] < 1024**2 else f"{pf['size']/1024**2:,.1f} MB"
+                size_str = (
+                    f"{pf['size']:,} bytes"
+                    if pf["size"] < 1024
+                    else f"{pf['size'] / 1024:,.1f} KB"
+                    if pf["size"] < 1024**2
+                    else f"{pf['size'] / 1024**2:,.1f} MB"
+                )
                 backups = pf.get("backups", 0)
                 backup_str = f", {backups} backup(s)" if backups else ""
                 print(f"  {pf['path']} ({size_str}{backup_str})")
@@ -986,8 +1011,7 @@ def action_status(path: Optional[str] = None, json_mode: bool = False) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build parser.
-        """
+    """Build parser."""
     parser = argparse.ArgumentParser(
         prog="file_guard",
         description="Protect important files from accidental overwrite, deletion, or rename.",
@@ -1004,7 +1028,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output results in JSON format instead of human-readable text.",
     )
     parser.add_argument(
-        "--force", "-f",
+        "--force",
+        "-f",
         action="store_true",
         help="Skip user approval prompts (use with caution).",
     )
@@ -1019,7 +1044,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_diff = subparsers.add_parser("diff", help="Show diff before modifying a protected file")
     p_diff.add_argument("path", help="Path to the protected file")
     p_diff.add_argument(
-        "content", nargs="?", default=None,
+        "content",
+        nargs="?",
+        default=None,
         help="New content (optional; reads from stdin if omitted)",
     )
 
@@ -1029,7 +1056,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_protect.add_argument("path", help="Path to the file to write")
     p_protect.add_argument(
-        "content", nargs="?", default=None,
+        "content",
+        nargs="?",
+        default=None,
         help="New content (optional; reads from stdin if omitted)",
     )
 
@@ -1053,11 +1082,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_backup.add_argument("path", help="Path to the file to back up")
 
     # status
-    p_status = subparsers.add_parser(
-        "status", help="Show protected file status in a directory"
-    )
+    p_status = subparsers.add_parser("status", help="Show protected file status in a directory")
     p_status.add_argument(
-        "path", nargs="?", default=None,
+        "path",
+        nargs="?",
+        default=None,
         help="Directory to scan (default: current working directory)",
     )
 
@@ -1151,8 +1180,7 @@ def guard_diff(path: Union[str, Path], new_content: str) -> Dict[str, Any]:
     return result
 
 
-def guard_protect(path: Union[str, Path], new_content: str,
-                  force: bool = False) -> Dict[str, Any]:
+def guard_protect(path: Union[str, Path], new_content: str, force: bool = False) -> Dict[str, Any]:
     """
     Write to a file through the guard. Returns dict with status.
     If not force, this will prompt on the terminal.

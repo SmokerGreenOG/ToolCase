@@ -16,6 +16,7 @@ Gebruik:
     python frontend_backend_linker.py <path> --json
     python frontend_backend_linker.py <path> --fix
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -26,23 +27,30 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from toolcase_core.utils import collect_source_files, normalize_url
 
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    "build", "dist", ".next",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        ".next",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # Backend route detection patterns
 BACKEND_ROUTE_PATTERNS = {
@@ -65,8 +73,8 @@ BACKEND_ROUTE_PATTERNS = {
         r'(?:router|app)\s*\.\s*(?:get|post|put|delete|patch)\s*\(\s*["\']([^"\']+)["\']',
     ),
     "ts_nextjs_api": re.compile(
-        r'(?:export\s+(?:async\s+)?function\s+(?:GET|POST|PUT|DELETE|PATCH)|'
-        r'export\s+const\s+(?:GET|POST|PUT|DELETE|PATCH)\s*[=:])',
+        r"(?:export\s+(?:async\s+)?function\s+(?:GET|POST|PUT|DELETE|PATCH)|"
+        r"export\s+const\s+(?:GET|POST|PUT|DELETE|PATCH)\s*[=:])",
     ),
 }
 
@@ -85,7 +93,7 @@ FRONTEND_API_PATTERNS = {
         r'([^"\']+)["\']',
     ),
     "graphql": re.compile(
-        r'(?:gql|graphql)\s*`\s*(?:query|mutation|subscription)',
+        r"(?:gql|graphql)\s*`\s*(?:query|mutation|subscription)",
     ),
     "trpc": re.compile(
         r'trpc\s*\.\s*(?:query|mutation|useQuery|useMutation)\s*\(\s*["\']'
@@ -128,22 +136,11 @@ ROUTE_METHOD_MAP = {
 def is_api_call(url: str) -> bool:
     """Check if a URL looks like an API call."""
     return (
-        url.startswith("/api/") or
-        url.startswith("/") and
-        not url.startswith(("#", "/_next", "/static", "/favicon", "/assets"))
+        url.startswith("/api/")
+        or url.startswith("/")
+        and not url.startswith(("#", "/_next", "/static", "/favicon", "/assets"))
     )
 
-
-def normalize_url(url: str) -> str:
-    """Normalize a URL by removing query strings and trailing slashes."""
-    # Remove query strings
-    url = url.split("?")[0]
-    # Remove trailing slash
-    url = url.rstrip("/")
-    # Collapse double slashes
-    while "//" in url:
-        url = url.replace("//", "/")
-    return url
 
 
 def extract_route_params(url: str) -> list[str]:
@@ -156,23 +153,6 @@ def extract_route_params(url: str) -> list[str]:
             params.append(param)
     return params
 
-
-def collect_source_files(root: Path) -> list[Path]:
-    """Collect all relevant source files."""
-    files = []
-    exts = {".ts", ".tsx", ".js", ".jsx", ".py", ".rs", ".mjs", ".cjs"}
-
-    if root.is_file():
-        return [root]
-
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
-        for fn in filenames:
-            ext = Path(fn).suffix.lower()
-            if ext in exts:
-                files.append(Path(dirpath) / fn)
-
-    return sorted(files)
 
 
 def scan_backend_routes(root: Path, api_prefix: str) -> list[dict]:
@@ -198,7 +178,7 @@ def scan_backend_routes(root: Path, api_prefix: str) -> list[dict]:
 
                 # Detect HTTP method
                 line_start = max(0, match.start() - 200)
-                context = content[line_start:match.end()]
+                context = content[line_start : match.end()]
                 method = "GET"  # default
                 for m_name, m_pattern in BACKEND_METHOD_PATTERNS.items():
                     if m_pattern.search(context):
@@ -207,15 +187,17 @@ def scan_backend_routes(root: Path, api_prefix: str) -> list[dict]:
 
                 params = extract_route_params(url)
 
-                routes.append({
-                    "route": normalize_url(full_url),
-                    "raw_url": url,
-                    "file": str(fp),
-                    "framework": pattern_name,
-                    "method": method,
-                    "params": params,
-                    "type": "backend",
-                })
+                routes.append(
+                    {
+                        "route": normalize_url(full_url),
+                        "raw_url": url,
+                        "file": str(fp),
+                        "framework": pattern_name,
+                        "method": method,
+                        "params": params,
+                        "type": "backend",
+                    }
+                )
 
     return routes
 
@@ -245,7 +227,7 @@ def scan_frontend_calls(root: Path, api_prefix: str) -> list[dict]:
 
                 # Detect HTTP method
                 line_start = max(0, match.start() - 100)
-                context = content[line_start:match.end()]
+                context = content[line_start : match.end()]
                 method = "GET"  # default
                 for m_name, m_pattern in HTTP_METHOD_PATTERNS.items():
                     if m_pattern.search(context):
@@ -254,21 +236,22 @@ def scan_frontend_calls(root: Path, api_prefix: str) -> list[dict]:
 
                 params = extract_route_params(url)
 
-                calls.append({
-                    "route": normalize_url(url),
-                    "raw_url": url,
-                    "file": str(fp),
-                    "pattern": pattern_name,
-                    "method": method,
-                    "params": params,
-                    "type": "frontend",
-                })
+                calls.append(
+                    {
+                        "route": normalize_url(url),
+                        "raw_url": url,
+                        "file": str(fp),
+                        "pattern": pattern_name,
+                        "method": method,
+                        "params": params,
+                        "type": "frontend",
+                    }
+                )
 
     return calls
 
 
-def match_routes(backend_routes: list[dict], frontend_calls: list[dict],
-                 api_prefix: str) -> dict:
+def match_routes(backend_routes: list[dict], frontend_calls: list[dict], api_prefix: str) -> dict:
     """Cross-reference frontend calls with backend routes."""
     backend_by_route = {}
     for br in backend_routes:
@@ -295,20 +278,21 @@ def match_routes(backend_routes: list[dict], frontend_calls: list[dict],
         fcs = frontend_by_route[route]
         method_match = any(b["method"] == f["method"] for b in brs for f in fcs)
         param_match = all(
-            set(b.get("params", [])) == set(f.get("params", []))
-            for b in brs for f in fcs
+            set(b.get("params", [])) == set(f.get("params", [])) for b in brs for f in fcs
         )
 
-        matched.append({
-            "route": route,
-            "status": "MATCHED",
-            "method_match": method_match,
-            "param_match": param_match,
-            "backend_count": len(brs),
-            "frontend_count": len(fcs),
-            "backend_files": sorted(set(b["file"] for b in brs)),
-            "frontend_files": sorted(set(f["file"] for f in fcs)),
-        })
+        matched.append(
+            {
+                "route": route,
+                "status": "MATCHED",
+                "method_match": method_match,
+                "param_match": param_match,
+                "backend_count": len(brs),
+                "frontend_count": len(fcs),
+                "backend_files": sorted(set(b["file"] for b in brs)),
+                "frontend_files": sorted(set(f["file"] for f in fcs)),
+            }
+        )
 
     # Orphaned backend routes
     orphaned_backend = []
@@ -330,13 +314,15 @@ def match_routes(backend_routes: list[dict], frontend_calls: list[dict],
         br_methods = set(b["method"] for b in brs)
         fc_methods = set(f["method"] for f in fcs)
         if br_methods != fc_methods:
-            method_mismatches.append({
-                "route": route,
-                "backend_methods": list(br_methods),
-                "frontend_methods": list(fc_methods),
-                "backend_files": sorted(set(b["file"] for b in brs)),
-                "frontend_files": sorted(set(f["file"] for f in fcs)),
-            })
+            method_mismatches.append(
+                {
+                    "route": route,
+                    "backend_methods": list(br_methods),
+                    "frontend_methods": list(fc_methods),
+                    "backend_files": sorted(set(b["file"] for b in brs)),
+                    "frontend_files": sorted(set(f["file"] for f in fcs)),
+                }
+            )
 
     # Param mismatches
     param_mismatches = []
@@ -353,13 +339,15 @@ def match_routes(backend_routes: list[dict], frontend_calls: list[dict],
         missing_backend = fc_params - br_params
         missing_frontend = br_params - fc_params
         if missing_backend or missing_frontend:
-            param_mismatches.append({
-                "route": route,
-                "backend_params": list(br_params),
-                "frontend_params": list(fc_params),
-                "missing_in_backend": list(missing_backend),
-                "missing_in_frontend": list(missing_frontend),
-            })
+            param_mismatches.append(
+                {
+                    "route": route,
+                    "backend_params": list(br_params),
+                    "frontend_params": list(fc_params),
+                    "missing_in_backend": list(missing_backend),
+                    "missing_in_frontend": list(missing_frontend),
+                }
+            )
 
     return {
         "matched": matched,
@@ -378,9 +366,9 @@ def print_report(stats: dict, api_prefix: str) -> None:
     method_mismatches = stats["method_mismatches"]
     param_mismatches = stats["param_mismatches"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🔗 FRONTEND-BACKEND LINKER")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   API prefix: {api_prefix}")
     print(f"   ✅ Matched routes:  {len(matched)}")
     print(f"   ⚠  Orphaned backend: {len(orphaned_backend)}")
@@ -444,8 +432,7 @@ def print_report(stats: dict, api_prefix: str) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="frontend_backend_linker.py — Cross-ref frontend/backend API endpoints",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -458,13 +445,14 @@ Examples:
         """,
     )
     parser.add_argument("path", nargs="?", default=".", help="Project root")
-    parser.add_argument("--api-prefix", "-p", default="/api",
-                        help="API prefix voor backend routes (default: /api)")
+    parser.add_argument(
+        "--api-prefix", "-p", default="/api", help="API prefix voor backend routes (default: /api)"
+    )
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--fix", "-f", action="store_true",
-                        help="Probeer mismatches te fixen (experimenteel)")
-    parser.add_argument("--version", action="version",
-                        version="frontend_backend_linker.py v1.0.0")
+    parser.add_argument(
+        "--fix", "-f", action="store_true", help="Probeer mismatches te fixen (experimenteel)"
+    )
+    parser.add_argument("--version", action="version", version="frontend_backend_linker.py v1.0.0")
 
     args = parser.parse_args()
 

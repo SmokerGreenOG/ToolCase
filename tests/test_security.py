@@ -3,8 +3,10 @@
 All secrets in this file are deliberate test values.
 # toolcase: ignore-security
 """
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
@@ -19,12 +21,14 @@ class TestSecurityScan(unittest.TestCase):
 
     def tearDown(self) -> None:
         import shutil
+
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def test_scan_clean_file_no_findings(self) -> None:
         """A clean file should have no security findings."""
         from security_scan import scan_file
         from pathlib import Path
+
         clean = os.path.join(self.tmpdir, "clean.py")
         with open(clean, "w", encoding="utf-8") as f:
             f.write("import os\nprint('hello')\n")
@@ -35,6 +39,7 @@ class TestSecurityScan(unittest.TestCase):
         """A file with an API key should be flagged."""
         from security_scan import scan_file
         from pathlib import Path
+
         risky = os.path.join(self.tmpdir, "risky.py")
         with open(risky, "w", encoding="utf-8") as f:
             f.write('API_KEY = "sk-1234567890abcdef"\n')
@@ -46,18 +51,17 @@ class TestSecurityScan(unittest.TestCase):
         """Intentional examples can be suppressed without excluding a file."""
         from security_scan import scan_file
         from pathlib import Path
+
         example = os.path.join(self.tmpdir, "example.py")
         with open(example, "w", encoding="utf-8") as f:
-            f.write(
-                '# toolcase: ignore-security\n'
-                'API_KEY = "sk-example-value"\n'
-            )
+            f.write('# toolcase: ignore-security\nAPI_KEY = "sk-example-value"\n')
         self.assertEqual(scan_file(Path(example)), [])
 
     def test_scan_detects_eval(self) -> None:
         """A file with eval() should be flagged."""
         from security_scan import scan_file
         from pathlib import Path
+
         risky = os.path.join(self.tmpdir, "eval_risk.py")
         with open(risky, "w", encoding="utf-8") as f:
             f.write('eval("print(1)")\n')
@@ -69,6 +73,7 @@ class TestSecurityScan(unittest.TestCase):
         """A file with a private key header should be flagged."""
         from security_scan import scan_file
         from pathlib import Path
+
         risky = os.path.join(self.tmpdir, "key.pem")
         with open(risky, "w", encoding="utf-8") as f:
             f.write("-----BEGIN RSA PRIVATE KEY-----\n")
@@ -80,6 +85,7 @@ class TestSecurityScan(unittest.TestCase):
         """collect_files should find .py files."""
         from security_scan import collect_files
         from pathlib import Path
+
         # Create a file
         test_file = os.path.join(self.tmpdir, "test.py")
         with open(test_file, "w") as f:
@@ -91,6 +97,7 @@ class TestSecurityScan(unittest.TestCase):
     def test_mask_secret(self) -> None:
         """_mask_secret should mask sensitive values."""
         from security_scan import _mask_secret
+
         masked = _mask_secret('API_KEY = "sk-1234567890abcdef"')
         self.assertIn("**", masked)
         self.assertNotIn("1234567890abcdef", masked.replace("****", ""))
@@ -99,6 +106,7 @@ class TestSecurityScan(unittest.TestCase):
         """Binary files should be skipped."""
         from security_scan import scan_file
         from pathlib import Path
+
         binary = os.path.join(self.tmpdir, "file.png")
         with open(binary, "wb") as f:
             f.write(b"PNG\x0d\x0a\x1a\x0a")
@@ -109,6 +117,7 @@ class TestSecurityScan(unittest.TestCase):
         """Connection strings with credentials should be flagged."""
         from security_scan import scan_file
         from pathlib import Path
+
         risky = os.path.join(self.tmpdir, "config.py")
         with open(risky, "w", encoding="utf-8") as f:
             f.write('DB = "postgresql://user:pass123@localhost:5432/db"\n')

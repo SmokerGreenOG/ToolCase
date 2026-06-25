@@ -12,6 +12,7 @@ Gebruik:
     python php_complexity.py <directory> --recursive
     python php_complexity.py <path> --threshold 10 --json
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -27,64 +28,74 @@ from pathlib import Path
 # ═══════════════════════════════════════════════════════════════════
 
 EXCLUDE_DIRS = {
-    "node_modules", "vendor", ".git", "__pycache__", "tests/fixtures",
-    ".venv", "venv", "dist", "build", ".cache",
-    "storage", "bootstrap/cache", "wp-content/cache",
+    "node_modules",
+    "vendor",
+    ".git",
+    "__pycache__",
+    "tests/fixtures",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".cache",
+    "storage",
+    "bootstrap/cache",
+    "wp-content/cache",
 }
 
 DEFAULT_THRESHOLD = 10  # McCabe warning threshold
 
 # ── PHP function/method detection ──
 FUNCTION_START = re.compile(
-    r'^\s*(?:(?:public|private|protected|static|abstract|final)\s+)*'
-    r'function\s+(\w+)\s*\(',
+    r"^\s*(?:(?:public|private|protected|static|abstract|final)\s+)*"
+    r"function\s+(\w+)\s*\(",
     re.MULTILINE,
 )
 
 # Anonymous function / closure
 CLOSURE_START = re.compile(
-    r'\bfunction\s*\([^)]*\)\s*(?:\s*use\s*\([^)]*\))?\s*\{',
+    r"\bfunction\s*\([^)]*\)\s*(?:\s*use\s*\([^)]*\))?\s*\{",
 )
 
 # ── Decision points (each +1 McCabe) ──
 DECISION_PATTERNS = [
-    re.compile(r'\bif\s*[\(:]'),          # if
-    re.compile(r'\belseif\s*[\(:]'),      # elseif
-    re.compile(r'\belse\b'),              # else (structural)
-    re.compile(r'\bfor\s*\('),            # for
-    re.compile(r'\bforeach\s*\('),        # foreach
-    re.compile(r'\bwhile\s*\('),          # while
-    re.compile(r'\bdo\s*\{'),             # do...while
-    re.compile(r'\bswitch\s*\('),         # switch (counts as 1)
-    re.compile(r'\bcase\s+'),             # each case (+1)
-    re.compile(r'\bcatch\s*\('),          # catch
-    re.compile(r'\?\s*(?!>)'),             # ternary operator
-    re.compile(r'&&'),                    # logical AND
-    re.compile(r'\|\|'),                  # logical OR
-    re.compile(r'\band\b'),               # low-precedence AND
-    re.compile(r'\bor\b'),                 # low-precedence OR
-    re.compile(r'\bxor\b'),               # XOR
+    re.compile(r"\bif\s*[\(:]"),  # if
+    re.compile(r"\belseif\s*[\(:]"),  # elseif
+    re.compile(r"\belse\b"),  # else (structural)
+    re.compile(r"\bfor\s*\("),  # for
+    re.compile(r"\bforeach\s*\("),  # foreach
+    re.compile(r"\bwhile\s*\("),  # while
+    re.compile(r"\bdo\s*\{"),  # do...while
+    re.compile(r"\bswitch\s*\("),  # switch (counts as 1)
+    re.compile(r"\bcase\s+"),  # each case (+1)
+    re.compile(r"\bcatch\s*\("),  # catch
+    re.compile(r"\?\s*(?!>)"),  # ternary operator
+    re.compile(r"&&"),  # logical AND
+    re.compile(r"\|\|"),  # logical OR
+    re.compile(r"\band\b"),  # low-precedence AND
+    re.compile(r"\bor\b"),  # low-precedence OR
+    re.compile(r"\bxor\b"),  # XOR
 ]
 
 # ── Nesting incrementors (cognitive load) ──
 NESTING_PATTERNS = [
-    re.compile(r'\bif\s*[\(:]'),
-    re.compile(r'\belseif\s*[\(:]'),
-    re.compile(r'\bfor\s*\('),
-    re.compile(r'\bforeach\s*\('),
-    re.compile(r'\bwhile\s*\('),
-    re.compile(r'\bswitch\s*\('),
-    re.compile(r'\btry\s*\{'),
-    re.compile(r'\bfunction\s*\([^)]*\)\s*\{'),  # closures add nesting
+    re.compile(r"\bif\s*[\(:]"),
+    re.compile(r"\belseif\s*[\(:]"),
+    re.compile(r"\bfor\s*\("),
+    re.compile(r"\bforeach\s*\("),
+    re.compile(r"\bwhile\s*\("),
+    re.compile(r"\bswitch\s*\("),
+    re.compile(r"\btry\s*\{"),
+    re.compile(r"\bfunction\s*\([^)]*\)\s*\{"),  # closures add nesting
 ]
 
 # ── Boolean operators (cognitive load weight: 0.5 each) ──
 BOOLEAN_PATTERNS = [
-    re.compile(r'&&'),
-    re.compile(r'\|\|'),
-    re.compile(r'\band\b'),
-    re.compile(r'\bor\b'),
-    re.compile(r'\bxor\b'),
+    re.compile(r"&&"),
+    re.compile(r"\|\|"),
+    re.compile(r"\band\b"),
+    re.compile(r"\bor\b"),
+    re.compile(r"\bxor\b"),
 ]
 
 
@@ -106,11 +117,11 @@ def extract_functions(source: str) -> list[dict]:
         body_start = -1
         body_end = -1
         for i, c in enumerate(source[start:], start):
-            if c == '{':
+            if c == "{":
                 if depth == 0:
                     body_start = i + 1
                 depth += 1
-            elif c == '}':
+            elif c == "}":
                 depth -= 1
                 if depth == 0:
                     body_end = i
@@ -118,12 +129,14 @@ def extract_functions(source: str) -> list[dict]:
 
         if body_start >= 0 and body_end >= 0:
             body = source[body_start:body_end]
-            functions.append({
-                "name": name,
-                "line": source[:match.start()].count('\n') + 1,
-                "body": body,
-                "type": "function",
-            })
+            functions.append(
+                {
+                    "name": name,
+                    "line": source[: match.start()].count("\n") + 1,
+                    "body": body,
+                    "type": "function",
+                }
+            )
 
     return functions
 
@@ -139,17 +152,17 @@ def compute_mccabe(body: str) -> int:
 def compute_cognitive(body: str) -> float:
     """Compute cognitive load score: nesting depth + boolean weight."""
     score = 0.0
-    lines = body.split('\n')
+    lines = body.split("\n")
     nesting_depth = 0
 
     for line in lines:
         stripped = line.strip()
-        if not stripped or stripped.startswith('//') or stripped.startswith('#'):
+        if not stripped or stripped.startswith("//") or stripped.startswith("#"):
             continue
 
         # Track nesting for cognitive load
         opens = sum(1 for p in NESTING_PATTERNS if p.search(stripped))
-        closes = stripped.count('}')
+        closes = stripped.count("}")
 
         if opens > 0:
             nesting_depth += opens
@@ -174,7 +187,7 @@ def analyze_php_file(filepath: Path, threshold: int) -> dict:
     except Exception as e:
         return {"file": str(filepath), "error": f"Cannot read: {e}", "functions": []}
 
-    line_count = source.count('\n')
+    line_count = source.count("\n")
     functions = extract_functions(source)
 
     results = []
@@ -183,14 +196,16 @@ def analyze_php_file(filepath: Path, threshold: int) -> dict:
         cognitive = compute_cognitive(func["body"])
         status = "OK" if mccabe <= threshold else "WARN"
 
-        results.append({
-            "name": func["name"],
-            "line": func["line"],
-            "type": func["type"],
-            "mccabe": mccabe,
-            "cognitive": cognitive,
-            "status": status,
-        })
+        results.append(
+            {
+                "name": func["name"],
+                "line": func["line"],
+                "type": func["type"],
+                "mccabe": mccabe,
+                "cognitive": cognitive,
+                "status": status,
+            }
+        )
 
     # Top 5 most complex
     by_mccabe = sorted(results, key=lambda f: f["mccabe"], reverse=True)[:5]
@@ -260,7 +275,9 @@ def print_report(results: list[dict], threshold: int) -> None:
             print(f"\n   Top 5 most complex:")
             for f in top5:
                 bar = "█" * min(f["mccabe"], 40)
-                print(f"     {f['name']:<30s} McCabe {f['mccabe']:3d}  Cog {f['cognitive']:5.1f}  {bar}  [{f['status']}]")
+                print(
+                    f"     {f['name']:<30s} McCabe {f['mccabe']:3d}  Cog {f['cognitive']:5.1f}  {bar}  [{f['status']}]"
+                )
         else:
             print(f"   No functions found")
 
@@ -270,7 +287,9 @@ def print_report(results: list[dict], threshold: int) -> None:
     print(f"{'=' * 70}")
     print(f"   Files analyzed:      {total_files}")
     print(f"   Total functions:     {total_funcs}")
-    print(f"   Avg McCabe:          {round(sum(f['mccabe'] for f in all_funcs) / max(len(all_funcs), 1), 1)}")
+    print(
+        f"   Avg McCabe:          {round(sum(f['mccabe'] for f in all_funcs) / max(len(all_funcs), 1), 1)}"
+    )
     print(f"   Warnings (> {threshold}):    {total_warnings}")
 
     if global_top10:
@@ -306,16 +325,18 @@ def print_json(results: list[dict], threshold: int) -> None:
     }
 
     for report in results:
-        output["files"].append({
-            "file": report["file"],
-            "lines": report["lines"],
-            "total_functions": report["total_functions"],
-            "avg_mccabe": report["avg_mccabe"],
-            "avg_cognitive": report["avg_cognitive"],
-            "warnings": report.get("warnings", 0),
-            "functions": report.get("functions", []),
-            "top5": report.get("top5", []),
-        })
+        output["files"].append(
+            {
+                "file": report["file"],
+                "lines": report["lines"],
+                "total_functions": report["total_functions"],
+                "avg_mccabe": report["avg_mccabe"],
+                "avg_cognitive": report["avg_cognitive"],
+                "warnings": report.get("warnings", 0),
+                "functions": report.get("functions", []),
+                "top5": report.get("top5", []),
+            }
+        )
 
     print(json.dumps(output, indent=2, ensure_ascii=False))
 
@@ -326,8 +347,7 @@ def print_json(results: list[dict], threshold: int) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="php_complexity.py - PHP cyclomatic complexity analyzer",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -335,8 +355,13 @@ def main() -> None:
     parser.add_argument("path", help="PHP file or directory")
     parser.add_argument("--recursive", "-r", action="store_true", help="Recursive scan")
     parser.add_argument("--json", "-j", action="store_true", help="JSON output")
-    parser.add_argument("--threshold", "-t", type=int, default=DEFAULT_THRESHOLD,
-                        help=f"McCabe warning threshold (default: {DEFAULT_THRESHOLD})")
+    parser.add_argument(
+        "--threshold",
+        "-t",
+        type=int,
+        default=DEFAULT_THRESHOLD,
+        help=f"McCabe warning threshold (default: {DEFAULT_THRESHOLD})",
+    )
     parser.add_argument("--version", action="version", version="php_complexity.py v1.0.0")
 
     args = parser.parse_args()
@@ -358,12 +383,14 @@ def main() -> None:
     elif target.is_dir():
         files = discover_php_files(target) if args.recursive else sorted(target.glob("*.php"))
         if not files:
-            print(f"No .php files found"); sys.exit(0)
+            print(f"No .php files found")
+            sys.exit(0)
         if not args.json:
             print(f"{len(files)} PHP file(s) found")
         results = [analyze_php_file(f, args.threshold) for f in files]
     else:
-        print(f"Not a file or directory", file=sys.stderr); sys.exit(1)
+        print(f"Not a file or directory", file=sys.stderr)
+        sys.exit(1)
 
     if args.json:
         print_json(results, args.threshold)

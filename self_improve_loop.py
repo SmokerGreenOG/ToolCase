@@ -33,13 +33,13 @@ from __future__ import annotations
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 
 import argparse
 import json
 import re
 import shlex
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -55,25 +55,43 @@ TIMEOUT_LONG = 120
 
 # ── Forbidden patterns (Rule 7) ─────────────────────────────
 FORBIDDEN_COMMANDS = [
-    "rm -rf", "rm -r /", "rm -rf /", "del /f /s",
-    "git clean -fdx", "git clean -fd",
-    "curl.*| sh", "curl.*| bash", "wget.*| sh", "wget.*| bash",
-    "powershell.*DownloadFile", "powershell.*Invoke-WebRequest",
-    "Invoke-Expression", "iex",
+    "rm -rf",
+    "rm -r /",
+    "rm -rf /",
+    "del /f /s",
+    "git clean -fdx",
+    "git clean -fd",
+    "curl.*| sh",
+    "curl.*| bash",
+    "wget.*| sh",
+    "wget.*| bash",
+    "powershell.*DownloadFile",
+    "powershell.*Invoke-WebRequest",
+    "Invoke-Expression",
+    "iex",
 ]
 
 FORBIDDEN_FILE_READS = [
-    ".env", ".env.local", ".env.production", ".env.example",
-    "credentials", "secrets", "api_key", "token", "password",
-    "id_rsa", "id_ed25519", ".netrc", ".npmrc._token",
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.example",
+    "credentials",
+    "secrets",
+    "api_key",
+    "token",
+    "password",
+    "id_rsa",
+    "id_ed25519",
+    ".netrc",
+    ".npmrc._token",
 ]
 
 
 # ── Data classes ────────────────────────────────────────────
 
+
 @dataclass
-
-
 class Finding:
     category: str  # code-quality | security | project-health | docs | tests | build
     severity: str  # critical | high | medium | low | info
@@ -84,8 +102,6 @@ class Finding:
 
 
 @dataclass
-
-
 class Change:
     description: str
     category: str  # safe | needs_approval | forbidden
@@ -97,8 +113,6 @@ class Change:
 
 
 @dataclass
-
-
 class CycleReport:
     cycle: int
     mode: str  # dry-run | safe-only | apply
@@ -109,9 +123,7 @@ class CycleReport:
     skipped_changes: list[Change] = field(default_factory=list)
     backup_paths: list[str] = field(default_factory=list)
     tests: dict = field(
-        default_factory=lambda: {
-            "status": "not_run", "command": None, "details": []
-        }
+        default_factory=lambda: {"status": "not_run", "command": None, "details": []}
     )
     rollback: dict = field(default_factory=lambda: {"executed": False, "reason": None})
     errors: list[str] = field(default_factory=list)
@@ -151,9 +163,7 @@ class SafetyManager:
             p.relative_to(self.workspace)
             return p
         except ValueError:
-            raise PermissionError(
-                f"SAFETY BLOCKED: {p} is outside workspace {self.workspace}"
-            )
+            raise PermissionError(f"SAFETY BLOCKED: {p} is outside workspace {self.workspace}")
 
     # ── Rule 1: Backup ────────────────────────────────────
     def create_backup(self, path: str | Path) -> str | None:
@@ -232,13 +242,12 @@ class CodeScanner:
         self.workspace = workspace
         self.focus = focus
 
-    def _run_tool(self, script: str, args: list[str],
-                  timeout: int = TIMEOUT_MEDIUM) -> dict:
+    def _run_tool(self, script: str, args: list[str], timeout: int = TIMEOUT_MEDIUM) -> dict:
         tool = TOOLCASE_DIR / script
         if not tool.exists():
             return {"error": f"Tool not found: {script}"}
         try:
-            r = subprocess.run(
+            r = safe_run(
                 [sys.executable, str(tool)] + args,
                 capture_output=True,
                 text=True,
@@ -248,7 +257,7 @@ class CodeScanner:
             )
             output = (r.stdout + r.stderr).strip()
             return {"exit_code": r.returncode, "output": output}
-        except subprocess.TimeoutExpired:
+        except TimeoutError:
             return {"error": f"TIMEOUT ({timeout}s): {script}"}
         except Exception as e:
             return {"error": str(e)}
@@ -263,13 +272,15 @@ class CodeScanner:
         if self.focus not in ("all", "code-quality"):
             return findings
 
-        r = self._run_tool("improve.py", [str(self.workspace), "--recursive"],
-                           timeout=TIMEOUT_LONG)
+        r = self._run_tool("improve.py", [str(self.workspace), "--recursive"], timeout=TIMEOUT_LONG)
         if r.get("error"):
-            findings.append(Finding(
-                category="code-quality", severity="warning",
-                message=f"improve.py scan: {r['error']}",
-            ))
+            findings.append(
+                Finding(
+                    category="code-quality",
+                    severity="warning",
+                    message=f"improve.py scan: {r['error']}",
+                )
+            )
             return findings
 
         output = r.get("output", "")
@@ -279,10 +290,7 @@ class CodeScanner:
             if not stripped:
                 continue
             # Detect lint lines: "file.py:NN | E501|E302|W291|W293"
-            lint_match = re.match(
-                r'^(\S+?\.py):(\d+)\s*\|\s*(E\d+|W\d+)\s*:\s*(.+)$',
-                stripped
-            )
+            lint_match = re.match(r"^(\S+?\.py):(\d+)\s*\|\s*(E\d+|W\d+)\s*:\s*(.+)$", stripped)
             if lint_match:
                 fpath = lint_match.group(1)
                 lnum = int(lint_match.group(2))
@@ -290,26 +298,30 @@ class CodeScanner:
                 desc = lint_match.group(4).strip()[:90]
                 # E501 (line too long) is info-only — can't auto-fix safely
                 sev = "info"
-                findings.append(Finding(
-                    category="code-quality", severity=sev,
-                    message=f"{fpath}:{lnum} | {code}: {desc}",
-                    file=fpath, line=lnum,
-                    suggestion=f"Consider wrapping line {lnum} in {fpath}",
-                ))
+                findings.append(
+                    Finding(
+                        category="code-quality",
+                        severity=sev,
+                        message=f"{fpath}:{lnum} | {code}: {desc}",
+                        file=fpath,
+                        line=lnum,
+                        suggestion=f"Consider wrapping line {lnum} in {fpath}",
+                    )
+                )
                 continue
             # Detect W291/W293 (trailing whitespace) — auto-fixable
-            ws_match = re.match(
-                r'^(\S+?\.py):(\d+)\s*\|\s*(W291|W293)\s*:\s*(.+)$',
-                stripped
-            )
+            ws_match = re.match(r"^(\S+?\.py):(\d+)\s*\|\s*(W291|W293)\s*:\s*(.+)$", stripped)
             if ws_match:
-                findings.append(Finding(
-                    category="code-quality", severity="low",
-                    message=stripped[:100],
-                    file=ws_match.group(1),
-                    line=int(ws_match.group(2)),
-                    suggestion="Remove trailing whitespace",
-                ))
+                findings.append(
+                    Finding(
+                        category="code-quality",
+                        severity="low",
+                        message=stripped[:100],
+                        file=ws_match.group(1),
+                        line=int(ws_match.group(2)),
+                        suggestion="Remove trailing whitespace",
+                    )
+                )
         return findings
 
     def scan_security(self) -> list[Finding]:
@@ -329,23 +341,32 @@ class CodeScanner:
                     risk = f_item.get("risk", "low").lower()
                     # Preserve original severity — no escalation
                     sev = risk if risk in ("critical", "high", "medium", "low", "info") else "low"
-                    findings.append(Finding(
-                        category="security", severity=sev,
-                        message=f_item.get("pattern", "Security issue"),
-                        file=f_item.get("file", ""),
-                        line=f_item.get("line", 0),
-                        suggestion=f_item.get("fix", ""),
-                    ))
+                    findings.append(
+                        Finding(
+                            category="security",
+                            severity=sev,
+                            message=f_item.get("pattern", "Security issue"),
+                            file=f_item.get("file", ""),
+                            line=f_item.get("line", 0),
+                            suggestion=f_item.get("fix", ""),
+                        )
+                    )
             else:
-                findings.append(Finding(
-                    category="security", severity="warning",
-                    message=f"Security scan output unparseable",
-                ))
+                findings.append(
+                    Finding(
+                        category="security",
+                        severity="warning",
+                        message=f"Security scan output unparseable",
+                    )
+                )
         except (json.JSONDecodeError, KeyError):
-            findings.append(Finding(
-                category="security", severity="warning",
-                message="Could not parse security scan output",
-            ))
+            findings.append(
+                Finding(
+                    category="security",
+                    severity="warning",
+                    message="Could not parse security scan output",
+                )
+            )
         return findings
 
     def scan_todos(self) -> list[Finding]:
@@ -364,11 +385,14 @@ class CodeScanner:
             except (json.JSONDecodeError, TypeError, ValueError):
                 marker_count = 0
         if marker_count > 0:
-            findings.append(Finding(
-                category="code-quality", severity="medium",
-                message=f"{marker_count} TODO/FIXME markers found",
-                suggestion="Review and resolve stale markers",
-            ))
+            findings.append(
+                Finding(
+                    category="code-quality",
+                    severity="medium",
+                    message=f"{marker_count} TODO/FIXME markers found",
+                    suggestion="Review and resolve stale markers",
+                )
+            )
         return findings
 
     def scan_dead_code(self) -> list[Finding]:
@@ -386,10 +410,13 @@ class CodeScanner:
             except json.JSONDecodeError:
                 items = []
             if items:
-                findings.append(Finding(
-                    category="code-quality", severity="medium",
-                    message=f"{len(items)} possible dead-code finding(s)",
-                ))
+                findings.append(
+                    Finding(
+                        category="code-quality",
+                        severity="medium",
+                        message=f"{len(items)} possible dead-code finding(s)",
+                    )
+                )
         return findings
 
     def scan_project_health(self) -> list[Finding]:
@@ -408,28 +435,37 @@ class CodeScanner:
             ):
                 init = subdir / "__init__.py"
                 if not init.exists():
-                    findings.append(Finding(
-                        category="project-health", severity="low",
-                        message=f"Missing __init__.py in {subdir.name}/",
-                        suggestion="Add empty __init__.py",
-                    ))
+                    findings.append(
+                        Finding(
+                            category="project-health",
+                            severity="low",
+                            message=f"Missing __init__.py in {subdir.name}/",
+                            suggestion="Add empty __init__.py",
+                        )
+                    )
 
         # Check for README
         if not (self.workspace / "README.md").exists():
-            findings.append(Finding(
-                category="docs", severity="high",
-                message="Missing README.md",
-                suggestion="Create README.md with project documentation",
-            ))
+            findings.append(
+                Finding(
+                    category="docs",
+                    severity="high",
+                    message="Missing README.md",
+                    suggestion="Create README.md with project documentation",
+                )
+            )
 
         # Check for docs/ directory
         docs_dir = self.workspace / "docs"
         if not docs_dir.exists():
-            findings.append(Finding(
-                category="docs", severity="low",
-                message="No docs/ directory",
-                suggestion="Consider creating docs/ for documentation",
-            ))
+            findings.append(
+                Finding(
+                    category="docs",
+                    severity="low",
+                    message="No docs/ directory",
+                    suggestion="Consider creating docs/ for documentation",
+                )
+            )
 
         return findings
 
@@ -442,27 +478,39 @@ class CodeScanner:
         for pyfile in sorted(self.workspace.glob("*.py")):
             name = pyfile.name
             # Skip utility modules and private files
-            if name.startswith("_") or name == "improve.py" or name in (
-                "i18n.py", "_protect.py",
+            if (
+                name.startswith("_")
+                or name == "improve.py"
+                or name
+                in (
+                    "i18n.py",
+                    "_protect.py",
+                )
             ):
                 continue
             content = pyfile.read_text(encoding="utf-8", errors="ignore")
             has_help = "--help" in content or "add_argument" in content
             has_json = "--json" in content or "json" in content.lower()
             if not has_help:
-                findings.append(Finding(
-                    category="code-quality", severity="medium",
-                    message=f"{name} — missing --help / argparse",
-                    file=name,
-                    suggestion="Add argparse with --help support",
-                ))
+                findings.append(
+                    Finding(
+                        category="code-quality",
+                        severity="medium",
+                        message=f"{name} — missing --help / argparse",
+                        file=name,
+                        suggestion="Add argparse with --help support",
+                    )
+                )
             if not has_json:
-                findings.append(Finding(
-                    category="code-quality", severity="low",
-                    message=f"{name} — missing --json output",
-                    file=name,
-                    suggestion="Add --json flag for machine-readable output",
-                ))
+                findings.append(
+                    Finding(
+                        category="code-quality",
+                        severity="low",
+                        message=f"{name} — missing --json output",
+                        file=name,
+                        suggestion="Add --json flag for machine-readable output",
+                    )
+                )
         return findings
 
     def scan_all(self) -> list[Finding]:
@@ -548,9 +596,20 @@ class ImprovementPlanner:
             reason = "Report-only — needs manual review"
 
         # Check needs approval
-        elif any(a in msg_lower for a in ["package.json", "requirements.txt", "dependency",
-                                           "config file", "rewrite", "delete", "rename",
-                                           "terminal", "release"]):
+        elif any(
+            a in msg_lower
+            for a in [
+                "package.json",
+                "requirements.txt",
+                "dependency",
+                "config file",
+                "rewrite",
+                "delete",
+                "rename",
+                "terminal",
+                "release",
+            ]
+        ):
             cat = "needs_approval"
             reason = "Requires explicit approval"
         elif finding.severity in ("critical", "high") and self.mode == "safe-only":
@@ -631,8 +690,7 @@ class Executor:
             init_file = dirpath / "__init__.py"
             if not init_file.exists():
                 init_file.write_text(
-                    f'# {dirpath.name} package\n'
-                    f'# Auto-created by ToolCase self_improve_loop\n',
+                    f"# {dirpath.name} package\n# Auto-created by ToolCase self_improve_loop\n",
                     encoding="utf-8",
                 )
                 change.description = f"Create {dirpath.name}/__init__.py"
@@ -668,8 +726,7 @@ class Executor:
             return "skipped (forbidden)"
 
         if change.category == "needs_approval":
-            if not self.safety.require_approval("Apply change",
-                                                  change.description):
+            if not self.safety.require_approval("Apply change", change.description):
                 change.status = "skipped"
                 change.reason = "User declined approval"
                 self.skipped.append(change)
@@ -682,8 +739,11 @@ class Executor:
             # ── Only fix these in safe-only mode ──
             if self.mode == "safe-only":
                 safe_whitelist = [
-                    "trailing whitespace", "W291", "W293",
-                    "__init__.py", "docs/ directory",
+                    "trailing whitespace",
+                    "W291",
+                    "W293",
+                    "__init__.py",
+                    "docs/ directory",
                     "No docs/ directory",
                 ]
                 if not any(w in msg for w in safe_whitelist):
@@ -706,7 +766,7 @@ class Executor:
                 if fp.exists():
                     preview_script = TOOLCASE_DIR / "patch_preview.py"
                     if preview_script.exists():
-                        subprocess.run(
+                        safe_run(
                             [sys.executable, str(preview_script), str(fp)],
                             timeout=10,
                         )
@@ -725,6 +785,7 @@ class Executor:
             elif "Missing __init__.py" in msg and change.file == "":
                 # Extract directory name from message
                 import re as _re
+
                 m = _re.search(r"in (\S+)/$", msg)
                 if m:
                     dirname = m.group(1)
@@ -778,15 +839,14 @@ class TestRunner:
         self.workspace = workspace
 
     def run(self, focus: str = "all") -> dict:
-        result = {"status": "passed", "command": None, "details": [],
-                  "exit_code": 0}
+        result = {"status": "passed", "command": None, "details": [], "exit_code": 0}
 
         # Python compile check
         compile_cmd = f"python -m py_compile"
         result["command"] = f"{compile_cmd} *.py"
         errors = []
         for pyfile in sorted(self.workspace.glob("*.py")):
-            r = subprocess.run(
+            r = safe_run(
                 [sys.executable, "-m", "py_compile", str(pyfile)],
                 capture_output=True,
                 text=True,
@@ -810,7 +870,7 @@ class TestRunner:
         if focus in ("all", "tests"):
             test_script = self.workspace / "test_runner.py"
             if test_script.exists():
-                r = subprocess.run(
+                r = safe_run(
                     [sys.executable, str(test_script), str(self.workspace)],
                     capture_output=True,
                     text=True,
@@ -835,8 +895,7 @@ class TestRunner:
 class ReportGenerator:
     """Generates human-readable and JSON reports."""
 
-    def __init__(self, mode: str, focus: str, cycles_executed: int,
-                 reports: list[CycleReport]):
+    def __init__(self, mode: str, focus: str, cycles_executed: int, reports: list[CycleReport]):
         self.mode = mode
         self.focus = focus
         self.cycles_executed = cycles_executed
@@ -915,8 +974,14 @@ class ReportGenerator:
             if cat in cats:
                 lines.append(f"- {cat}: {len(cats[cat])} issues")
                 for f in cats[cat][:5]:  # Show top 5
-                    sev_icon = {"critical": "🔴", "high": "🟠", "medium": "🟡",
-                                "low": "🔵", "warning": "⚠", "info": "ℹ"}
+                    sev_icon = {
+                        "critical": "🔴",
+                        "high": "🟠",
+                        "medium": "🟡",
+                        "low": "🔵",
+                        "warning": "⚠",
+                        "info": "ℹ",
+                    }
                     icon = sev_icon.get(f.severity, "•")
                     loc = f" ({f.file}:{f.line})" if f.file else ""
                     lines.append(f"  {icon} [{f.severity}] {f.message[:90]}{loc}")
@@ -1062,16 +1127,19 @@ class ReportGenerator:
 
 
 def run_one_cycle(
-    cycle: int, total_cycles: int,
-    safety: SafetyManager, workspace: Path,
-    mode: str, focus: str,
+    cycle: int,
+    total_cycles: int,
+    safety: SafetyManager,
+    workspace: Path,
+    mode: str,
+    focus: str,
 ) -> CycleReport:
     """Run one self-improvement cycle."""
     report = CycleReport(cycle=cycle, mode=mode, focus=focus)
 
-    print(f"\n{'─'*60}", file=sys.stderr)
+    print(f"\n{'─' * 60}", file=sys.stderr)
     print(f"  Cycle {cycle}/{total_cycles} — Mode: {mode}  Focus: {focus}", file=sys.stderr)
-    print(f"{'─'*60}", file=sys.stderr)
+    print(f"{'─' * 60}", file=sys.stderr)
 
     # Step 1-5: Scan
     print("\n  🔍 Scanning...", file=sys.stderr)
@@ -1089,7 +1157,10 @@ def run_one_cycle(
     safe_count = sum(1 for c in changes if c.category == "safe")
     approval_count = sum(1 for c in changes if c.category == "needs_approval")
     forbidden_count = sum(1 for c in changes if c.category == "forbidden")
-    print(f"     {safe_count} safe, {approval_count} need approval, {forbidden_count} forbidden", file=sys.stderr)
+    print(
+        f"     {safe_count} safe, {approval_count} need approval, {forbidden_count} forbidden",
+        file=sys.stderr,
+    )
 
     # Report findings by severity (don't downgrade blocked/failed)
     critical = [f for f in findings if f.severity == "critical"]
@@ -1138,7 +1209,10 @@ def run_one_cycle(
 
         report.applied_changes = executor.applied
         report.backup_paths = executor.backup_paths
-        print(f"     Applied: {len(executor.applied)}, Skipped: {len(executor.skipped)}", file=sys.stderr)
+        print(
+            f"     Applied: {len(executor.applied)}, Skipped: {len(executor.skipped)}",
+            file=sys.stderr,
+        )
 
     # Step 10: Test
     if mode in ("safe-only", "apply"):
@@ -1159,7 +1233,11 @@ def run_one_cycle(
             return report
 
         # Rule 10: Validate
-        if test_result["status"] == "warning" and report.status not in ("blocked", "failed", "rolled_back"):
+        if test_result["status"] == "warning" and report.status not in (
+            "blocked",
+            "failed",
+            "rolled_back",
+        ):
             report.status = "warning"
             report.warnings.append("Test warnings found")
 
@@ -1191,23 +1269,40 @@ def main():
             "  4  Blocked by safety rule\n"
         ),
     )
-    parser.add_argument("target", nargs="?", default=".",
-                        help="Workspace path (default: current directory)")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Analyse only — no files modified, show plan")
-    parser.add_argument("--apply", action="store_true",
-                        help="Apply mode — backup, preview, test, rollback on failure")
-    parser.add_argument("--safe-only", action="store_true",
-                        help="Only trailing whitespace, formatting, docs, __init__.py fixes")
-    parser.add_argument("--cycles", type=int, default=1,
-                        help=f"Number of improvement cycles (max {MAX_CYCLES_LIMIT})")
-    parser.add_argument("--json", action="store_true",
-                        help="Output machine-readable JSON")
-    parser.add_argument("--no-report", action="store_true",
-                        help="Do not write a report file to the target workspace")
-    parser.add_argument("--focus", choices=["all", "docs", "security", "code-quality", "tests"],
-                        default="all",
-                        help="Focus scanning on a specific area")
+    parser.add_argument(
+        "target", nargs="?", default=".", help="Workspace path (default: current directory)"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Analyse only — no files modified, show plan"
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply mode — backup, preview, test, rollback on failure",
+    )
+    parser.add_argument(
+        "--safe-only",
+        action="store_true",
+        help="Only trailing whitespace, formatting, docs, __init__.py fixes",
+    )
+    parser.add_argument(
+        "--cycles",
+        type=int,
+        default=1,
+        help=f"Number of improvement cycles (max {MAX_CYCLES_LIMIT})",
+    )
+    parser.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        help="Do not write a report file to the target workspace",
+    )
+    parser.add_argument(
+        "--focus",
+        choices=["all", "docs", "security", "code-quality", "tests"],
+        default="all",
+        help="Focus scanning on a specific area",
+    )
 
     args = parser.parse_args()
 
@@ -1240,9 +1335,9 @@ def main():
     final_exit = 0
 
     if not args.json:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f" ♻️  ToolCase Self-Improve Loop")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f" Workspace: {workspace}")
         print(f" Mode:      {mode}")
         print(f" Focus:     {args.focus}")
@@ -1252,9 +1347,12 @@ def main():
     try:
         for cycle in range(1, cycles + 1):
             report = run_one_cycle(
-                cycle=cycle, total_cycles=cycles,
-                safety=safety, workspace=workspace,
-                mode=mode, focus=args.focus,
+                cycle=cycle,
+                total_cycles=cycles,
+                safety=safety,
+                workspace=workspace,
+                mode=mode,
+                focus=args.focus,
             )
             reports.append(report)
 
@@ -1275,7 +1373,8 @@ def main():
 
     # ── Generate report ──
     generator = ReportGenerator(
-        mode=mode, focus=args.focus,
+        mode=mode,
+        focus=args.focus,
         cycles_executed=len(reports),
         reports=reports,
     )
@@ -1296,9 +1395,10 @@ def main():
             ext = "json" if args.json else "txt"
             report_path = report_dir / f"self_improve_{ts}.{ext}"
             if args.json:
-                report_path.write_text(json.dumps(
-                    generator.json_report(), indent=2, ensure_ascii=False, default=str
-                ), encoding="utf-8")
+                report_path.write_text(
+                    json.dumps(generator.json_report(), indent=2, ensure_ascii=False, default=str),
+                    encoding="utf-8",
+                )
             else:
                 report_path.write_text(output, encoding="utf-8")
             print(f"\n📄 Report saved: {report_path}")

@@ -12,6 +12,7 @@ Gebruik:
     python php_depgraph.py <path> --recursive
     python php_depgraph.py <path> --json
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -22,26 +23,37 @@ import sys
 from collections import defaultdict, deque
 from pathlib import Path
 
-EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", "tests/fixtures", ".venv", "venv", "dist", "build", ".cache"}
+EXCLUDE_DIRS = {
+    "node_modules",
+    "vendor",
+    ".git",
+    "__pycache__",
+    "tests/fixtures",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".cache",
+}
 
 INCLUDE_PATTERN = re.compile(
-    r'(?:include|require|include_once|require_once)\s*(?:\(?\s*)?'
-    r'(?:__DIR__\s*\.\s*)?[\"\']([^\"\']+\.php)[\"\']',
+    r"(?:include|require|include_once|require_once)\s*(?:\(?\s*)?"
+    r"(?:__DIR__\s*\.\s*)?[\"\']([^\"\']+\.php)[\"\']",
 )
-NAMESPACE_PATTERN = re.compile(r'^\s*namespace\s+([\w\\]+)\s*;', re.MULTILINE)
-USE_PATTERN = re.compile(r'^\s*use\s+([\w\\]+)(?:\s+as\s+(\w+))?\s*;', re.MULTILINE)
-CLASS_PATTERN = re.compile(r'^\s*(?:abstract\s+)?(?:final\s+)?class\s+(\w+)', re.MULTILINE)
+NAMESPACE_PATTERN = re.compile(r"^\s*namespace\s+([\w\\]+)\s*;", re.MULTILINE)
+USE_PATTERN = re.compile(r"^\s*use\s+([\w\\]+)(?:\s+as\s+(\w+))?\s*;", re.MULTILINE)
+CLASS_PATTERN = re.compile(r"^\s*(?:abstract\s+)?(?:final\s+)?class\s+(\w+)", re.MULTILINE)
 
 
 def discover_php_files(root: Path) -> list[Path]:
     """discover php files.
 
-        Args:
-            root: Description.
+    Args:
+        root: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     files = []
     for f in root.rglob("*.php"):
         try:
@@ -66,7 +78,7 @@ def analyze_file(filepath: Path, root: Path) -> dict:
     # Includes
     includes = []
     for m in INCLUDE_PATTERN.finditer(source):
-        includes.append({"path": m.group(1), "line": source[:m.start()].count('\n') + 1})
+        includes.append({"path": m.group(1), "line": source[: m.start()].count("\n") + 1})
 
     # Namespace
     ns_match = NAMESPACE_PATTERN.search(source)
@@ -75,7 +87,7 @@ def analyze_file(filepath: Path, root: Path) -> dict:
     # Use statements
     uses = []
     for m in USE_PATTERN.finditer(source):
-        uses.append({"fqcn": m.group(1), "alias": m.group(2) or m.group(1).split('\\')[-1]})
+        uses.append({"fqcn": m.group(1), "alias": m.group(2) or m.group(1).split("\\")[-1]})
 
     # Classes
     classes = CLASS_PATTERN.findall(source)
@@ -176,8 +188,7 @@ def print_json(results: list[dict], cycles: list[list[str]]) -> None:
 
 
 def main():
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="php_depgraph.py - PHP dependency graph")
     parser.add_argument("path", help="PHP file or directory")
     parser.add_argument("--recursive", "-r", action="store_true", help="Recursive scan")
@@ -187,13 +198,19 @@ def main():
     args = parser.parse_args()
     target = Path(args.path)
     if not target.exists():
-        print(f"'{args.path}' not found", file=sys.stderr); sys.exit(1)
+        print(f"'{args.path}' not found", file=sys.stderr)
+        sys.exit(1)
 
     root = target if target.is_dir() else target.parent
-    files = [target] if target.is_file() else (discover_php_files(target) if args.recursive else sorted(target.glob("*.php")))
+    files = (
+        [target]
+        if target.is_file()
+        else (discover_php_files(target) if args.recursive else sorted(target.glob("*.php")))
+    )
 
     if not files:
-        print("No PHP files found"); sys.exit(0)
+        print("No PHP files found")
+        sys.exit(0)
 
     print(f"\n🔗 PHP DepGraph v1.0.0 — {len(files)} file(s)")
     print(f"{'=' * 70}")

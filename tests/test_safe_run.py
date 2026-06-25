@@ -1,6 +1,8 @@
 """Tests for safe_run.py — Central safe subprocess executor."""
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
@@ -62,11 +64,11 @@ class TestSafeRunClassification(unittest.TestCase):
     def test_case_insensitive_detection(self) -> None:
         """Uppercase variants must still be detected."""
         r = classify_command("RM -RF /tmp/test")
-        self.assertGreaterEqual(r.risk, Risk.HIGH,
-                                f"Expected HIGH for RM -RF, got {r.risk_label}")
+        self.assertGreaterEqual(r.risk, Risk.HIGH, f"Expected HIGH for RM -RF, got {r.risk_label}")
         r2 = classify_command("DOCKER SYSTEM PRUNE -AF")
-        self.assertGreaterEqual(r2.risk, Risk.HIGH,
-                                f"Expected HIGH for DOCKER SYSTEM PRUNE, got {r2.risk_label}")
+        self.assertGreaterEqual(
+            r2.risk, Risk.HIGH, f"Expected HIGH for DOCKER SYSTEM PRUNE, got {r2.risk_label}"
+        )
 
     def test_git_status_safe(self) -> None:
         r = classify_command("git status")
@@ -91,6 +93,7 @@ class TestSafeRunExecution(unittest.TestCase):
     def tearDown(self) -> None:
         """Clean up."""
         import shutil
+
         shutil.rmtree(self.workspace, ignore_errors=True)
 
     def _safe_cmd(self) -> list[str]:
@@ -130,8 +133,7 @@ class TestSafeRunExecution(unittest.TestCase):
             risk_level="medium",  # Full python path not in SAFE_PATTERNS
             approval_required=False,
         )
-        self.assertFalse(result.blocked,
-                         f"blocked={result.blocked}, reason={result.block_reason}")
+        self.assertFalse(result.blocked, f"blocked={result.blocked}, reason={result.block_reason}")
         self.assertIn("hello_test", result.stdout)
 
     def test_cwd_outside_workspace_blocked(self) -> None:
@@ -144,8 +146,7 @@ class TestSafeRunExecution(unittest.TestCase):
             risk_level="low",
             approval_required=False,
         )
-        self.assertTrue(result.blocked,
-                        f"Expected blocked, got blocked={result.blocked}")
+        self.assertTrue(result.blocked, f"Expected blocked, got blocked={result.blocked}")
 
     def test_path_outside_workspace_resolved_blocked(self) -> None:
         """Relative paths resolved against cwd must be checked."""
@@ -156,8 +157,7 @@ class TestSafeRunExecution(unittest.TestCase):
             risk_level="medium",
             approval_required=False,
         )
-        self.assertTrue(result.blocked,
-                        f"Expected blocked for outside path, got {result.blocked}")
+        self.assertTrue(result.blocked, f"Expected blocked for outside path, got {result.blocked}")
 
     def test_workspace_containment_allows(self) -> None:
         """In-workspace execution must be allowed."""
@@ -167,8 +167,7 @@ class TestSafeRunExecution(unittest.TestCase):
             risk_level="medium",  # Full python path not in SAFE_PATTERNS
             approval_required=False,
         )
-        self.assertFalse(result.blocked,
-                         f"blocked={result.blocked}, reason={result.block_reason}")
+        self.assertFalse(result.blocked, f"blocked={result.blocked}, reason={result.block_reason}")
 
 
 if __name__ == "__main__":

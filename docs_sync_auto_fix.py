@@ -7,6 +7,7 @@ Genereert:
   - Tool lijst update
   - Badge update (tests count)
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -56,17 +57,11 @@ def generate_tool_list() -> str:
 
 
 def main() -> None:
-    """main.
-        """
-    parser = argparse.ArgumentParser(
-        description="Docs Sync Auto Fix — Update README automatically"
-    )
-    parser.add_argument("--dry-run", "-n", action="store_true",
-                        help="Toon wat er zou veranderen")
-    parser.add_argument("--tool-list", action="store_true",
-                        help="Genereer tool lijst voor README")
-    parser.add_argument("--count", action="store_true",
-                        help="Toon tool + test counts")
+    """main."""
+    parser = argparse.ArgumentParser(description="Docs Sync Auto Fix — Update README automatically")
+    parser.add_argument("--dry-run", "-n", action="store_true", help="Toon wat er zou veranderen")
+    parser.add_argument("--tool-list", action="store_true", help="Genereer tool lijst voor README")
+    parser.add_argument("--count", action="store_true", help="Toon tool + test counts")
     args = parser.parse_args()
 
     tool_count = count_tools()
@@ -93,16 +88,13 @@ def main() -> None:
     if readme.exists():
         content = readme.read_text(encoding="utf-8")
         # Check current count in README
-        tool_match = re.search(r'(\d+)\s+tools', content)
+        tool_match = re.search(r"(\d+)\s+tools", content)
         if tool_match:
             current_count = int(tool_match.group(1))
             if current_count != tool_count:
                 print(f"   ⚠️  README says {current_count} tools, disk has {tool_count}")
                 if not args.dry_run:
-                    new_content = content.replace(
-                        f"{current_count} tools",
-                        f"{tool_count} tools"
-                    )
+                    new_content = content.replace(f"{current_count} tools", f"{tool_count} tools")
                     readme.write_text(new_content, encoding="utf-8")
                     print(f"   ✅ README updated: {current_count} → {tool_count} tools")
             else:
@@ -110,7 +102,7 @@ def main() -> None:
         else:
             print(f"   ⚠️  Could not find tool count in README")
 
-        test_match = re.search(r'tests[- ](\d+)', content)
+        test_match = re.search(r"tests[- ](\d+)", content)
         if test_match:
             current_tests = int(test_match.group(1))
             if current_tests != test_count:

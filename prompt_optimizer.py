@@ -26,6 +26,7 @@ Metrics per prompt:
     - Readability (Flesch-style: lengte + complexiteit)
     - Clarity: heeft het voorbeelden? Output format? Constraints?
 """
+
 from __future__ import annotations
 
 __maker__ = "SmokerGreenOG"
@@ -61,16 +62,25 @@ PROMPT_PATTERNS = {
     ),
 }
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", "__pycache__", ".venv", "venv",
-    ".backups", ".self_improve_reports", "release", "build", "dist",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".backups",
+        ".self_improve_reports",
+        "release",
+        "build",
+        "dist",
         ".rsi_backups",
-
         ".rsi_reports",
-        })
+    }
+)
 
-LONG_PROMPT_THRESHOLD = 2000   # chars
-SHORT_PROMPT_THRESHOLD = 30    # chars
+LONG_PROMPT_THRESHOLD = 2000  # chars
+SHORT_PROMPT_THRESHOLD = 30  # chars
 
 
 # ── Data classes ──────────────────────────────────────
@@ -79,11 +89,21 @@ SHORT_PROMPT_THRESHOLD = 30    # chars
 class PromptFinding:
     """A single prompt finding."""
 
-    __slots__ = ("file", "line", "prompt_text", "category", "token_estimate",
-                 "clarity_score", "issues", "suggestions", "severity")
+    __slots__ = (
+        "file",
+        "line",
+        "prompt_text",
+        "category",
+        "token_estimate",
+        "clarity_score",
+        "issues",
+        "suggestions",
+        "severity",
+    )
 
-    def __init__(self, file: str = "", line: int = 0, prompt_text: str = "",
-                 category: str = "unknown"):
+    def __init__(
+        self, file: str = "", line: int = 0, prompt_text: str = "", category: str = "unknown"
+    ):
         self.file = file
         self.line = line
         self.prompt_text = prompt_text[:500]
@@ -95,8 +115,7 @@ class PromptFinding:
         self.severity = "info"
 
     def to_dict(self) -> dict:
-        """to dict.
-            """
+        """to dict."""
         return {
             "file": self.file,
             "line": self.line,
@@ -128,18 +147,12 @@ def analyze_prompt_text(prompt: str, finding: PromptFinding) -> PromptFinding:
         finding.issues.append(
             f"Lange prompt ({len(prompt)} chars, ~{finding.token_estimate} tokens)"
         )
-        finding.suggestions.append(
-            "Overweeg de prompt op te splitsen in kleinere delen"
-        )
+        finding.suggestions.append("Overweeg de prompt op te splitsen in kleinere delen")
         finding.severity = "medium"
 
     elif len(prompt) < SHORT_PROMPT_THRESHOLD and len(prompt) > 5:
-        finding.issues.append(
-            f"Korte prompt ({len(prompt)} chars) — mogelijk te weinig context"
-        )
-        finding.suggestions.append(
-            "Voeg voorbeelden, output format, of constraints toe"
-        )
+        finding.issues.append(f"Korte prompt ({len(prompt)} chars) — mogelijk te weinig context")
+        finding.suggestions.append("Voeg voorbeelden, output format, of constraints toe")
         finding.severity = "low"
 
     # ── Clarity checks ──
@@ -148,8 +161,9 @@ def analyze_prompt_text(prompt: str, finding: PromptFinding) -> PromptFinding:
 
     # Check voor output format
     clarity_checks += 1
-    if any(kw in prompt.lower() for kw in
-           ("output", "format", "json", "markdown", "return ", "print ")):
+    if any(
+        kw in prompt.lower() for kw in ("output", "format", "json", "markdown", "return ", "print ")
+    ):
         clarity_passed += 1
     else:
         finding.issues.append("Geen output format gespecificeerd")
@@ -159,52 +173,79 @@ def analyze_prompt_text(prompt: str, finding: PromptFinding) -> PromptFinding:
 
     # Check voor voorbeelden (few-shot)
     clarity_checks += 1
-    has_example = any(kw in prompt.lower() for kw in
-                      ("bijvoorbeeld", "example", "e.g.", "i.e.", "zoals",
-                       "for instance", ":\n- ", ":\n  "))
+    has_example = any(
+        kw in prompt.lower()
+        for kw in (
+            "bijvoorbeeld",
+            "example",
+            "e.g.",
+            "i.e.",
+            "zoals",
+            "for instance",
+            ":\n- ",
+            ":\n  ",
+        )
+    )
     if has_example:
         clarity_passed += 1
     else:
         finding.issues.append("Geen voorbeelden (few-shot) in prompt")
-        finding.suggestions.append(
-            "Voeg 1-3 voorbeelden toe: 'Bijvoorbeeld: [...]'"
-        )
+        finding.suggestions.append("Voeg 1-3 voorbeelden toe: 'Bijvoorbeeld: [...]'")
 
     # Check voor constraints
     clarity_checks += 1
-    if any(kw in prompt.lower() for kw in
-           ("niet", "geen", "no", "don't", "vermeid", "avoid",
-            "max", "limit", "min", "moet", "must", "should")):
+    if any(
+        kw in prompt.lower()
+        for kw in (
+            "niet",
+            "geen",
+            "no",
+            "don't",
+            "vermeid",
+            "avoid",
+            "max",
+            "limit",
+            "min",
+            "moet",
+            "must",
+            "should",
+        )
+    ):
         clarity_passed += 1
     else:
         finding.issues.append("Geen constraints/limieten gedefinieerd")
-        finding.suggestions.append(
-            "Voeg constraints toe: 'Max 100 woorden', 'Niet hallucineren'"
-        )
+        finding.suggestions.append("Voeg constraints toe: 'Max 100 woorden', 'Niet hallucineren'")
 
     # Check voor chain-of-thought
     clarity_checks += 1
-    if any(kw in prompt.lower() for kw in
-           ("stap", "step", "eerst", "first", "dan", "then", "think",
-            "reason", "overweeg")):
+    if any(
+        kw in prompt.lower()
+        for kw in ("stap", "step", "eerst", "first", "dan", "then", "think", "reason", "overweeg")
+    ):
         clarity_passed += 1
     else:
         finding.issues.append("Geen chain-of-thought instructie")
-        finding.suggestions.append(
-            "Voeg redeneerstappen toe: 'Denk stap voor stap na'"
-        )
+        finding.suggestions.append("Voeg redeneerstappen toe: 'Denk stap voor stap na'")
 
     # Check voor person/role
     clarity_checks += 1
-    if any(kw in prompt.lower() for kw in
-           ("je bent", "you are", "act as", "role", "expert",
-            "assistent", "assistant", "specialist")):
+    if any(
+        kw in prompt.lower()
+        for kw in (
+            "je bent",
+            "you are",
+            "act as",
+            "role",
+            "expert",
+            "assistent",
+            "assistant",
+            "specialist",
+        )
+    ):
         clarity_passed += 1
     else:
         finding.issues.append("Geen role/persona gedefinieerd")
-        finding.suggestions.append(
-            "Geef de AI een rol: 'Je bent een ervaren Python developer'"
-        )
+        finding.suggestions.append("Geef de AI een rol: 'Je bent een ervaren Python developer'")
 
     if clarity_checks > 0:
         finding.clarity_score = clarity_passed / clarity_checks
@@ -233,10 +274,20 @@ def extract_prompts_from_python(filepath: Path) -> list[PromptFinding]:
         # String constants that look like prompts
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             text = node.value.strip()
-            if len(text) > 20 and any(kw in text.lower() for kw in
-                                      ("prompt", "instruction", "system", "assistant",
-                                       "je bent", "you are", "act as",
-                                       "task:", "goal:")):
+            if len(text) > 20 and any(
+                kw in text.lower()
+                for kw in (
+                    "prompt",
+                    "instruction",
+                    "system",
+                    "assistant",
+                    "je bent",
+                    "you are",
+                    "act as",
+                    "task:",
+                    "goal:",
+                )
+            ):
                 finding = PromptFinding(
                     file=str(filepath),
                     line=getattr(node, "lineno", 0),
@@ -248,9 +299,10 @@ def extract_prompts_from_python(filepath: Path) -> list[PromptFinding]:
         # f-strings with prompt content
         elif isinstance(node, ast.JoinedStr):
             text = _reconstruct_fstring(node)
-            if len(text) > 30 and any(kw in text.lower() for kw in
-                                      ("prompt", "instruction", "system",
-                                       "act as", "je bent")):
+            if len(text) > 30 and any(
+                kw in text.lower()
+                for kw in ("prompt", "instruction", "system", "act as", "je bent")
+            ):
                 finding = PromptFinding(
                     file=str(filepath),
                     line=getattr(node, "lineno", 0),
@@ -308,8 +360,7 @@ class PromptOptimizer:
         }
 
     def run(self) -> list[PromptFinding]:
-        """run.
-            """
+        """run."""
         files = find_prompt_files(self.path)
         self.stats["files_scanned"] = len(files)
 
@@ -321,17 +372,17 @@ class PromptOptimizer:
         self.stats["total_tokens"] = sum(f.token_estimate for f in self.findings)
 
         if self.findings:
-            self.stats["avg_clarity"] = sum(f.clarity_score for f in self.findings) / len(self.findings)
+            self.stats["avg_clarity"] = sum(f.clarity_score for f in self.findings) / len(
+                self.findings
+            )
 
         for f in self.findings:
-            self.stats["by_severity"][f.severity] = \
-                self.stats["by_severity"].get(f.severity, 0) + 1
+            self.stats["by_severity"][f.severity] = self.stats["by_severity"].get(f.severity, 0) + 1
 
         return self.findings
 
     def get_report(self) -> dict:
-        """Get report.
-            """
+        """Get report."""
         return {
             "path": str(self.path),
             "stats": self.stats,
@@ -372,8 +423,10 @@ def print_report(findings: list[PromptFinding], stats: dict) -> None:
         icon = severity_icon.get(f.severity, "•")
         print()
         print(f" {icon}  #{i} — {f.file}:{f.line}  [{f.severity.upper()}]")
-        print(f"     Category: {f.category}  |  Tokens: ~{f.token_estimate}  "
-              f"|  Clarity: {f.clarity_score:.0%}")
+        print(
+            f"     Category: {f.category}  |  Tokens: ~{f.token_estimate}  "
+            f"|  Clarity: {f.clarity_score:.0%}"
+        )
         print(f"     Preview:  {f.prompt_text[:120]}...")
 
         for issue in f.issues[:4]:
@@ -409,8 +462,7 @@ def analyze_direct_prompt(prompt: str) -> dict:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="🧠 Prompt Optimizer — Analyseer en optimaliseer AI prompts in code",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -423,16 +475,15 @@ Examples:
   python prompt_optimizer.py --min-tokens 10       # Minimum prompt tokens
         """,
     )
-    parser.add_argument("path", nargs="?", default=".",
-                        help="Bestand of directory om te scannen")
-    parser.add_argument("--analyze", "-a", metavar="PROMPT",
-                        help="Analyseer een directe prompt string")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output als JSON")
-    parser.add_argument("--min-tokens", type=int, default=5,
-                        help="Minimum tokens voor prompt detectie (default: 5)")
-    parser.add_argument("--version", action="version",
-                        version="prompt_optimizer.py v1.0.0")
+    parser.add_argument("path", nargs="?", default=".", help="Bestand of directory om te scannen")
+    parser.add_argument(
+        "--analyze", "-a", metavar="PROMPT", help="Analyseer een directe prompt string"
+    )
+    parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
+    parser.add_argument(
+        "--min-tokens", type=int, default=5, help="Minimum tokens voor prompt detectie (default: 5)"
+    )
+    parser.add_argument("--version", action="version", version="prompt_optimizer.py v1.0.0")
 
     args = parser.parse_args()
 

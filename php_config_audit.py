@@ -14,6 +14,7 @@ Gebruik:
     python php_config_audit.py <path>
     python php_config_audit.py <path> --json
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -47,30 +48,39 @@ PHP_INI_BEST_PRACTICES = {
 
 # Dangerous PHP functions often enabled in dev
 DANGEROUS_FUNCTIONS = [
-    "exec", "system", "passthru", "shell_exec", "popen", "proc_open",
-    "eval", "assert", "create_function", "allow_url_fopen", "allow_url_include",
+    "exec",
+    "system",
+    "passthru",
+    "shell_exec",
+    "popen",
+    "proc_open",
+    "eval",
+    "assert",
+    "create_function",
+    "allow_url_fopen",
+    "allow_url_include",
 ]
 
 # Settings to search for in code (ini_set calls)
 INI_SET_PATTERN = re.compile(
-    r'ini_set\s*\(\s*[\"\'](\w+(?:\.\w+)*)[\"\']\s*,\s*[\"\']([^\"\']*)[\"\']',
+    r"ini_set\s*\(\s*[\"\'](\w+(?:\.\w+)*)[\"\']\s*,\s*[\"\']([^\"\']*)[\"\']",
 )
 
 # display_errors in code
 DISPLAY_ERRORS_PATTERN = re.compile(
-    r'(?:ini_set|error_reporting)\s*\(\s*[\"\'](?:display_errors|error_reporting)[\"\']\s*,\s*[\"\']?(?:1|true|on|E_ALL)[\"\']?',
+    r"(?:ini_set|error_reporting)\s*\(\s*[\"\'](?:display_errors|error_reporting)[\"\']\s*,\s*[\"\']?(?:1|true|on|E_ALL)[\"\']?",
     re.IGNORECASE,
 )
 
 # Debug-mode environment detection
 DEBUG_MODE_PATTERN = re.compile(
-    r'(?:APP_DEBUG|DEBUG|ENVIRONMENT)\s*=\s*(?:true|1|development|dev|local)',
+    r"(?:APP_DEBUG|DEBUG|ENVIRONMENT)\s*=\s*(?:true|1|development|dev|local)",
     re.IGNORECASE,
 )
 
-    # Embedded secret values
+# Embedded secret values
 SECRET_PATTERN = re.compile(
-    r'(?:DB_PASSWORD|DB_USERNAME|MAIL_PASSWORD|SECRET|API_KEY|APP_KEY)\s*=\s*[\"\'](?!\$\{)[^\"\']{3,}[\"\']',
+    r"(?:DB_PASSWORD|DB_USERNAME|MAIL_PASSWORD|SECRET|API_KEY|APP_KEY)\s*=\s*[\"\'](?!\$\{)[^\"\']{3,}[\"\']",
 )
 
 
@@ -92,12 +102,12 @@ def find_config_files(root: Path) -> list[Path]:
 def find_php_files(root: Path) -> list[Path]:
     """Find php files.
 
-        Args:
-            root: Description.
+    Args:
+        root: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     files = []
     for f in root.rglob("*.php"):
         try:
@@ -123,34 +133,65 @@ def audit_config(filepath: Path) -> dict:
     # .env specific checks
     if name.startswith(".env"):
         if SECRET_PATTERN.search(source):
-            findings.append({"severity": "HIGH", "message": "Secret in .env — ensure .env is gitignored"})
+            findings.append(
+                {"severity": "HIGH", "message": "Secret in .env — ensure .env is gitignored"}
+            )
         if DEBUG_MODE_PATTERN.search(source):
-            findings.append({"severity": "HIGH", "message": "APP_DEBUG=true — turn off in production"})
+            findings.append(
+                {"severity": "HIGH", "message": "APP_DEBUG=true — turn off in production"}
+            )
         if filepath.name == ".env" and not filepath.parent.name.startswith("."):
-            findings.append({"severity": "MEDIUM", "message": ".env in web-accessible directory — move outside webroot"})
+            findings.append(
+                {
+                    "severity": "MEDIUM",
+                    "message": ".env in web-accessible directory — move outside webroot",
+                }
+            )
 
     # php.ini checks
     if name.endswith(".ini") or "php.ini" in name:
         for setting, info in PHP_INI_BEST_PRACTICES.items():
-            pattern = re.compile(rf'^{re.escape(setting)}\s*=\s*(.+)', re.MULTILINE | re.IGNORECASE)
+            pattern = re.compile(rf"^{re.escape(setting)}\s*=\s*(.+)", re.MULTILINE | re.IGNORECASE)
             match = pattern.search(source)
             if match:
                 value = match.group(1).strip()
-                if info["recommended"] in ("Off", "0") and value.lower() not in ("off", "0", "false", ""):
-                    findings.append({"severity": info["severity"],
-                                     "message": f"{setting} = {value} (recommended: {info['recommended']})"})
+                if info["recommended"] in ("Off", "0") and value.lower() not in (
+                    "off",
+                    "0",
+                    "false",
+                    "",
+                ):
+                    findings.append(
+                        {
+                            "severity": info["severity"],
+                            "message": f"{setting} = {value} (recommended: {info['recommended']})",
+                        }
+                    )
                 if info["recommended"] in ("On", "1") and value.lower() in ("off", "0", "false"):
-                    findings.append({"severity": info["severity"],
-                                     "message": f"{setting} = {value} (recommended: {info['recommended']})"})
+                    findings.append(
+                        {
+                            "severity": info["severity"],
+                            "message": f"{setting} = {value} (recommended: {info['recommended']})",
+                        }
+                    )
 
     # .htaccess checks
     if name == ".htaccess":
         if "Options -Indexes" not in source:
-            findings.append({"severity": "MEDIUM", "message": "Missing Options -Indexes — directory listing enabled"})
+            findings.append(
+                {
+                    "severity": "MEDIUM",
+                    "message": "Missing Options -Indexes — directory listing enabled",
+                }
+            )
         if "Header set X-Content-Type-Options" not in source:
-            findings.append({"severity": "LOW", "message": "Missing X-Content-Type-Options: nosniff header"})
+            findings.append(
+                {"severity": "LOW", "message": "Missing X-Content-Type-Options: nosniff header"}
+            )
         if "Header set X-Frame-Options" not in source:
-            findings.append({"severity": "LOW", "message": "Missing X-Frame-Options header (clickjacking)"})
+            findings.append(
+                {"severity": "LOW", "message": "Missing X-Frame-Options header (clickjacking)"}
+            )
 
     return {"file": str(filepath), "findings": findings}
 
@@ -166,9 +207,14 @@ def audit_php_code(filepath: Path) -> dict:
 
     # display_errors / error_reporting in code
     for match in DISPLAY_ERRORS_PATTERN.finditer(source):
-        line = source[:match.start()].count('\n') + 1
-        findings.append({"severity": "HIGH", "line": line,
-                        "message": "display_errors/error_reporting enabled in code"})
+        line = source[: match.start()].count("\n") + 1
+        findings.append(
+            {
+                "severity": "HIGH",
+                "line": line,
+                "message": "display_errors/error_reporting enabled in code",
+            }
+        )
 
     # ini_set calls
     for match in INI_SET_PATTERN.finditer(source):
@@ -177,9 +223,14 @@ def audit_php_code(filepath: Path) -> dict:
         if setting in PHP_INI_BEST_PRACTICES:
             info = PHP_INI_BEST_PRACTICES[setting]
             if value != info["recommended"]:
-                line = source[:match.start()].count('\n') + 1
-                findings.append({"severity": info["severity"], "line": line,
-                                "message": f"ini_set('{setting}', '{value}') — recommended: '{info['recommended']}'"})
+                line = source[: match.start()].count("\n") + 1
+                findings.append(
+                    {
+                        "severity": info["severity"],
+                        "line": line,
+                        "message": f"ini_set('{setting}', '{value}') — recommended: '{info['recommended']}'",
+                    }
+                )
 
     return {"file": str(filepath), "findings": findings}
 
@@ -187,13 +238,13 @@ def audit_php_code(filepath: Path) -> dict:
 def print_report(config_results: list, code_results: list) -> None:
     """Print report.
 
-        Args:
-            config_results: Description.
-            code_results: Description.
+    Args:
+        config_results: Description.
+        code_results: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     all_findings = []
     for r in config_results + code_results:
         all_findings.extend(r["findings"])
@@ -209,7 +260,13 @@ def print_report(config_results: list, code_results: list) -> None:
             print(f" {status} {r['file']} ({len(r['findings'])} issues)")
             print(f"{'=' * 70}")
             for f in r["findings"]:
-                sev = "[HIGH]" if f["severity"] == "HIGH" else "[MED]" if f["severity"] == "MEDIUM" else "[LOW]"
+                sev = (
+                    "[HIGH]"
+                    if f["severity"] == "HIGH"
+                    else "[MED]"
+                    if f["severity"] == "MEDIUM"
+                    else "[LOW]"
+                )
                 line_info = f" line {f['line']}" if f.get("line") else ""
                 print(f"     {sev}{line_info} {f['message']}")
 
@@ -238,13 +295,13 @@ def print_report(config_results: list, code_results: list) -> None:
 def print_json(config_results: list, code_results: list) -> None:
     """Print json.
 
-        Args:
-            config_results: Description.
-            code_results: Description.
+    Args:
+        config_results: Description.
+        code_results: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     all_findings = []
     for r in config_results + code_results:
         all_findings.extend(r["findings"])
@@ -265,8 +322,7 @@ def print_json(config_results: list, code_results: list) -> None:
 
 
 def main():
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="php_config_audit.py - PHP config security audit")
     parser.add_argument("path", help="PHP project directory")
     parser.add_argument("--json", "-j", action="store_true")
@@ -275,7 +331,8 @@ def main():
     args = parser.parse_args()
     target = Path(args.path)
     if not target.exists():
-        print(f"Not found", file=sys.stderr); sys.exit(1)
+        print(f"Not found", file=sys.stderr)
+        sys.exit(1)
 
     root = target if target.is_dir() else target.parent
 

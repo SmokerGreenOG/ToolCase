@@ -26,14 +26,15 @@ GitHub Actions integration:
       with:
         sarif_file: toolcase.sarif
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 
 import argparse
 import hashlib
 import json
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -71,8 +72,7 @@ RISK_TO_RANK = {
 # SARIF version
 SARIF_VERSION = "2.1.0"
 SARIF_SCHEMA = (
-    "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/"
-    "master/Schemata/sarif-schema-2.1.0.json"
+    "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
 )
 
 
@@ -151,8 +151,7 @@ def _fingerprint(finding: dict[str, Any]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _finding_to_result(finding: dict[str, Any],
-                       repo_root: Path) -> dict[str, Any]:
+def _finding_to_result(finding: dict[str, Any], repo_root: Path) -> dict[str, Any]:
     """Convert a single ToolCase finding to a SARIF result."""
     file_path = finding.get("file", "")
     rel_path = file_path
@@ -219,10 +218,12 @@ def _finding_to_result(finding: dict[str, Any],
 # ---------------------------------------------------------------------------
 
 
-def build_sarif(findings: list[dict[str, Any]],
-                repo_root: Path | None = None,
-                tool_name: str = "ToolCase",
-                scan_stats: dict[str, int] | None = None) -> dict[str, Any]:
+def build_sarif(
+    findings: list[dict[str, Any]],
+    repo_root: Path | None = None,
+    tool_name: str = "ToolCase",
+    scan_stats: dict[str, int] | None = None,
+) -> dict[str, Any]:
     """Build a complete SARIF v2.1.0 document from ToolCase findings."""
 
     if repo_root is None:
@@ -281,12 +282,14 @@ def run_scanner(scanner_name: str, path: str) -> dict[str, Any]:
     scanner_script = f"{scanner_name}.py" if not scanner_name.endswith(".py") else scanner_name
 
     try:
-        proc = subprocess.run(
+        proc = safe_run(
             [sys.executable, scanner_script, str(target), "--json"],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True,
+            text=True,
+            timeout=120,
             cwd=str(Path(__file__).parent),
         )
-    except subprocess.TimeoutExpired:
+    except TimeoutError:
         return {"findings": [], "scan_stats": {"error": "Scanner timed out"}}
     except FileNotFoundError:
         return {"findings": [], "scan_stats": {"error": f"Scanner '{scanner_name}' not found"}}
@@ -373,8 +376,7 @@ def validate_sarif(sarif_path: str) -> tuple[bool, str]:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="sarif_exporter.py — Export ToolCase findings as SARIF v2.1.0",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -386,20 +388,17 @@ Examples:
   python sarif_exporter.py --validate results.sarif
         """,
     )
-    parser.add_argument("--scan", "-s",
-                        help="Comma-separated scanner names (security, php_checker, etc.)")
-    parser.add_argument("--path", "-p", default=".",
-                        help="Path to scan (default: current dir)")
-    parser.add_argument("--output", "-o",
-                        help="Output SARIF file (default: stdout)")
-    parser.add_argument("--stdin", action="store_true",
-                        help="Read JSON findings from stdin")
-    parser.add_argument("--repo-root",
-                        help="Repository root for relative paths (default: current dir)")
-    parser.add_argument("--validate", metavar="FILE",
-                        help="Validate an existing SARIF file")
-    parser.add_argument("--version", action="version",
-                        version="sarif_exporter.py v1.0.0")
+    parser.add_argument(
+        "--scan", "-s", help="Comma-separated scanner names (security, php_checker, etc.)"
+    )
+    parser.add_argument("--path", "-p", default=".", help="Path to scan (default: current dir)")
+    parser.add_argument("--output", "-o", help="Output SARIF file (default: stdout)")
+    parser.add_argument("--stdin", action="store_true", help="Read JSON findings from stdin")
+    parser.add_argument(
+        "--repo-root", help="Repository root for relative paths (default: current dir)"
+    )
+    parser.add_argument("--validate", metavar="FILE", help="Validate an existing SARIF file")
+    parser.add_argument("--version", action="version", version="sarif_exporter.py v1.0.0")
 
     args = parser.parse_args()
 
@@ -473,9 +472,11 @@ Examples:
 
     if args.output:
         Path(args.output).write_text(sarif_json, encoding="utf-8")
-        print(f"✅ SARIF written to {args.output} "
-              f"({len(findings)} findings, "
-              f"{sarif['runs'][0]['tool']['driver']['name']})")
+        print(
+            f"✅ SARIF written to {args.output} "
+            f"({len(findings)} findings, "
+            f"{sarif['runs'][0]['tool']['driver']['name']})"
+        )
     else:
         print(sarif_json)
 

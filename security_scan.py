@@ -14,6 +14,7 @@ Gebruik:
     python security_scan.py <path> --json
     python security_scan.py <path> --patterns-only
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -26,10 +27,10 @@ from collections import defaultdict
 from pathlib import Path
 
 # Ensure UTF-8 output on all platforms (Windows cp1252 can't handle emoji/unicode)
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
 # ---------------------------------------------------------------------------
@@ -40,63 +41,47 @@ HIGH_RISK_PATTERNS = {
     "api_key": re.compile(
         r'(?i)(?:api[_-]?key|apikey|api[_-]?secret|api_secret)\s*[=:]\s*["\']([^"\'\s]{8,})["\']'
     ),
-    "password": re.compile(
-        r'(?i)(?:password|pwd|passwd|secret)\s*[=:]\s*["\']([^"\'\s]{4,})["\']'
-    ),
+    "password": re.compile(r'(?i)(?:password|pwd|passwd|secret)\s*[=:]\s*["\']([^"\'\s]{4,})["\']'),
     "token": re.compile(
-        r'(?i)(?:token|bearer|jwt|auth_token|access_token|'
+        r"(?i)(?:token|bearer|jwt|auth_token|access_token|"
         r'refresh_token)\s*[=:]\s*["\']([^"\'\\s]{8,})["\']'
     ),
-    "aws_key": re.compile(
-        r'(?i)AKIA[0-9A-Z]{16}'
-    ),
-    "private_key": re.compile(
-        r'-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'
-    ),
+    "aws_key": re.compile(r"(?i)AKIA[0-9A-Z]{16}"),
+    "private_key": re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
     "connection_string": re.compile(
         r'(?i)(?:mongodb|postgresql|mysql|redis|amqp|rabbitmq)://[^"\'\s]+:[^"\'\s]+@'
     ),
 }
 
 MEDIUM_RISK_PATTERNS = {
-    "eval_exec": re.compile(
-        r'\b(?:eval|exec|execfile|__import__)\s*\('
-    ),
+    "eval_exec": re.compile(r"\b(?:eval|exec|execfile|__import__)\s*\("),
     "pickle_usage": re.compile(
-        r'\b(?:pickle\.loads?|cPickle\.loads?|dill\.loads?|cloudpickle\.loads?)\s*\('
+        r"\b(?:pickle\.loads?|cPickle\.loads?|dill\.loads?|cloudpickle\.loads?)\s*\("
     ),
     "shell_injection": re.compile(
-        r'(?:os\.system|subprocess\.[a-z_]+\s*\([^)]*\bshell\s*=\s*True)'
+        r"(?:os\.system|subprocess\.[a-z_]+\s*\([^)]*\bshell\s*=\s*True)"
     ),
-    "sql_injection": re.compile(
-        r'(?i)(?:execute|executemany|rawsql|query)\s*\(\s*f["\']'
-    ),
-    "yaml_load": re.compile(
-        r'(?i)(?:yaml\.load|yaml_load)\s*\('
-    ),
-    "assert_used": re.compile(
-        r'^\s*assert\s+',
-        re.MULTILINE
-    ),
+    "sql_injection": re.compile(r'(?i)(?:execute|executemany|rawsql|query)\s*\(\s*f["\']'),
+    "yaml_load": re.compile(r"(?i)(?:yaml\.load|yaml_load)\s*\("),
+    "assert_used": re.compile(r"^\s*assert\s+", re.MULTILINE),
 }
 
 LOW_RISK_PATTERNS = {
     "hardcoded_ip": re.compile(
-        r'(?<!\d)(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|'
-        r'172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|'
-        r'192\.168\.\d{1,3}\.\d{1,3})(?!\d)'
+        r"(?<!\d)(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+        r"172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|"
+        r"192\.168\.\d{1,3}\.\d{1,3})(?!\d)"
     ),
     "localhost_url": re.compile(
         # toolcase: ignore-security — scanner signature, not a runtime URL.
-        r'(?:http://localhost|http://127\.0\.0\.1)(?::\d+)?'
+        r"(?:http://localhost|http://127\.0\.0\.1)(?::\d+)?"
     ),
     "commented_auth": re.compile(
-        r'^\s*#.*(?:password|api_key|secret|token)\s*[=:]',
-        re.MULTILINE | re.IGNORECASE
+        r"^\s*#.*(?:password|api_key|secret|token)\s*[=:]", re.MULTILINE | re.IGNORECASE
     ),
     "env_with_secret": re.compile(
-        r'(?i)^\s*(?:export\s+)?(?:SECRET|API_KEY|TOKEN|PASSWORD|DB_PASS|AUTH_KEY)\s*=\s*\S',
-        re.MULTILINE
+        r"(?i)^\s*(?:export\s+)?(?:SECRET|API_KEY|TOKEN|PASSWORD|DB_PASS|AUTH_KEY)\s*=\s*\S",
+        re.MULTILINE,
     ),
 }
 
@@ -111,12 +96,12 @@ FIX_SUGGESTIONS = {
     "aws_key": "AWS IAM user keys should not be in source code. Use IAM roles or env vars.",
     "private_key": "Private keys should never be committed. Use SSH agent or secrets manager.",
     "connection_string": (
-        "Move connection strings to environment variables"
-        " or a config file outside the repo."),
+        "Move connection strings to environment variables or a config file outside the repo."
+    ),
     "eval_exec": "Avoid eval/exec — it allows arbitrary code execution. Use safer alternatives.",
     "pickle_usage": (
-        "Pickle is insecure for untrusted data."
-        " Consider JSON or structured serialization."),
+        "Pickle is insecure for untrusted data. Consider JSON or structured serialization."
+    ),
     "shell_injection": "Avoid shell=True in subprocess calls. Use argument lists instead.",
     "sql_injection": "Use parameterized queries (?, %s) instead of f-string interpolation.",
     "yaml_load": "Use yaml.safe_load() instead of unsafe YAML loading.",
@@ -146,13 +131,30 @@ RISK_LEVELS = {
     "env_with_secret": "HIGH",
 }
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "demo", "target", ".git", "__pycache__", "tests/fixtures", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", "vendor",
-    ".backups", ".self_improve_reports", "release", "tests",
-    ".rsi_backups",
-    ".rsi_reports",
-})
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "demo",
+        "target",
+        ".git",
+        "__pycache__",
+        "tests/fixtures",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        "vendor",
+        ".backups",
+        ".self_improve_reports",
+        "release",
+        "tests",
+        ".rsi_backups",
+        ".rsi_reports",
+    }
+)
 
 # Generated report files/patterns — excluded from scans to prevent false positives
 GENERATED_REPORT_PATTERNS = (
@@ -164,39 +166,67 @@ GENERATED_REPORT_PATTERNS = (
     "*.rsi_backups/*",
 )
 
-EXCLUDE_EXTENSIONS = frozenset({
-    ".pyc", ".pyo", ".so", ".dll", ".dylib", ".exe",
-    ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg",
-    ".woff", ".woff2", ".ttf", ".eot",
-    ".mp3", ".mp4", ".ogg", ".wav",
-    ".zip", ".tar", ".gz", ".bz2", ".7z",
-    ".lock", ".sum",
-})
+EXCLUDE_EXTENSIONS = frozenset(
+    {
+        ".pyc",
+        ".pyo",
+        ".so",
+        ".dll",
+        ".dylib",
+        ".exe",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".ico",
+        ".svg",
+        ".woff",
+        ".woff2",
+        ".ttf",
+        ".eot",
+        ".mp3",
+        ".mp4",
+        ".ogg",
+        ".wav",
+        ".zip",
+        ".tar",
+        ".gz",
+        ".bz2",
+        ".7z",
+        ".lock",
+        ".sum",
+    }
+)
 
 SUPPRESSION_MARKER = "toolcase: ignore-security"
 
 # Generated report name patterns (lowercase match)
 _GENERATED_NAMES = {
-    "codex_audit_report.md", "codex_audit_report.html",
-    "toolcase_analysis_report.html", "toolcase_analysis_report.md",
+    "codex_audit_report.md",
+    "codex_audit_report.html",
+    "toolcase_analysis_report.html",
+    "toolcase_analysis_report.md",
     "dexcore_analysis_report.html",
 }
 
 # Documentation files excluded from security scan
 # (README, CHANGELOG etc. document security patterns but don't execute them)
 _DOC_FILES = {
-    "readme.md", "changelog.md", "license",
+    "readme.md",
+    "changelog.md",
+    "license",
 }
 
 # Directories excluded from security scan
 _EXCLUDE_DIRS = {
-    ".hermes", ".github", "build", "dist",
+    ".hermes",
+    ".github",
+    "build",
+    "dist",
 }
 
 # Path suffixes to exclude (e.g. *.egg-info/PKG-INFO)
-_EXCLUDE_PATH_SUFFIXES = (
-    ".egg-info",
-)
+_EXCLUDE_PATH_SUFFIXES = (".egg-info",)
 
 
 def _is_generated_report(filepath: Path) -> bool:
@@ -239,15 +269,17 @@ def scan_file(filepath: Path) -> list[dict]:
         content = filepath.read_text(encoding="utf-8", errors="replace")
     except (OSError, UnicodeDecodeError) as e:
         # Log read errors but don't silently swallow
-        return [{
-            "file": str(filepath),
-            "line": 0,
-            "risk": "INFO",
-            "pattern": "read_error",
-            "match": str(e)[:100],
-            "context": f"Could not read file: {e}",
-            "fix": "Check file permissions and encoding",
-        }]
+        return [
+            {
+                "file": str(filepath),
+                "line": 0,
+                "risk": "INFO",
+                "pattern": "read_error",
+                "match": str(e)[:100],
+                "context": f"Could not read file: {e}",
+                "fix": "Check file permissions and encoding",
+            }
+        ]
 
     lines = content.split("\n")
     findings = []
@@ -261,58 +293,64 @@ def scan_file(filepath: Path) -> list[dict]:
     # Check each pattern
     for pattern_name, pattern in HIGH_RISK_PATTERNS.items():
         for match in pattern.finditer(content):
-            line_no = content[:match.start()].count("\n") + 1
+            line_no = content[: match.start()].count("\n") + 1
             if is_suppressed(line_no):
                 continue
             context_line = lines[line_no - 1].strip() if line_no <= len(lines) else ""
-            findings.append({
-                "file": str(filepath),
-                "line": line_no,
-                "risk": "HIGH",
-                "pattern": pattern_name,
-                "match": _mask_secret(match.group())[:100],
-                "context": context_line[:120],
-                "fix": FIX_SUGGESTIONS.get(pattern_name, ""),
-            })
+            findings.append(
+                {
+                    "file": str(filepath),
+                    "line": line_no,
+                    "risk": "HIGH",
+                    "pattern": pattern_name,
+                    "match": _mask_secret(match.group())[:100],
+                    "context": context_line[:120],
+                    "fix": FIX_SUGGESTIONS.get(pattern_name, ""),
+                }
+            )
 
     for pattern_name, pattern in MEDIUM_RISK_PATTERNS.items():
         for match in pattern.finditer(content):
-            line_no = content[:match.start()].count("\n") + 1
+            line_no = content[: match.start()].count("\n") + 1
             if is_suppressed(line_no):
                 continue
             context_line = lines[line_no - 1].strip() if line_no <= len(lines) else ""
-            findings.append({
-                "file": str(filepath),
-                "line": line_no,
-                "risk": "MEDIUM",
-                "pattern": pattern_name,
-                "match": match.group()[:100],
-                "context": context_line[:120],
-                "fix": FIX_SUGGESTIONS.get(pattern_name, ""),
-            })
+            findings.append(
+                {
+                    "file": str(filepath),
+                    "line": line_no,
+                    "risk": "MEDIUM",
+                    "pattern": pattern_name,
+                    "match": match.group()[:100],
+                    "context": context_line[:120],
+                    "fix": FIX_SUGGESTIONS.get(pattern_name, ""),
+                }
+            )
 
     for pattern_name, pattern in LOW_RISK_PATTERNS.items():
         for match in pattern.finditer(content):
-            line_no = content[:match.start()].count("\n") + 1
+            line_no = content[: match.start()].count("\n") + 1
             if is_suppressed(line_no):
                 continue
             context_line = lines[line_no - 1].strip() if line_no <= len(lines) else ""
-            findings.append({
-                "file": str(filepath),
-                "line": line_no,
-                "risk": "LOW",
-                "pattern": pattern_name,
-                "match": match.group()[:100],
-                "context": context_line[:120],
-                "fix": FIX_SUGGESTIONS.get(pattern_name, ""),
-            })
+            findings.append(
+                {
+                    "file": str(filepath),
+                    "line": line_no,
+                    "risk": "LOW",
+                    "pattern": pattern_name,
+                    "match": match.group()[:100],
+                    "context": context_line[:120],
+                    "fix": FIX_SUGGESTIONS.get(pattern_name, ""),
+                }
+            )
 
     return findings
 
 
 def _mask_secret(text: str) -> str:
     """Mask the value part of a secret-like match."""
-    for sep in ['="', "='", "= ", ": ", ":\"", ":'"]:
+    for sep in ['="', "='", "= ", ": ", ':"', ":'"]:
         if sep in text:
             parts = text.split(sep, 1)
             if len(parts) == 2 and len(parts[1]) > 4:
@@ -350,9 +388,9 @@ def print_report(findings: list[dict], patterns_only: bool = False) -> None:
     medium = [f for f in findings if f["risk"] == "MEDIUM"]
     low = [f for f in findings if f["risk"] == "LOW"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🔒 SECURITY SCAN — {len(findings)} finding(s)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   🔴 HIGH:   {len(high)}")
     print(f"   🟡 MEDIUM: {len(medium)}")
     print(f"   🟢 LOW:    {len(low)}")
@@ -415,8 +453,12 @@ Examples:
     )
     parser.add_argument("path", help="Bestand of directory om te scannen")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--patterns-only", "-p", action="store_true",
-                        help="Groepeer resultaten per patroon i.p.v. per file")
+    parser.add_argument(
+        "--patterns-only",
+        "-p",
+        action="store_true",
+        help="Groepeer resultaten per patroon i.p.v. per file",
+    )
     parser.add_argument("--version", action="version", version="security_scan.py v1.1.0")
 
     args = parser.parse_args()

@@ -4,12 +4,13 @@ code_churn_analyzer.py — Analyseer welke files het vaakst wijzigen (hotspots).
 
 Hotspot = wijzigingen × file_grootte. Hoe vaker gewijzigd + hoe groter = hoe riskanter.
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import json
-import subprocess
 import sys
 from pathlib import Path
 from collections import defaultdict
@@ -18,8 +19,7 @@ ROOT = Path(__file__).parent.resolve()
 
 
 def analyze() -> dict:
-    """analyze.
-        """
+    """analyze."""
     results = {}
     stats = defaultdict(lambda: {"changes": 0, "lines": 0, "score": 0})
 
@@ -32,15 +32,18 @@ def analyze() -> dict:
 
     # Get change frequency from git log
     try:
-        r = subprocess.run(
+        r = safe_run(
             ["git", "log", "--pretty=format:", "--name-only"],
-            capture_output=True, text=True, cwd=str(ROOT), timeout=15
+            capture_output=True,
+            text=True,
+            cwd=str(ROOT),
+            timeout=15,
         )
         for line in r.stdout.strip().split("\n"):
             line = line.strip()
             if line and line.endswith(".py") and not line.startswith(("_", "test_")):
                 stats[line]["changes"] += 1
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+    except (TimeoutError, FileNotFoundError):
         pass
 
     # Compute hotspot score
@@ -64,8 +67,7 @@ def analyze() -> dict:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="Code Churn Analyzer — Hotspot detectie")
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
@@ -85,7 +87,7 @@ def main() -> None:
         print(f"   Hotspots:       {data['hotspots']} (score > 2)")
         print()
         print(f"   {'File':<35s} {'Chg':>4s} {'Lines':>6s} {'Score':>7s}")
-        print(f"   {'-'*54}")
+        print(f"   {'-' * 54}")
 
         for fname, changes, lines, score in files[:20]:
             if score > 2:

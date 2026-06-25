@@ -16,6 +16,7 @@ Gebruik:
     python feature_gap_analyzer.py <path> --json
     python feature_gap_analyzer.py <path> --deep
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -32,64 +33,184 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    "build", "dist", ".next",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        ".next",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # Common feature area keywords
 FEATURE_KEYWORDS = {
-    "auth": ["login", "logout", "register", "signup", "signin", "session",
-             "token", "jwt", "oauth", "password", "user", "profile",
-             "authenticate", "authorize", "permission", "role"],
-    "database": ["query", "mutation", "crud", "create", "read", "update",
-                 "delete", "save", "load", "fetch", "store", "persist",
-                 "model", "schema", "migration", "seed"],
-    "api": ["endpoint", "route", "api", "rest", "graphql", "websocket",
-            "request", "response", "handler", "middleware"],
-    "ui": ["component", "page", "layout", "modal", "dialog", "form",
-           "button", "input", "dropdown", "menu", "navbar", "sidebar",
-           "card", "table", "list", "grid"],
-    "state": ["store", "state", "context", "reducer", "redux", "zustand",
-              "recoil", "jotai", "signal", "reactive"],
-    "error": ["error", "fallback", "errorboundary", "catch", "try",
-              "exception", "validation", "sanitize", "escape"],
-    "loading": ["loading", "spinner", "skeleton", "placeholder", "progress",
-                "suspense", "pending", "fetching"],
-    "settings": ["config", "setting", "preference", "option", "theme",
-                 "locale", "language", "notification"],
-    "search": ["search", "filter", "query", "find", "browse", "explore",
-               "catalog", "index"],
-    "notification": ["toast", "notification", "alert", "snackbar", "banner",
-                     "message", "popup"],
-    "file": ["upload", "download", "file", "image", "attachment", "document",
-             "import", "export", "csv", "pdf"],
-    "real-time": ["websocket", "realtime", "live", "stream", "subscribe",
-                  "event", "push", "poll"],
+    "auth": [
+        "login",
+        "logout",
+        "register",
+        "signup",
+        "signin",
+        "session",
+        "token",
+        "jwt",
+        "oauth",
+        "password",
+        "user",
+        "profile",
+        "authenticate",
+        "authorize",
+        "permission",
+        "role",
+    ],
+    "database": [
+        "query",
+        "mutation",
+        "crud",
+        "create",
+        "read",
+        "update",
+        "delete",
+        "save",
+        "load",
+        "fetch",
+        "store",
+        "persist",
+        "model",
+        "schema",
+        "migration",
+        "seed",
+    ],
+    "api": [
+        "endpoint",
+        "route",
+        "api",
+        "rest",
+        "graphql",
+        "websocket",
+        "request",
+        "response",
+        "handler",
+        "middleware",
+    ],
+    "ui": [
+        "component",
+        "page",
+        "layout",
+        "modal",
+        "dialog",
+        "form",
+        "button",
+        "input",
+        "dropdown",
+        "menu",
+        "navbar",
+        "sidebar",
+        "card",
+        "table",
+        "list",
+        "grid",
+    ],
+    "state": [
+        "store",
+        "state",
+        "context",
+        "reducer",
+        "redux",
+        "zustand",
+        "recoil",
+        "jotai",
+        "signal",
+        "reactive",
+    ],
+    "error": [
+        "error",
+        "fallback",
+        "errorboundary",
+        "catch",
+        "try",
+        "exception",
+        "validation",
+        "sanitize",
+        "escape",
+    ],
+    "loading": [
+        "loading",
+        "spinner",
+        "skeleton",
+        "placeholder",
+        "progress",
+        "suspense",
+        "pending",
+        "fetching",
+    ],
+    "settings": [
+        "config",
+        "setting",
+        "preference",
+        "option",
+        "theme",
+        "locale",
+        "language",
+        "notification",
+    ],
+    "search": ["search", "filter", "query", "find", "browse", "explore", "catalog", "index"],
+    "notification": ["toast", "notification", "alert", "snackbar", "banner", "message", "popup"],
+    "file": [
+        "upload",
+        "download",
+        "file",
+        "image",
+        "attachment",
+        "document",
+        "import",
+        "export",
+        "csv",
+        "pdf",
+    ],
+    "real-time": ["websocket", "realtime", "live", "stream", "subscribe", "event", "push", "poll"],
 }
 
 REQUIRED_FEATURE_PATTERNS = {
     "error_handling": re.compile(
-        r"(?:catch|error|fallback|errorboundary|err|try\s*\{)", re.IGNORECASE),
+        r"(?:catch|error|fallback|errorboundary|err|try\s*\{)", re.IGNORECASE
+    ),
     "loading_state": re.compile(
-        r"(?:loading|spinner|skeleton|suspense|isLoading|isFetching)", re.IGNORECASE),
-    "validation": re.compile(r'(?:validate|sanitize|schema|zod|yup|joi|validator)', re.IGNORECASE),
-    "empty_state": re.compile(r'(?:empty|no[A-Z]\w+|isEmpty|notFound|noData)', re.IGNORECASE),
+        r"(?:loading|spinner|skeleton|suspense|isLoading|isFetching)", re.IGNORECASE
+    ),
+    "validation": re.compile(r"(?:validate|sanitize|schema|zod|yup|joi|validator)", re.IGNORECASE),
+    "empty_state": re.compile(r"(?:empty|no[A-Z]\w+|isEmpty|notFound|noData)", re.IGNORECASE),
 }
 
 
 def collect_source_files(root: Path) -> list[Path]:
     """Collect all source files."""
     files = []
-    exts = {".ts", ".tsx", ".js", ".jsx", ".py", ".rs", ".mjs", ".cjs",
-            ".css", ".scss", ".html", ".json", ".yaml", ".yml", ".toml"}
+    exts = {
+        ".ts",
+        ".tsx",
+        ".js",
+        ".jsx",
+        ".py",
+        ".rs",
+        ".mjs",
+        ".cjs",
+        ".css",
+        ".scss",
+        ".html",
+        ".json",
+        ".yaml",
+        ".yml",
+        ".toml",
+    }
 
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
@@ -118,7 +239,7 @@ def detect_features(files: list[Path]) -> dict:
 
         for feature, keywords in FEATURE_KEYWORDS.items():
             for keyword in keywords:
-                pattern = re.compile(r'\b' + re.escape(keyword) + r'\b', re.IGNORECASE)
+                pattern = re.compile(r"\b" + re.escape(keyword) + r"\b", re.IGNORECASE)
                 matches = pattern.findall(content)
                 if matches:
                     feat = features[feature]
@@ -147,26 +268,29 @@ def analyze_feature_gaps(features: dict) -> list[dict]:
         has_backend = data.get("has_backend", False)
 
         if has_frontend and not has_backend:
-            gaps.append({
-                "feature": feature,
-                "type": "missing_backend",
-                "description": (
-                    f"{feature.title()} heeft frontend code "
-                    "maar geen backend ondersteuning"
-                ),
-                "confidence": data["confidence"],
-                "mentions": data["mentions"],
-                "files": data["files"][:5],
-            })
+            gaps.append(
+                {
+                    "feature": feature,
+                    "type": "missing_backend",
+                    "description": (
+                        f"{feature.title()} heeft frontend code maar geen backend ondersteuning"
+                    ),
+                    "confidence": data["confidence"],
+                    "mentions": data["mentions"],
+                    "files": data["files"][:5],
+                }
+            )
         elif has_backend and not has_frontend:
-            gaps.append({
-                "feature": feature,
-                "type": "missing_frontend",
-                "description": f"{feature.title()} heeft backend code maar geen frontend UI",
-                "confidence": data["confidence"],
-                "mentions": data["mentions"],
-                "files": data["files"][:5],
-            })
+            gaps.append(
+                {
+                    "feature": feature,
+                    "type": "missing_frontend",
+                    "description": f"{feature.title()} heeft backend code maar geen frontend UI",
+                    "confidence": data["confidence"],
+                    "mentions": data["mentions"],
+                    "files": data["files"][:5],
+                }
+            )
 
     return gaps
 
@@ -188,40 +312,45 @@ def analyze_pattern_gaps(files: list[Path]) -> list[dict]:
         rel_path = fp.relative_to(Path.cwd()) if fp.exists() else fp
 
         # Check for API calls without error handling
-        if re.search(r'(?:fetch|axios|api)\.\s*(?:get|post|put|delete)', content):
+        if re.search(r"(?:fetch|axios|api)\.\s*(?:get|post|put|delete)", content):
             if not REQUIRED_FEATURE_PATTERNS["error_handling"].search(content):
-                gaps.append({
-                    "file": str(rel_path),
-                    "type": "missing_error_handling",
-                    "description": f"API calls zonder error handling in {fp.name}",
-                    "severity": "MEDIUM",
-                })
+                gaps.append(
+                    {
+                        "file": str(rel_path),
+                        "type": "missing_error_handling",
+                        "description": f"API calls zonder error handling in {fp.name}",
+                        "severity": "MEDIUM",
+                    }
+                )
 
         # Check for data fetching without loading state
-        if re.search(r'(?:useQuery|useMutation|fetch|useEffect.*fetch)', content):
+        if re.search(r"(?:useQuery|useMutation|fetch|useEffect.*fetch)", content):
             if not REQUIRED_FEATURE_PATTERNS["loading_state"].search(content):
-                gaps.append({
-                    "file": str(rel_path),
-                    "type": "missing_loading_state",
-                    "description": f"Data fetching zonder loading state in {fp.name}",
-                    "severity": "LOW",
-                })
+                gaps.append(
+                    {
+                        "file": str(rel_path),
+                        "type": "missing_loading_state",
+                        "description": f"Data fetching zonder loading state in {fp.name}",
+                        "severity": "LOW",
+                    }
+                )
 
         # Check for forms without validation
-        if re.search(r'<form|<Form|<input|<Input|<textarea|<select', content):
+        if re.search(r"<form|<Form|<input|<Input|<textarea|<select", content):
             if not REQUIRED_FEATURE_PATTERNS["validation"].search(content):
-                gaps.append({
-                    "file": str(rel_path),
-                    "type": "missing_validation",
-                    "description": f"Formulieren zonder validatie in {fp.name}",
-                    "severity": "MEDIUM",
-                })
+                gaps.append(
+                    {
+                        "file": str(rel_path),
+                        "type": "missing_validation",
+                        "description": f"Formulieren zonder validatie in {fp.name}",
+                        "severity": "MEDIUM",
+                    }
+                )
 
     return gaps
 
 
-def print_report(features: dict, gaps: list[dict],
-                 pattern_gaps: list[dict]) -> None:
+def print_report(features: dict, gaps: list[dict], pattern_gaps: list[dict]) -> None:
     """Print a formatted feature gap report."""
     # Sort features by confidence
     sorted_features = sorted(features.items(), key=lambda x: x[1]["confidence"], reverse=True)
@@ -229,9 +358,9 @@ def print_report(features: dict, gaps: list[dict],
     missing_frontend = [g for g in gaps if g["type"] == "missing_frontend"]
     missing_backend = [g for g in gaps if g["type"] == "missing_backend"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🔍 FEATURE GAP ANALYZER")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Feature areas detected: {len(features)}")
     print(f"   ⚠  Missing frontend:    {len(missing_frontend)}")
     print(f"   ⚠  Missing backend:     {len(missing_backend)}")
@@ -280,10 +409,12 @@ def print_report(features: dict, gaps: list[dict],
             print(f"\n   {label} ({len(items)}):")
             for item in items[:5]:
                 sev = (
-                "🔴" if item["severity"] == "HIGH"
-                else "🟡" if item["severity"] == "MEDIUM"
-                else "🟢"
-            )
+                    "🔴"
+                    if item["severity"] == "HIGH"
+                    else "🟡"
+                    if item["severity"] == "MEDIUM"
+                    else "🟢"
+                )
                 print(f"     {sev} {item['description']}")
             if len(items) > 5:
                 print(f"     ... en nog {len(items) - 5}")
@@ -295,8 +426,7 @@ def print_report(features: dict, gaps: list[dict],
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="feature_gap_analyzer.py — Analyze feature gaps between frontend & backend",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -309,8 +439,9 @@ Examples:
     )
     parser.add_argument("path", nargs="?", default=".", help="Project root")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--deep", "-d", action="store_true",
-                        help="Diepere analyse (patronen, error handling)")
+    parser.add_argument(
+        "--deep", "-d", action="store_true", help="Diepere analyse (patronen, error handling)"
+    )
     parser.add_argument("--version", action="version", version="feature_gap_analyzer.py v1.0.0")
 
     args = parser.parse_args()

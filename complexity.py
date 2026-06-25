@@ -15,6 +15,7 @@ Gebruik:
 
 Gebruikt enkel stdlib (re, json, sys, os, argparse).
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -26,10 +27,10 @@ import argparse
 from collections import defaultdict
 
 # Ensure UTF-8 output on all platforms (Windows cp1252 can't handle emoji/unicode)
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # ─────────────────────────────────────────────
 # PATRONEN per taal
@@ -37,116 +38,112 @@ if hasattr(sys.stderr, 'reconfigure'):
 
 PATTERNS = {
     "py": {
-        "function_start": re.compile(
-            r'^(\s*)def\s+(\w+)\s*\('
-        ),
-        "function_call": re.compile(
-            r'^\s*(\w+)\s*\(', re.MULTILINE
-        ),
+        "function_start": re.compile(r"^(\s*)def\s+(\w+)\s*\("),
+        "function_call": re.compile(r"^\s*(\w+)\s*\(", re.MULTILINE),
         "decision_points": {
-            re.compile(r'\bif\b'),        # if
-            re.compile(r'\belif\b'),       # elif
-            re.compile(r'\belse\b'),       # else
-            re.compile(r'\bfor\b'),        # for
-            re.compile(r'\bwhile\b'),      # while
-            re.compile(r'\band\b'),        # and
-            re.compile(r'\bor\b'),         # or
-            re.compile(r'\bexcept\b'),     # except
-            re.compile(r'\btry\b'),        # try counts as 0, but except is 1
+            re.compile(r"\bif\b"),  # if
+            re.compile(r"\belif\b"),  # elif
+            re.compile(r"\belse\b"),  # else
+            re.compile(r"\bfor\b"),  # for
+            re.compile(r"\bwhile\b"),  # while
+            re.compile(r"\band\b"),  # and
+            re.compile(r"\bor\b"),  # or
+            re.compile(r"\bexcept\b"),  # except
+            re.compile(r"\btry\b"),  # try counts as 0, but except is 1
         },
         "boolean_ops": {
-            re.compile(r'\band\b'),
-            re.compile(r'\bor\b'),
+            re.compile(r"\band\b"),
+            re.compile(r"\bor\b"),
         },
         "nested_increment": {
-            re.compile(r'\bif\b'),
-            re.compile(r'\bfor\b'),
-            re.compile(r'\bwhile\b'),
-            re.compile(r'\btry\b'),
+            re.compile(r"\bif\b"),
+            re.compile(r"\bfor\b"),
+            re.compile(r"\bwhile\b"),
+            re.compile(r"\btry\b"),
         },
-        "comment": re.compile(r'^\s*#'),
+        "comment": re.compile(r"^\s*#"),
         "string_literal": re.compile(r'"""|\'\'\'|"|\''),
     },
     "ts": {
         "function_start": re.compile(
-            r'(?:^|\s)'  # start of line or whitespace
-            r'(?:'
-            r'(?:public|private|protected|static|async|export|default|\s)*\bfunction\s+(\w+)\s*\('
-            r'|'
-            r'(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*(?::[^=]+)?\s*=>'
-            r'|'
-            r'(\w+)\s*\([^)]*\)\s*\{'  # methodName() {
-            r')'
+            r"(?:^|\s)"  # start of line or whitespace
+            r"(?:"
+            r"(?:public|private|protected|static|async|export|default|\s)*\bfunction\s+(\w+)\s*\("
+            r"|"
+            r"(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\([^)]*\)\s*(?::[^=]+)?\s*=>"
+            r"|"
+            r"(\w+)\s*\([^)]*\)\s*\{"  # methodName() {
+            r")"
         ),
         "decision_points": {
-            re.compile(r'\bif\b'),
-            re.compile(r'\belse\s+if\b'),
-            re.compile(r'\belse\b'),
-            re.compile(r'\bfor\b'),
-            re.compile(r'\bwhile\b'),
-            re.compile(r'\bcatch\b'),
-            re.compile(r'\bswitch\b'),
-            re.compile(r'\bcase\b'),
-            re.compile(r'\?\s*[^?]'),  # ternary ? (not nullish ??)
-            re.compile(r'\b&&\b'),
-            re.compile(r'\b\|\|\b'),
+            re.compile(r"\bif\b"),
+            re.compile(r"\belse\s+if\b"),
+            re.compile(r"\belse\b"),
+            re.compile(r"\bfor\b"),
+            re.compile(r"\bwhile\b"),
+            re.compile(r"\bcatch\b"),
+            re.compile(r"\bswitch\b"),
+            re.compile(r"\bcase\b"),
+            re.compile(r"\?\s*[^?]"),  # ternary ? (not nullish ??)
+            re.compile(r"\b&&\b"),
+            re.compile(r"\b\|\|\b"),
         },
         "boolean_ops": {
-            re.compile(r'\b&&\b'),
-            re.compile(r'\b\|\|\b'),
+            re.compile(r"\b&&\b"),
+            re.compile(r"\b\|\|\b"),
         },
         "nested_increment": {
-            re.compile(r'\bif\b'),
-            re.compile(r'\bfor\b'),
-            re.compile(r'\bwhile\b'),
-            re.compile(r'\bcatch\b'),
-            re.compile(r'\bfinally\b'),
+            re.compile(r"\bif\b"),
+            re.compile(r"\bfor\b"),
+            re.compile(r"\bwhile\b"),
+            re.compile(r"\bcatch\b"),
+            re.compile(r"\bfinally\b"),
         },
-        "comment_single": re.compile(r'^\s*//'),
-        "comment_multi_start": re.compile(r'/\*'),
+        "comment_single": re.compile(r"^\s*//"),
+        "comment_multi_start": re.compile(r"/\*"),
     },
     "rs": {
         "function_start": re.compile(
-            r'^(\s*)'          # leading whitespace
-            r'(?:pub\s+)?'     # optional pub
-            r'(?:unsafe\s+)?'  # optional unsafe
-            r'(?:async\s+)?'   # optional async
-            r'fn\s+'           # fn keyword
-            r'(\w+)'           # function name
-            r'\s*<'            # generic params start
-            r'|'
-            r'^(\s*)'          # leading whitespace
-            r'(?:pub\s+)?'
-            r'(?:unsafe\s+)?'
-            r'(?:async\s+)?'
-            r'fn\s+'           # fn keyword
-            r'(\w+)'           # function name
-            r'\s*\('           # paren start
+            r"^(\s*)"  # leading whitespace
+            r"(?:pub\s+)?"  # optional pub
+            r"(?:unsafe\s+)?"  # optional unsafe
+            r"(?:async\s+)?"  # optional async
+            r"fn\s+"  # fn keyword
+            r"(\w+)"  # function name
+            r"\s*<"  # generic params start
+            r"|"
+            r"^(\s*)"  # leading whitespace
+            r"(?:pub\s+)?"
+            r"(?:unsafe\s+)?"
+            r"(?:async\s+)?"
+            r"fn\s+"  # fn keyword
+            r"(\w+)"  # function name
+            r"\s*\("  # paren start
         ),
         "decision_points": {
-            re.compile(r'\bif\b'),
-            re.compile(r'\belse\s+if\b'),
-            re.compile(r'\belse\b'),
-            re.compile(r'\bfor\b'),
-            re.compile(r'\bwhile\b'),
-            re.compile(r'\bmatch\b'),
-            re.compile(r'\bcatch\b'),
-            re.compile(r'\b&&\b'),
-            re.compile(r'\b\|\|\b'),
+            re.compile(r"\bif\b"),
+            re.compile(r"\belse\s+if\b"),
+            re.compile(r"\belse\b"),
+            re.compile(r"\bfor\b"),
+            re.compile(r"\bwhile\b"),
+            re.compile(r"\bmatch\b"),
+            re.compile(r"\bcatch\b"),
+            re.compile(r"\b&&\b"),
+            re.compile(r"\b\|\|\b"),
         },
         "boolean_ops": {
-            re.compile(r'\b&&\b'),
-            re.compile(r'\b\|\|\b'),
+            re.compile(r"\b&&\b"),
+            re.compile(r"\b\|\|\b"),
         },
         "nested_increment": {
-            re.compile(r'\bif\b'),
-            re.compile(r'\bfor\b'),
-            re.compile(r'\bwhile\b'),
-            re.compile(r'\bmatch\b'),
-            re.compile(r'\bloop\b'),
+            re.compile(r"\bif\b"),
+            re.compile(r"\bfor\b"),
+            re.compile(r"\bwhile\b"),
+            re.compile(r"\bmatch\b"),
+            re.compile(r"\bloop\b"),
         },
-        "comment_single": re.compile(r'^\s*//'),
-        "comment_multi_start": re.compile(r'/\*'),
+        "comment_single": re.compile(r"^\s*//"),
+        "comment_multi_start": re.compile(r"/\*"),
     },
 }
 
@@ -182,7 +179,7 @@ def find_functions_py(lines: list[str]) -> list[dict]:
             # tel parameters
             paren_start = line.index("(")
             paren_end = _find_matching_paren(line, paren_start)
-            params_str = line[paren_start + 1:paren_end] if paren_end > paren_start else ""
+            params_str = line[paren_start + 1 : paren_end] if paren_end > paren_start else ""
             # ook multi-line parameters checken
             if paren_end == -1 or (paren_end > paren_start and ")" not in line[paren_start:]):
                 # multi-line signature
@@ -193,18 +190,21 @@ def find_functions_py(lines: list[str]) -> list[dict]:
                     j += 1
                 if ")" in combined:
                     paren_end = combined.index(")", paren_start)
-                    params_str = combined[paren_start + 1:paren_end]
-            params = [p for p in params_str.split(",")
-                      if p.strip() and p.strip() not in ("self", "cls")]
+                    params_str = combined[paren_start + 1 : paren_end]
+            params = [
+                p for p in params_str.split(",") if p.strip() and p.strip() not in ("self", "cls")
+            ]
             param_count = len(params)
 
-            functions.append({
-                "name": name,
-                "line": i + 1,
-                "indent": indent,
-                "end_line": None,
-                "params": param_count,
-            })
+            functions.append(
+                {
+                    "name": name,
+                    "line": i + 1,
+                    "indent": indent,
+                    "end_line": None,
+                    "params": param_count,
+                }
+            )
     return _compute_function_bodies(lines, functions, "py")
 
 
@@ -217,21 +217,23 @@ def find_functions_ts(lines: list[str]) -> list[dict]:
         if not name:
             continue
         # Bereken regelnummer
-        line_no = text[:m.start()].count("\n") + 1
+        line_no = text[: m.start()].count("\n") + 1
 
         # Tel parameters uit de match
         brace_pos = m.end()
         # Zoek de { die het function body start
         body_start = _find_body_start(text, brace_pos)
 
-        functions.append({
-            "name": name,
-            "line": line_no,
-            "indent": 0,
-            "end_line": None,
-            "params": 0,
-            "body_start": body_start,
-        })
+        functions.append(
+            {
+                "name": name,
+                "line": line_no,
+                "indent": 0,
+                "end_line": None,
+                "params": 0,
+                "body_start": body_start,
+            }
+        )
     return _compute_function_bodies(lines, functions, "ts")
 
 
@@ -242,23 +244,23 @@ def find_functions_rs(lines: list[str]) -> list[dict]:
 
     # Eerste pattern: fn name<T>(...)
     pat1 = re.compile(
-        r'^(\s*)'          # leading whitespace
-        r'(?:pub\s+)?'     # optional pub
-        r'(?:unsafe\s+)?'  # optional unsafe
-        r'(?:async\s+)?'   # optional async
-        r'fn\s+'           # fn keyword
-        r'(\w+)'           # function name
-        r'\s*<'            # generic params start
+        r"^(\s*)"  # leading whitespace
+        r"(?:pub\s+)?"  # optional pub
+        r"(?:unsafe\s+)?"  # optional unsafe
+        r"(?:async\s+)?"  # optional async
+        r"fn\s+"  # fn keyword
+        r"(\w+)"  # function name
+        r"\s*<"  # generic params start
     )
     # Tweede pattern: fn name(...)
     pat2 = re.compile(
-        r'^(\s*)'          # leading whitespace
-        r'(?:pub\s+)?'
-        r'(?:unsafe\s+)?'
-        r'(?:async\s+)?'
-        r'fn\s+'           # fn keyword
-        r'(\w+)'           # function name
-        r'\s*\('           # paren start
+        r"^(\s*)"  # leading whitespace
+        r"(?:pub\s+)?"
+        r"(?:unsafe\s+)?"
+        r"(?:async\s+)?"
+        r"fn\s+"  # fn keyword
+        r"(\w+)"  # function name
+        r"\s*\("  # paren start
     )
 
     for m in pat1.finditer(text, re.MULTILINE):
@@ -268,7 +270,7 @@ def find_functions_rs(lines: list[str]) -> list[dict]:
     # Vermijd duplicaten voor pat2
     existing_lines = {f["line"] for f in functions}
     for m in pat2.finditer(text, re.MULTILINE):
-        line_no = text[:m.start()].count("\n") + 1
+        line_no = text[: m.start()].count("\n") + 1
         if line_no in existing_lines:
             continue
         func = _make_rs_func(lines, text, m)
@@ -279,34 +281,34 @@ def find_functions_rs(lines: list[str]) -> list[dict]:
 
 
 def _make_rs_func(lines: list[str], text: str, m: re.Match) -> dict | None:
-    """ make rs func.
+    """make rs func.
 
-        Args:
-            lines: Description.
-            text: Description.
-            m: Description.
+    Args:
+        lines: Description.
+        text: Description.
+        m: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     name = m.group(2)
     if not name:
         return None
-    line_no = text[:m.start()].count("\n") + 1
+    line_no = text[: m.start()].count("\n") + 1
     # Zoek de { die het function body start
     # Rust fns kunnen een 'where' clause hebben, dus we moeten verder zoeken
     brace_pos = m.end()
-    segment = text[m.start():]
+    segment = text[m.start() :]
     # Skip generics en where clause
     depth = 0
     in_angle = False
     brace_idx = -1
     for idx, ch in enumerate(segment):
-        if ch == '<':
+        if ch == "<":
             in_angle = True
-        elif ch == '>':
+        elif ch == ">":
             in_angle = False
-        elif ch == '{' and not in_angle:
+        elif ch == "{" and not in_angle:
             brace_idx = m.start() + idx
             break
     if brace_idx == -1:
@@ -418,7 +420,7 @@ def _compute_brace_bodies(lines: list[str], functions: list[dict]) -> list[dict]
                     break
         # end_pos is de positie van de sluitende }
         body_ok = end_pos > body_start
-        end_line = text[:end_pos + 1].count("\n") + 1 if body_ok else func["line"]
+        end_line = text[: end_pos + 1].count("\n") + 1 if body_ok else func["line"]
         func["end_line"] = end_line
 
         # Tel parameters op basis van signature tussen functienaam en first {
@@ -431,9 +433,12 @@ def _compute_brace_bodies(lines: list[str], functions: list[dict]) -> list[dict]
             if paren_idx >= 0:
                 close_paren = _find_matching_paren(sig_text, paren_idx)
                 if close_paren >= 0:
-                    params_str = sig_text[paren_idx + 1:close_paren]
-                    params_list = [p for p in params_str.split(",")
-                                   if p.strip() and not p.strip().startswith("//")]
+                    params_str = sig_text[paren_idx + 1 : close_paren]
+                    params_list = [
+                        p
+                        for p in params_str.split(",")
+                        if p.strip() and not p.strip().startswith("//")
+                    ]
                     func["params"] = len(params_list)
         result.append(func)
     return result
@@ -491,11 +496,11 @@ def _remove_strings(line: str) -> str:
                 in_string = False
             i += 1
             continue
-        if ch in ("\"", "'"):
+        if ch in ('"', "'"):
             # Check voor triple quotes
-            if line[i:i+3] in ('"""', "'''"):
+            if line[i : i + 3] in ('"""', "'''"):
                 in_string = True
-                string_char = line[i:i+3]
+                string_char = line[i : i + 3]
                 i += 3
                 continue
             in_string = True
@@ -683,8 +688,7 @@ def summary(results: list[dict]) -> dict:
 def print_table(results: list[dict], threshold: int = 0) -> None:
     """Print een tabel met functiecomplexiteit."""
     if threshold:
-        filtered = [r for r in results
-                    if r["cyclomatic_complexity"] >= threshold]
+        filtered = [r for r in results if r["cyclomatic_complexity"] >= threshold]
     else:
         filtered = results
 
@@ -712,14 +716,14 @@ def print_table(results: list[dict], threshold: int = 0) -> None:
 
 def print_summary(summ: dict, filepath: str) -> None:
     """Print een mooie samenvatting."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Samenvatting: {filepath}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Totaal functies:      {summ['total_functions']}")
     print(f"  Gem. cyclomatisch:    {summ['average_cyclomatic']}")
     print(f"  Gem. cognitive load:  {summ['average_cognitive_load']}")
     print(f"\n  Top 5 meest complexe functies:")
-    print(f"  {'-'*50}")
+    print(f"  {'-' * 50}")
     for i, func in enumerate(summ["top_5_complex"], 1):
         print(
             f"  {i}. {func['name']:<25} "
@@ -727,7 +731,7 @@ def print_summary(summ: dict, filepath: str) -> None:
             f"cyclo={func['cyclomatic_complexity']:<3} "
             f"cog={func['cognitive_load']:<3}"
         )
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
 def scan_recursive(path: str, threshold: int = 0, json_output: bool = False) -> None:
@@ -759,9 +763,9 @@ def scan_recursive(path: str, threshold: int = 0, json_output: bool = False) -> 
     # Print per bestand
     for rel_path in sorted(all_results.keys()):
         results = all_results[rel_path]
-        print(f"\n{'─'*60}")
+        print(f"\n{'─' * 60}")
         print(f"  Bestand: {rel_path}")
-        print(f"{'─'*60}")
+        print(f"{'─' * 60}")
         print_table(results, threshold)
 
         summ = summary(results)
@@ -770,18 +774,17 @@ def scan_recursive(path: str, threshold: int = 0, json_output: bool = False) -> 
     # Algemene samenvatting
     if file_stats:
         file_stats_sorted = sorted(file_stats, key=lambda x: x[1], reverse=True)
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  ALGEMENE SAMENVATTING ({len(file_stats)} bestanden)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"  Bestanden met hoogste gemiddelde complexiteit:")
-        print(f"  {'-'*50}")
+        print(f"  {'-' * 50}")
         for rel_path, avg_c, n_funcs in file_stats_sorted[:5]:
             print(f"  {rel_path:<40} avg cyclo={avg_c:<6.2f}  ({n_funcs} functies)")
 
 
 def main():
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="Complexity meter — cyclomatische complexiteit & cognitieve load",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -796,8 +799,13 @@ def main():
     parser.add_argument("path", help="Bestand of directory om te analyseren")
     parser.add_argument("--recursive", "-r", action="store_true", help="Recursief scannen")
     parser.add_argument("--json", action="store_true", help="JSON output")
-    parser.add_argument("--threshold", "-t", type=int, default=0,
-                        help="Alleen functies rapporteren met complexiteit > N")
+    parser.add_argument(
+        "--threshold",
+        "-t",
+        type=int,
+        default=0,
+        help="Alleen functies rapporteren met complexiteit > N",
+    )
 
     args = parser.parse_args()
 
@@ -809,15 +817,18 @@ def main():
 
     if args.recursive:
         if os.path.isfile(path):
-            print(f"Fout: --recursive werkt alleen met directories, niet met bestanden.",
-                  file=sys.stderr)
+            print(
+                f"Fout: --recursive werkt alleen met directories, niet met bestanden.",
+                file=sys.stderr,
+            )
             sys.exit(1)
         scan_recursive(path, args.threshold, args.json)
         return
 
     if os.path.isdir(path):
-        print(f"Fout: '{path}' is een directory. Gebruik --recursive om te scannen.",
-              file=sys.stderr)
+        print(
+            f"Fout: '{path}' is een directory. Gebruik --recursive om te scannen.", file=sys.stderr
+        )
         sys.exit(1)
 
     results = analyze_file(path)
@@ -826,9 +837,9 @@ def main():
         print(json.dumps(summary(results), indent=2))
         return
 
-    print(f"\n{'─'*60}")
+    print(f"\n{'─' * 60}")
     print(f"  Analyse: {path}")
-    print(f"{'─'*60}")
+    print(f"{'─' * 60}")
     print_table(results, args.threshold)
 
     summ = summary(results)

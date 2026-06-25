@@ -29,7 +29,7 @@ import json
 import re
 import shlex
 import shutil
-import subprocess
+from safe_run import SafeRunResult, safe_run
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -40,22 +40,35 @@ from typing import Any
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", ".husky/_", ".git2",
-    ".svn", ".hg", "coverage", ".nyc_output",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        ".husky/_",
+        ".git2",
+        ".svn",
+        ".hg",
+        "coverage",
+        ".nyc_output",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 EXIT_OK = 0
-EXIT_ISSUES = 1       # problems found
-EXIT_ERROR = 2        # script error
+EXIT_ISSUES = 1  # problems found
+EXIT_ERROR = 2  # script error
 
 MAX_LINE_LENGTH = 500
 
@@ -65,27 +78,17 @@ MAX_LINE_LENGTH = 500
 # ---------------------------------------------------------------------------
 
 
-def _run(cmd: list[str], cwd: Path, timeout: int = 120) -> subprocess.CompletedProcess:
-    """Run a subprocess and return the result."""
-    try:
-        return subprocess.run(
-            cmd,
-            cwd=str(cwd),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-    except FileNotFoundError:
-        # Command not found
-        return subprocess.CompletedProcess(
-            args=cmd, returncode=-1,
-            stdout="", stderr=f"Command not found: {cmd[0]}"
-        )
-    except subprocess.TimeoutExpired as e:
-        return subprocess.CompletedProcess(
-            args=cmd, returncode=-1,
-            stdout=e.stdout or "", stderr=(e.stderr or "") + "\n[TIMEOUT]"
-        )
+def _run(cmd: list[str], cwd: Path, timeout: int = 120) -> SafeRunResult:
+    """Run a subprocess via safe_run with workspace containment."""
+    return safe_run(
+        cmd,
+        workspace=cwd,
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        risk_level="medium",
+    )
 
 
 def _which(cmd: str) -> bool:
@@ -125,74 +128,84 @@ def check_npm_build(root: Path) -> list[dict]:
         return []
 
     if not _which("node"):
-        issues.append({
-            "severity": "ERROR",
-            "type": "npm",
-            "check": "npm run build",
-            "file": "package.json",
-            "message": "Node.js is not installed or not on PATH",
-            "cause": "Missing runtime",
-            "suggested_fix": "Install Node.js from https://nodejs.org/",
-            "retry_command": "winget install OpenJS.NodeJS || nvm install 20",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "npm",
+                "check": "npm run build",
+                "file": "package.json",
+                "message": "Node.js is not installed or not on PATH",
+                "cause": "Missing runtime",
+                "suggested_fix": "Install Node.js from https://nodejs.org/",
+                "retry_command": "winget install OpenJS.NodeJS || nvm install 20",
+            }
+        )
         return issues
 
     if not _which("npm"):
-        issues.append({
-            "severity": "ERROR",
-            "type": "npm",
-            "check": "npm run build",
-            "file": "package.json",
-            "message": "npm is not installed or not on PATH",
-            "cause": "Missing package manager",
-            "suggested_fix": "npm comes with Node.js — reinstall Node.js",
-            "retry_command": "winget install OpenJS.NodeJS",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "npm",
+                "check": "npm run build",
+                "file": "package.json",
+                "message": "npm is not installed or not on PATH",
+                "cause": "Missing package manager",
+                "suggested_fix": "npm comes with Node.js — reinstall Node.js",
+                "retry_command": "winget install OpenJS.NodeJS",
+            }
+        )
         return issues
 
     # Check node_modules exists
     nm = root / "node_modules"
     if not nm.exists():
-        issues.append({
-            "severity": "ERROR",
-            "type": "npm",
-            "check": "npm run build",
-            "file": "package.json",
-            "message": "node_modules/ is missing",
-            "cause": "Dependencies not installed",
-            "suggested_fix": "Run 'npm install' to install dependencies",
-            "retry_command": "npm install",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "npm",
+                "check": "npm run build",
+                "file": "package.json",
+                "message": "node_modules/ is missing",
+                "cause": "Dependencies not installed",
+                "suggested_fix": "Run 'npm install' to install dependencies",
+                "retry_command": "npm install",
+            }
+        )
         return issues
 
     # Check if build script exists in package.json
     try:
         pkg_data = json.loads(_safe_read(pkg))
     except json.JSONDecodeError as e:
-        issues.append({
-            "severity": "ERROR",
-            "type": "npm",
-            "check": "npm run build",
-            "file": "package.json",
-            "message": f"package.json is not valid JSON: {e}",
-            "cause": "Malformed package.json",
-            "suggested_fix": "Fix the JSON syntax in package.json",
-            "retry_command": "",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "npm",
+                "check": "npm run build",
+                "file": "package.json",
+                "message": f"package.json is not valid JSON: {e}",
+                "cause": "Malformed package.json",
+                "suggested_fix": "Fix the JSON syntax in package.json",
+                "retry_command": "",
+            }
+        )
         return issues
 
     scripts = pkg_data.get("scripts", {})
     if "build" not in scripts:
-        issues.append({
-            "severity": "WARN",
-            "type": "npm",
-            "check": "npm run build",
-            "file": "package.json",
-            "message": "No 'build' script defined in package.json",
-            "cause": "Missing build script",
-            "suggested_fix": "Add a 'build' script to package.json (e.g. 'vite build' or 'next build')",
-            "retry_command": "",
-        })
+        issues.append(
+            {
+                "severity": "WARN",
+                "type": "npm",
+                "check": "npm run build",
+                "file": "package.json",
+                "message": "No 'build' script defined in package.json",
+                "cause": "Missing build script",
+                "suggested_fix": "Add a 'build' script to package.json (e.g. 'vite build' or 'next build')",
+                "retry_command": "",
+            }
+        )
         return issues
 
     # Try to run npm run build
@@ -222,7 +235,10 @@ def parse_npm_errors(output: str, root: Path) -> list[dict]:
     for line in error_lines:
         # Try to extract file path from error line
         # Pattern: ./src/file.ts:line:col - error ...
-        m = re.search(r'[`\'"]?((?:\./)?(?:src|app|pages|components|lib|utils|hooks)/[^\s\'":]+)(?:\.\w+)?', line)
+        m = re.search(
+            r'[`\'"]?((?:\./)?(?:src|app|pages|components|lib|utils|hooks)/[^\s\'":]+)(?:\.\w+)?',
+            line,
+        )
         if m:
             file_path = m.group(1)
             file_errors[file_path].append(line.strip())
@@ -233,29 +249,33 @@ def parse_npm_errors(output: str, root: Path) -> list[dict]:
         issue_type = "npm_build"
         cause = _infer_npm_cause(errs)
         fix = _suggest_npm_fix(cause, errs)
-        issues.append({
-            "severity": "ERROR",
-            "type": issue_type,
-            "check": "npm run build",
-            "file": file_path,
-            "message": errs[0] if errs else "Build failed (see details)",
-            "details": errs[:5],
-            "cause": cause,
-            "suggested_fix": fix,
-            "retry_command": f"npm run build 2>&1",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": issue_type,
+                "check": "npm run build",
+                "file": file_path,
+                "message": errs[0] if errs else "Build failed (see details)",
+                "details": errs[:5],
+                "cause": cause,
+                "suggested_fix": fix,
+                "retry_command": f"npm run build 2>&1",
+            }
+        )
 
     if not issues:
-        issues.append({
-            "severity": "ERROR",
-            "type": "npm_build",
-            "check": "npm run build",
-            "file": "(general)",
-            "message": "npm run build failed (no parseable errors)",
-            "cause": "Unknown build failure",
-            "suggested_fix": "Inspect full build output manually",
-            "retry_command": "npm run build 2>&1",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "npm_build",
+                "check": "npm run build",
+                "file": "(general)",
+                "message": "npm run build failed (no parseable errors)",
+                "cause": "Unknown build failure",
+                "suggested_fix": "Inspect full build output manually",
+                "retry_command": "npm run build 2>&1",
+            }
+        )
 
     return issues
 
@@ -274,7 +294,10 @@ def check_missing_npm_deps(root: Path, pkg_data: dict) -> list[dict]:
     for sf in source_files:
         content = _safe_read(sf)
         # import x from 'pkg' / import 'pkg' / require('pkg')
-        for m in re.finditer(r"""(?:from\s+['"])([^'"]+)(?:['"])|(?:require\(['"])([^'"]+)(?:['"]\))|(?:import\s+['"])([^'"]+)(?:['"])""", content):
+        for m in re.finditer(
+            r"""(?:from\s+['"])([^'"]+)(?:['"])|(?:require\(['"])([^'"]+)(?:['"]\))|(?:import\s+['"])([^'"]+)(?:['"])""",
+            content,
+        ):
             pkg_name = m.group(1) or m.group(2) or m.group(3)
             if pkg_name and not pkg_name.startswith(".") and not pkg_name.startswith("/"):
                 # Get the base package name (handle @scoped/packages)
@@ -287,16 +310,18 @@ def check_missing_npm_deps(root: Path, pkg_data: dict) -> list[dict]:
 
     missing = found_imports - all_deps
     for pkg in sorted(missing):
-        issues.append({
-            "severity": "WARN",
-            "type": "missing_dep",
-            "check": "dependency_check",
-            "file": "package.json",
-            "message": f"Missing npm dependency: '{pkg}' — imported but not in package.json",
-            "cause": "Dependency not declared",
-            "suggested_fix": f"Run: npm install {pkg}",
-            "retry_command": f"npm install {pkg}",
-        })
+        issues.append(
+            {
+                "severity": "WARN",
+                "type": "missing_dep",
+                "check": "dependency_check",
+                "file": "package.json",
+                "message": f"Missing npm dependency: '{pkg}' — imported but not in package.json",
+                "cause": "Dependency not declared",
+                "suggested_fix": f"Run: npm install {pkg}",
+                "retry_command": f"npm install {pkg}",
+            }
+        )
 
     return issues
 
@@ -321,16 +346,18 @@ def check_vite_build(root: Path) -> list[dict]:
         return []
 
     if not _which("npx") and not _which("vite"):
-        issues.append({
-            "severity": "ERROR",
-            "type": "vite",
-            "check": "vite build",
-            "file": cfg_file.name,
-            "message": "Neither npx nor vite is available on PATH",
-            "cause": "Missing runtime",
-            "suggested_fix": "Run 'npm install -g vite' or use npx",
-            "retry_command": "npx vite build",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "vite",
+                "check": "vite build",
+                "file": cfg_file.name,
+                "message": "Neither npx nor vite is available on PATH",
+                "cause": "Missing runtime",
+                "suggested_fix": "Run 'npm install -g vite' or use npx",
+                "retry_command": "npx vite build",
+            }
+        )
         return issues
 
     # Check if vite is installed in node_modules
@@ -351,7 +378,7 @@ def check_vite_build(root: Path) -> list[dict]:
     # Parse vite-specific errors
     file_errors: dict[str, list[str]] = defaultdict(list)
     for line in error_lines:
-        m = re.search(r'(?:\./)?([^\s:]+\.(?:ts|tsx|js|jsx|vue|svelte)):(\d+):(\d+)', line)
+        m = re.search(r"(?:\./)?([^\s:]+\.(?:ts|tsx|js|jsx|vue|svelte)):(\d+):(\d+)", line)
         if m:
             file_errors[m.group(1)].append(line.strip())
         else:
@@ -360,17 +387,19 @@ def check_vite_build(root: Path) -> list[dict]:
     for file_path, errs in file_errors.items():
         cause = _infer_vite_cause(errs)
         fix = _suggest_vite_fix(cause, errs)
-        issues.append({
-            "severity": "ERROR",
-            "type": "vite",
-            "check": "vite build",
-            "file": file_path,
-            "message": errs[0] if errs else "vite build failed",
-            "details": errs[:5],
-            "cause": cause,
-            "suggested_fix": fix,
-            "retry_command": "npx vite build 2>&1",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "vite",
+                "check": "vite build",
+                "file": file_path,
+                "message": errs[0] if errs else "vite build failed",
+                "details": errs[:5],
+                "cause": cause,
+                "suggested_fix": fix,
+                "retry_command": "npx vite build 2>&1",
+            }
+        )
 
     # Check for alias configuration issues
     if cfg_file:
@@ -386,7 +415,9 @@ def check_vite_alias_paths(root: Path, cfg_file: Path) -> list[dict]:
     content = _safe_read(cfg_file)
 
     # Find alias patterns: '@': path.resolve(...) or '@' -> 'src' etc.
-    alias_pattern = re.compile(r"""['"](\@[a-zA-Z0-9_/-]+)['"]\s*[=:]\s*(?:path\.resolve|resolve)\([^)]*['"]([^'"]+)['"]""")
+    alias_pattern = re.compile(
+        r"""['"](\@[a-zA-Z0-9_/-]+)['"]\s*[=:]\s*(?:path\.resolve|resolve)\([^)]*['"]([^'"]+)['"]"""
+    )
     alias_matches = alias_pattern.findall(content)
 
     # Also find simple string aliases like '@': 'src'
@@ -402,16 +433,18 @@ def check_vite_alias_paths(root: Path, cfg_file: Path) -> list[dict]:
     for alias, target in alias_matches:
         target_path = root / target
         if not target_path.exists():
-            issues.append({
-                "severity": "WARN",
-                "type": "vite_alias",
-                "check": "vite alias paths",
-                "file": cfg_file.name,
-                "message": f"Alias '{alias}' points to '{target}' but that path does not exist",
-                "cause": "Wrong alias configuration",
-                "suggested_fix": f"Update the alias '{alias}' to point to an existing directory, or create '{target}'",
-                "retry_command": "",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "vite_alias",
+                    "check": "vite alias paths",
+                    "file": cfg_file.name,
+                    "message": f"Alias '{alias}' points to '{target}' but that path does not exist",
+                    "cause": "Wrong alias configuration",
+                    "suggested_fix": f"Update the alias '{alias}' to point to an existing directory, or create '{target}'",
+                    "retry_command": "",
+                }
+            )
 
     return issues
 
@@ -450,16 +483,18 @@ def check_next_build(root: Path) -> list[dict]:
         return []
 
     if not _which("npx") and not _which("next"):
-        issues.append({
-            "severity": "ERROR",
-            "type": "next",
-            "check": "next build",
-            "file": "next.config.*",
-            "message": "next command not found",
-            "cause": "Missing runtime",
-            "suggested_fix": "Run 'npm install next' or 'npm install'",
-            "retry_command": "npm install",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "next",
+                "check": "next build",
+                "file": "next.config.*",
+                "message": "next command not found",
+                "cause": "Missing runtime",
+                "suggested_fix": "Run 'npm install next' or 'npm install'",
+                "retry_command": "npm install",
+            }
+        )
         return issues
 
     # Check for common Next.js build issues
@@ -467,16 +502,18 @@ def check_next_build(root: Path) -> list[dict]:
     pages_dir = root / "pages"
     app_dir = root / "app"
     if not pages_dir.exists() and not app_dir.exists():
-        issues.append({
-            "severity": "ERROR",
-            "type": "next",
-            "check": "next build",
-            "file": "(project root)",
-            "message": "Neither 'pages/' nor 'app/' directory found — Next.js has no entry points",
-            "cause": "Missing pages or app directory",
-            "suggested_fix": "Create pages/ directory with at least an index page",
-            "retry_command": "",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "next",
+                "check": "next build",
+                "file": "(project root)",
+                "message": "Neither 'pages/' nor 'app/' directory found — Next.js has no entry points",
+                "cause": "Missing pages or app directory",
+                "suggested_fix": "Create pages/ directory with at least an index page",
+                "retry_command": "",
+            }
+        )
         return issues
 
     cmd = ["npx", "--yes", "next", "build"] if not _which("next") else ["next", "build"]
@@ -491,7 +528,7 @@ def check_next_build(root: Path) -> list[dict]:
 
     file_errors: dict[str, list[str]] = defaultdict(list)
     for line in error_lines:
-        m = re.search(r'(?:\./)?([^\s:]+\.(?:ts|tsx|js|jsx))', line)
+        m = re.search(r"(?:\./)?([^\s:]+\.(?:ts|tsx|js|jsx))", line)
         if m:
             file_errors[m.group(1)].append(line.strip())
         else:
@@ -500,17 +537,19 @@ def check_next_build(root: Path) -> list[dict]:
     for file_path, errs in file_errors.items():
         cause = _infer_next_cause(errs)
         fix = _suggest_next_fix(cause, errs)
-        issues.append({
-            "severity": "ERROR",
-            "type": "next",
-            "check": "next build",
-            "file": file_path,
-            "message": errs[0] if errs else "next build failed",
-            "details": errs[:5],
-            "cause": cause,
-            "suggested_fix": fix,
-            "retry_command": "npx next build 2>&1",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "next",
+                "check": "next build",
+                "file": file_path,
+                "message": errs[0] if errs else "next build failed",
+                "details": errs[:5],
+                "cause": cause,
+                "suggested_fix": fix,
+                "retry_command": "npx next build 2>&1",
+            }
+        )
 
     # Check tsconfig paths used in Next.js
     tsconfig_issues = check_tsconfig_paths(root)
@@ -532,32 +571,36 @@ def check_tsc(root: Path) -> list[dict]:
         return []
 
     if not _which("npx") and not _which("tsc"):
-        issues.append({
-            "severity": "ERROR",
-            "type": "tsc",
-            "check": "tsc --noEmit",
-            "file": "tsconfig.json",
-            "message": "tsc (TypeScript compiler) not found",
-            "cause": "Missing runtime",
-            "suggested_fix": "Run 'npm install -g typescript' or 'npm install typescript'",
-            "retry_command": "npm install -g typescript",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "tsc",
+                "check": "tsc --noEmit",
+                "file": "tsconfig.json",
+                "message": "tsc (TypeScript compiler) not found",
+                "cause": "Missing runtime",
+                "suggested_fix": "Run 'npm install -g typescript' or 'npm install typescript'",
+                "retry_command": "npm install -g typescript",
+            }
+        )
         return issues
 
     # Check tsconfig.json is valid
     try:
         tsconfig_data = json.loads(_safe_read(tsconfig))
     except json.JSONDecodeError as e:
-        issues.append({
-            "severity": "ERROR",
-            "type": "tsc",
-            "check": "tsc --noEmit",
-            "file": "tsconfig.json",
-            "message": f"tsconfig.json is not valid JSON: {e}",
-            "cause": "Malformed tsconfig.json",
-            "suggested_fix": "Fix JSON syntax in tsconfig.json",
-            "retry_command": "",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "tsc",
+                "check": "tsc --noEmit",
+                "file": "tsconfig.json",
+                "message": f"tsconfig.json is not valid JSON: {e}",
+                "cause": "Malformed tsconfig.json",
+                "suggested_fix": "Fix JSON syntax in tsconfig.json",
+                "retry_command": "",
+            }
+        )
         return issues
 
     cmd = ["npx", "--yes", "tsc", "--noEmit"] if not _which("tsc") else ["tsc", "--noEmit"]
@@ -572,7 +615,9 @@ def check_tsc(root: Path) -> list[dict]:
     file_errors: dict[str, list[str]] = defaultdict(list)
 
     for line in lines:
-        m = re.match(r'^([^\s:]+\.(?:ts|tsx)):\d+:\d+\s*-\s*(error|warning)\s+(TS\d+):\s*(.*)', line)
+        m = re.match(
+            r"^([^\s:]+\.(?:ts|tsx)):\d+:\d+\s*-\s*(error|warning)\s+(TS\d+):\s*(.*)", line
+        )
         if m:
             fpath = m.group(1)
             file_errors[fpath].append(line.strip())
@@ -580,29 +625,33 @@ def check_tsc(root: Path) -> list[dict]:
     for file_path, errs in file_errors.items():
         cause = _infer_tsc_cause(errs)
         fix = _suggest_tsc_fix(cause, errs)
-        issues.append({
-            "severity": "ERROR",
-            "type": "tsc",
-            "check": "tsc --noEmit",
-            "file": file_path,
-            "message": errs[0] if errs else "TypeScript type error",
-            "details": errs[:10],
-            "cause": cause,
-            "suggested_fix": fix,
-            "retry_command": "npx tsc --noEmit 2>&1",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "tsc",
+                "check": "tsc --noEmit",
+                "file": file_path,
+                "message": errs[0] if errs else "TypeScript type error",
+                "details": errs[:10],
+                "cause": cause,
+                "suggested_fix": fix,
+                "retry_command": "npx tsc --noEmit 2>&1",
+            }
+        )
 
     if not issues:
-        issues.append({
-            "severity": "ERROR",
-            "type": "tsc",
-            "check": "tsc --noEmit",
-            "file": "(general)",
-            "message": "tsc --noEmit failed with errors (could not parse)",
-            "cause": "TypeScript compilation error",
-            "suggested_fix": "Run 'npx tsc --noEmit' manually to see full output",
-            "retry_command": "npx tsc --noEmit 2>&1",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "tsc",
+                "check": "tsc --noEmit",
+                "file": "(general)",
+                "message": "tsc --noEmit failed with errors (could not parse)",
+                "cause": "TypeScript compilation error",
+                "suggested_fix": "Run 'npx tsc --noEmit' manually to see full output",
+                "retry_command": "npx tsc --noEmit 2>&1",
+            }
+        )
 
     # Also check tsconfig paths
     tsconfig_path_issues = check_tsconfig_paths(root)
@@ -637,32 +686,36 @@ def check_tsconfig_paths(root: Path) -> list[dict]:
 
             target_path = root / clean_target
             if not target_path.exists():
-                issues.append({
-                    "severity": "WARN",
-                    "type": "tsconfig_path",
-                    "check": "tsconfig paths",
-                    "file": "tsconfig.json",
-                    "message": f"Path alias '{alias}' → '{target}' points to non-existent location '{clean_target}'",
-                    "cause": "Wrong tsconfig path configuration",
-                    "suggested_fix": f"Update path '{clean_target}' to an existing directory, or create it",
-                    "retry_command": "",
-                })
+                issues.append(
+                    {
+                        "severity": "WARN",
+                        "type": "tsconfig_path",
+                        "check": "tsconfig paths",
+                        "file": "tsconfig.json",
+                        "message": f"Path alias '{alias}' → '{target}' points to non-existent location '{clean_target}'",
+                        "cause": "Wrong tsconfig path configuration",
+                        "suggested_fix": f"Update path '{clean_target}' to an existing directory, or create it",
+                        "retry_command": "",
+                    }
+                )
 
     # Also check baseUrl if set
     base_url = data.get("compilerOptions", {}).get("baseUrl", "")
     if base_url:
         base_path = root / base_url
         if not base_path.exists():
-            issues.append({
-                "severity": "WARN",
-                "type": "tsconfig_path",
-                "check": "tsconfig paths",
-                "file": "tsconfig.json",
-                "message": f"baseUrl '{base_url}' points to non-existent location",
-                "cause": "Wrong baseUrl in tsconfig",
-                "suggested_fix": f"Set baseUrl to an existing directory (e.g. '.') or create '{base_url}'",
-                "retry_command": "",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "tsconfig_path",
+                    "check": "tsconfig paths",
+                    "file": "tsconfig.json",
+                    "message": f"baseUrl '{base_url}' points to non-existent location",
+                    "cause": "Wrong baseUrl in tsconfig",
+                    "suggested_fix": f"Set baseUrl to an existing directory (e.g. '.') or create '{base_url}'",
+                    "retry_command": "",
+                }
+            )
 
     return issues
 
@@ -688,16 +741,18 @@ def check_python_imports(root: Path) -> list[dict]:
             break
 
     if not python_cmd:
-        issues.append({
-            "severity": "ERROR",
-            "type": "python",
-            "check": "Python import check",
-            "file": "(global)",
-            "message": "Python interpreter not found on PATH",
-            "cause": "Missing runtime",
-            "suggested_fix": "Install Python from python.org or your package manager",
-            "retry_command": "winget install Python.Python.3.11",
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "python",
+                "check": "Python import check",
+                "file": "(global)",
+                "message": "Python interpreter not found on PATH",
+                "cause": "Missing runtime",
+                "suggested_fix": "Install Python from python.org or your package manager",
+                "retry_command": "winget install Python.Python.3.11",
+            }
+        )
         return issues
 
     # Try to parse each Python file with ast to check syntax (no .pyc written)
@@ -706,38 +761,44 @@ def check_python_imports(root: Path) -> list[dict]:
             source = _safe_read(py_file)
             ast.parse(source, filename=str(py_file))
         except SyntaxError as e:
-            issues.append({
-                "severity": "ERROR",
-                "type": "python",
-                "check": "Python syntax",
-                "file": str(py_file.relative_to(root)),
-                "message": f"Syntax error: {e.msg} (line {e.lineno})",
-                "cause": "Python syntax error",
-                "suggested_fix": f"Fix syntax in {py_file.name}",
-                "retry_command": f"{python_cmd} -m py_compile \"{py_file}\"",
-            })
+            issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "python",
+                    "check": "Python syntax",
+                    "file": str(py_file.relative_to(root)),
+                    "message": f"Syntax error: {e.msg} (line {e.lineno})",
+                    "cause": "Python syntax error",
+                    "suggested_fix": f"Fix syntax in {py_file.name}",
+                    "retry_command": f'{python_cmd} -m py_compile "{py_file}"',
+                }
+            )
         except PermissionError:
-            issues.append({
-                "severity": "WARN",
-                "type": "python",
-                "check": "Python syntax",
-                "file": str(py_file.relative_to(root)),
-                "message": "Could not check syntax: file not readable (permissions)",
-                "cause": "Permission denied",
-                "suggested_fix": "Check file permissions",
-                "retry_command": "",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "python",
+                    "check": "Python syntax",
+                    "file": str(py_file.relative_to(root)),
+                    "message": "Could not check syntax: file not readable (permissions)",
+                    "cause": "Permission denied",
+                    "suggested_fix": "Check file permissions",
+                    "retry_command": "",
+                }
+            )
         except Exception as e:
-            issues.append({
-                "severity": "WARN",
-                "type": "python",
-                "check": "Python syntax",
-                "file": str(py_file.relative_to(root)),
-                "message": f"Could not check syntax: {e}",
-                "cause": "Unexpected error",
-                "suggested_fix": "Check file manually",
-                "retry_command": "",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "python",
+                    "check": "Python syntax",
+                    "file": str(py_file.relative_to(root)),
+                    "message": f"Could not check syntax: {e}",
+                    "cause": "Unexpected error",
+                    "suggested_fix": "Check file manually",
+                    "retry_command": "",
+                }
+            )
 
     # Check for missing imports by scanning import statements
     import_issues = check_missing_python_imports(root, py_files)
@@ -754,21 +815,93 @@ def check_missing_python_imports(root: Path, py_files: list[Path]) -> list[dict]
         stdlib_modules = set(sys.stdlib_module_names)
     except AttributeError:
         stdlib_modules = {
-            "os", "sys", "re", "json", "math", "time", "datetime", "pathlib",
-        "collections", "functools", "itertools", "typing", "abc", "enum",
-        "hashlib", "random", "string", "textwrap", "uuid", "copy", "dis",
-        "inspect", "pprint", "argparse", "logging", "subprocess", "shutil",
-        "tempfile", "io", "base64", "binascii", "struct", "pickle", "shelve",
-        "sqlite3", "csv", "configparser", "xml", "html", "http", "urllib",
-        "socket", "ssl", "email", "statistics", "decimal", "fractions",
-        "unittest", "doctest", "dataclasses", "importlib", "ast", "keyword",
-        "tokenize", "traceback", "warnings", "weakref", "threading",
-        "multiprocessing", "asyncio", "concurrent", "difflib",
-        "webbrowser", "filecmp", "stat", "glob", "fnmatch", "pathlib",
-        "atexit", "signal", "mmap", "ctypes", "platform", "getpass",
-        "calendar", "locale", "gettext", "textwrap", "pprint", "reprlib",
-        "array", "bisect", "heapq", "operator", "functools", "itertools",
-    }
+            "os",
+            "sys",
+            "re",
+            "json",
+            "math",
+            "time",
+            "datetime",
+            "pathlib",
+            "collections",
+            "functools",
+            "itertools",
+            "typing",
+            "abc",
+            "enum",
+            "hashlib",
+            "random",
+            "string",
+            "textwrap",
+            "uuid",
+            "copy",
+            "dis",
+            "inspect",
+            "pprint",
+            "argparse",
+            "logging",
+            "subprocess",
+            "shutil",
+            "tempfile",
+            "io",
+            "base64",
+            "binascii",
+            "struct",
+            "pickle",
+            "shelve",
+            "sqlite3",
+            "csv",
+            "configparser",
+            "xml",
+            "html",
+            "http",
+            "urllib",
+            "socket",
+            "ssl",
+            "email",
+            "statistics",
+            "decimal",
+            "fractions",
+            "unittest",
+            "doctest",
+            "dataclasses",
+            "importlib",
+            "ast",
+            "keyword",
+            "tokenize",
+            "traceback",
+            "warnings",
+            "weakref",
+            "threading",
+            "multiprocessing",
+            "asyncio",
+            "concurrent",
+            "difflib",
+            "webbrowser",
+            "filecmp",
+            "stat",
+            "glob",
+            "fnmatch",
+            "pathlib",
+            "atexit",
+            "signal",
+            "mmap",
+            "ctypes",
+            "platform",
+            "getpass",
+            "calendar",
+            "locale",
+            "gettext",
+            "textwrap",
+            "pprint",
+            "reprlib",
+            "array",
+            "bisect",
+            "heapq",
+            "operator",
+            "functools",
+            "itertools",
+        }
 
     # Get installed packages
     installed = set()
@@ -790,8 +923,8 @@ def check_missing_python_imports(root: Path, py_files: list[Path]) -> list[dict]
 
         # Find all imports
         import_patterns = [
-            r'^import\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)',
-            r'^from\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\s+import',
+            r"^import\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)",
+            r"^from\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\s+import",
         ]
 
         for pattern in import_patterns:
@@ -814,16 +947,18 @@ def check_missing_python_imports(root: Path, py_files: list[Path]) -> list[dict]
                             found = True
                             break
                     if not found:
-                        issues.append({
-                            "severity": "WARN",
-                            "type": "python_import",
-                            "check": "Python imports",
-                            "file": rel,
-                            "message": f"'{mod}' is imported but may not be installed (not found in pip list or local files)",
-                            "cause": "Missing Python dependency",
-                            "suggested_fix": f"Run: pip install {mod}",
-                            "retry_command": f"pip install {mod}",
-                        })
+                        issues.append(
+                            {
+                                "severity": "WARN",
+                                "type": "python_import",
+                                "check": "Python imports",
+                                "file": rel,
+                                "message": f"'{mod}' is imported but may not be installed (not found in pip list or local files)",
+                                "cause": "Missing Python dependency",
+                                "suggested_fix": f"Run: pip install {mod}",
+                                "retry_command": f"pip install {mod}",
+                            }
+                        )
 
     return issues
 
@@ -853,16 +988,18 @@ def check_package_scripts(root: Path) -> list[dict]:
         # Check for broken reference patterns
         # e.g. "build": "vite build" — but vite isn't installed
         if not script.strip():
-            issues.append({
-                "severity": "WARN",
-                "type": "broken_script",
-                "check": "package.json scripts",
-                "file": "package.json",
-                "message": f"Script '{name}' is empty",
-                "cause": "Empty script definition",
-                "suggested_fix": f"Remove or implement the '{name}' script",
-                "retry_command": "",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "broken_script",
+                    "check": "package.json scripts",
+                    "file": "package.json",
+                    "message": f"Script '{name}' is empty",
+                    "cause": "Empty script definition",
+                    "suggested_fix": f"Remove or implement the '{name}' script",
+                    "retry_command": "",
+                }
+            )
             continue
 
         # Extract the first command (before pipes, &&, etc.)
@@ -875,11 +1012,34 @@ def check_package_scripts(root: Path) -> list[dict]:
 
         # Known valid commands that come from packages
         known_binaries = {
-            "vite", "tsc", "next", "eslint", "prettier", "jest", "vitest",
-            "webpack", "rollup", "postcss", "tailwindcss", "sass", "less",
-            "babel", "terser", "swc", "tsup", "esbuild", "nodemon",
-            "concurrently", "cross-env", "rimraf", "mkdirp", "cpy-cli",
-            "npm", "node", "yarn", "pnpm",
+            "vite",
+            "tsc",
+            "next",
+            "eslint",
+            "prettier",
+            "jest",
+            "vitest",
+            "webpack",
+            "rollup",
+            "postcss",
+            "tailwindcss",
+            "sass",
+            "less",
+            "babel",
+            "terser",
+            "swc",
+            "tsup",
+            "esbuild",
+            "nodemon",
+            "concurrently",
+            "cross-env",
+            "rimraf",
+            "mkdirp",
+            "cpy-cli",
+            "npm",
+            "node",
+            "yarn",
+            "pnpm",
         }
 
         if first_word in known_binaries:
@@ -898,33 +1058,39 @@ def check_package_scripts(root: Path) -> list[dict]:
         if first_word.startswith("./") or first_word.startswith(".\\"):
             script_path = root / first_word
             if not script_path.exists():
-                issues.append({
-                    "severity": "WARN",
-                    "type": "broken_script",
-                    "check": "package.json scripts",
-                    "file": "package.json",
-                    "message": f"Script '{name}' references '{first_word}' which doesn't exist",
-                    "cause": "File not found for script execution",
-                    "suggested_fix": f"Create the script file at '{first_word}' or fix the path",
-                    "retry_command": "",
-                })
+                issues.append(
+                    {
+                        "severity": "WARN",
+                        "type": "broken_script",
+                        "check": "package.json scripts",
+                        "file": "package.json",
+                        "message": f"Script '{name}' references '{first_word}' which doesn't exist",
+                        "cause": "File not found for script execution",
+                        "suggested_fix": f"Create the script file at '{first_word}' or fix the path",
+                        "retry_command": "",
+                    }
+                )
             continue
 
         # Otherwise it might be a custom script in project
         # Check if there's a matching file
         script_file = root / f"{first_word}.js"
         if first_word and not script_file.exists() and first_word not in known_binaries:
-            issues.append({
-                "severity": "INFO",
-                "type": "broken_script",
-                "check": "package.json scripts",
-                "file": "package.json",
-                                "message": ("Script '{name}' = '{script}' — command"
-                       "'{first_word}' is not a known binary, may be missing"),
-                "cause": "Potentially unknown script command",
-                "suggested_fix": f"Ensure '{first_word}' is installed or define it as a project script",
-                "retry_command": "",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "type": "broken_script",
+                    "check": "package.json scripts",
+                    "file": "package.json",
+                    "message": (
+                        "Script '{name}' = '{script}' — command"
+                        "'{first_word}' is not a known binary, may be missing"
+                    ),
+                    "cause": "Potentially unknown script command",
+                    "suggested_fix": f"Ensure '{first_word}' is installed or define it as a project script",
+                    "retry_command": "",
+                }
+            )
 
     return issues
 
@@ -958,16 +1124,18 @@ def check_missing_deps(root: Path) -> list[dict]:
                     # Check on both OS path styles
                     dep_path_alt = nm / dep_name
                     if not dep_path.exists() and not dep_path_alt.exists():
-                        issues.append({
-                            "severity": "ERROR",
-                            "type": "missing_dep",
-                            "check": "dependencies",
-                            "file": "package.json",
-                            "message": f"Missing npm package: '{dep_name}' (declared but not installed in node_modules)",
-                            "cause": "Dependency not installed",
-                            "suggested_fix": f"Run: npm install {dep_name}",
-                            "retry_command": f"npm install {dep_name}",
-                        })
+                        issues.append(
+                            {
+                                "severity": "ERROR",
+                                "type": "missing_dep",
+                                "check": "dependencies",
+                                "file": "package.json",
+                                "message": f"Missing npm package: '{dep_name}' (declared but not installed in node_modules)",
+                                "cause": "Dependency not installed",
+                                "suggested_fix": f"Run: npm install {dep_name}",
+                                "retry_command": f"npm install {dep_name}",
+                            }
+                        )
         except Exception:
             pass
 
@@ -988,22 +1156,30 @@ def check_missing_deps(root: Path) -> list[dict]:
                     pkg_name = line
                 if pkg_name:
                     try:
-                        result = _run([python_cmd := "python3" if _which("python3") else "python",
-                                       "-c", f"import {pkg_name.replace('-', '_')}"], root)
+                        result = _run(
+                            [
+                                python_cmd := "python3" if _which("python3") else "python",
+                                "-c",
+                                f"import {pkg_name.replace('-', '_')}",
+                            ],
+                            root,
+                        )
                         if result.returncode != 0:
                             # Try with dashes replaced
                             pass
                     except Exception:
-                        issues.append({
-                            "severity": "WARN",
-                            "type": "missing_dep",
-                            "check": "dependencies",
-                            "file": "requirements.txt",
-                            "message": f"Missing Python package: '{pkg_name}' (declared but may not be installed)",
-                            "cause": "Python dependency not installed",
-                            "suggested_fix": f"Run: pip install {pkg_name}",
-                            "retry_command": f"pip install {pkg_name}",
-                        })
+                        issues.append(
+                            {
+                                "severity": "WARN",
+                                "type": "missing_dep",
+                                "check": "dependencies",
+                                "file": "requirements.txt",
+                                "message": f"Missing Python package: '{pkg_name}' (declared but may not be installed)",
+                                "cause": "Python dependency not installed",
+                                "suggested_fix": f"Run: pip install {pkg_name}",
+                                "retry_command": f"pip install {pkg_name}",
+                            }
+                        )
         except Exception:
             pass
 
@@ -1077,7 +1253,9 @@ def _suggest_npm_fix(cause: str, errors: list[str]) -> str:
     if "ts2769" in combined:
         return "Check the function call — no overload accepts these argument types"
     if "alias" in combined:
-        return "Check vite/tsconfig alias configuration — the alias may point to a non-existent path"
+        return (
+            "Check vite/tsconfig alias configuration — the alias may point to a non-existent path"
+        )
     return "Inspect the error output above and fix accordingly"
 
 
@@ -1163,8 +1341,11 @@ def _suggest_tsc_fix(cause: str, errors: list[str]) -> str:
         return "Add null/undefined checks (optional chaining, default values, or type guards)"
     if "overload" in cause.lower():
         return "Check function arguments — the call doesn't match any available overload"
-    return _suggest_npm_fix(cause, errors) if "module" in cause.lower() else \
-        "Fix the type according to the error message above"
+    return (
+        _suggest_npm_fix(cause, errors)
+        if "module" in cause.lower()
+        else "Fix the type according to the error message above"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1191,16 +1372,18 @@ def run_all_checks(root: Path) -> list[dict]:
             result = check_fn(root)
             all_issues.extend(result)
         except Exception as e:
-            all_issues.append({
-                "severity": "ERROR",
-                "type": "internal",
-                "check": check_name,
-                "file": "(internal)",
-                "message": f"Check '{check_name}' failed with exception: {e}",
-                "cause": "Internal error in build_doctor",
-                "suggested_fix": "Report this as a bug",
-                "retry_command": "",
-            })
+            all_issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "internal",
+                    "check": check_name,
+                    "file": "(internal)",
+                    "message": f"Check '{check_name}' failed with exception: {e}",
+                    "cause": "Internal error in build_doctor",
+                    "suggested_fix": "Report this as a bug",
+                    "retry_command": "",
+                }
+            )
 
     return all_issues
 
@@ -1213,9 +1396,9 @@ def run_all_checks(root: Path) -> list[dict]:
 def print_report(all_issues: list[dict]) -> None:
     """Print a formatted build diagnostics report."""
     if not all_issues:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f" ✅ BUILD DOCTOR — No issues found!")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print()
         return
 
@@ -1227,9 +1410,9 @@ def print_report(all_issues: list[dict]) -> None:
     warnings = [i for i in all_issues if i["severity"] == "WARN"]
     infos = [i for i in all_issues if i["severity"] == "INFO"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🔧 BUILD DOCTOR — {len(all_issues)} issue(s) found")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   ❌ Errors:   {len(errors)}")
     print(f"   ⚠  Warnings: {len(warnings)}")
     print(f"   💡 Info:     {len(infos)}")
@@ -1255,8 +1438,10 @@ def print_report(all_issues: list[dict]) -> None:
         print(f" ── {type_name} ({len(issues)}) ──")
 
         for issue in issues:
-            icon = "❌" if issue["severity"] == "ERROR" else (
-                "⚠" if issue["severity"] == "WARN" else "ℹ"
+            icon = (
+                "❌"
+                if issue["severity"] == "ERROR"
+                else ("⚠" if issue["severity"] == "WARN" else "ℹ")
             )
             print(f"   {icon} [{issue.get('file', '?')}] {issue['message']}")
             if issue.get("cause"):
@@ -1320,8 +1505,7 @@ def build_json_output(all_issues: list[dict]) -> dict:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="build_doctor.py — Diagnose build and compilation problems",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1332,17 +1516,22 @@ Examples:
   python build_doctor.py . --fix
         """,
     )
-    parser.add_argument("path", nargs="?", default=".",
-                        help="Project root directory to diagnose")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output as JSON")
-    parser.add_argument("--fix", "-f", action="store_true",
-                        help="Attempt auto-fixes (install missing deps where possible)")
-    parser.add_argument("--checks", "-c", nargs="+",
-                        choices=["npm", "vite", "next", "tsc", "python", "scripts", "deps"],
-                        help="Run specific checks only")
-    parser.add_argument("--version", action="version",
-                        version="build_doctor.py v1.0.0")
+    parser.add_argument("path", nargs="?", default=".", help="Project root directory to diagnose")
+    parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
+    parser.add_argument(
+        "--fix",
+        "-f",
+        action="store_true",
+        help="Attempt auto-fixes (install missing deps where possible)",
+    )
+    parser.add_argument(
+        "--checks",
+        "-c",
+        nargs="+",
+        choices=["npm", "vite", "next", "tsc", "python", "scripts", "deps"],
+        help="Run specific checks only",
+    )
+    parser.add_argument("--version", action="version", version="build_doctor.py v1.0.0")
 
     args = parser.parse_args()
 
@@ -1378,16 +1567,18 @@ Examples:
                 result = fn(target)
                 all_issues.extend(result)
             except Exception as e:
-                all_issues.append({
-                    "severity": "ERROR",
-                    "type": "internal",
-                    "check": check_name,
-                    "file": "(internal)",
-                    "message": f"Check '{check_name}' failed: {e}",
-                    "cause": "Internal error",
-                    "suggested_fix": "Report as bug",
-                    "retry_command": "",
-                })
+                all_issues.append(
+                    {
+                        "severity": "ERROR",
+                        "type": "internal",
+                        "check": check_name,
+                        "file": "(internal)",
+                        "message": f"Check '{check_name}' failed: {e}",
+                        "cause": "Internal error",
+                        "suggested_fix": "Report as bug",
+                        "retry_command": "",
+                    }
+                )
     else:
         all_issues = run_all_checks(target)
 
@@ -1403,8 +1594,10 @@ Examples:
             if retry and issue["severity"] == "ERROR" and issue["type"] == "missing_dep":
                 try:
                     args_list = shlex.split(retry)
-                    subprocess.run(args_list, cwd=str(target),
-                                   capture_output=True, text=True, timeout=60)
+                    safe_run(
+                        args_list, workspace=target, cwd=str(target),
+                        capture_output=True, text=True, timeout=60
+                    )
                     fixed.append(f"Ran: {retry}")
                 except Exception as e:
                     fixed.append(f"Failed: {retry} — {e}")

@@ -11,6 +11,7 @@ Usage:
     python check_syntax.py --json       # JSON output
     python check_syntax.py --help       # Show help
 """
+
 __maker__ = "SmokerGreenOG"
 import _protect
 import argparse
@@ -20,11 +21,22 @@ import sys
 from pathlib import Path
 
 # Directories and file patterns to skip
-SKIP_DIRS = {"__pycache__", ".rsi_backups", ".rsi_reports",
-             ".self_improve_reports", ".backups", ".git",
-             ".venv", "venv", "node_modules", "build", "dist"}
+SKIP_DIRS = {
+    "__pycache__",
+    ".rsi_backups",
+    ".rsi_reports",
+    ".self_improve_reports",
+    ".backups",
+    ".git",
+    ".venv",
+    "venv",
+    "node_modules",
+    "build",
+    "dist",
+}
 SKIP_NAMES = {
-    "codex_audit_report.md", "codex_audit_report.html",
+    "codex_audit_report.md",
+    "codex_audit_report.html",
 }
 
 
@@ -34,12 +46,12 @@ def check_syntax(root: Path = None) -> dict:
     Returns a dict with scanned, skipped, errors count and error details.
     """
     if root is None:
-        root = Path('.')
+        root = Path(".")
     errors_list = []
     scanned = 0
     skipped = 0
 
-    for p in root.rglob('*.py'):
+    for p in root.rglob("*.py"):
         # Skip excluded directories
         parts = set(p.parts)
         if parts & SKIP_DIRS:
@@ -51,23 +63,25 @@ def check_syntax(root: Path = None) -> dict:
             skipped += 1
             continue
 
-        if any(part.startswith('.rsi_') for part in p.parts):
+        if any(part.startswith(".rsi_") for part in p.parts):
             skipped += 1
             continue
 
         try:
-            source = p.read_text(encoding='utf-8')
+            source = p.read_text(encoding="utf-8")
             ast.parse(source, filename=str(p))
             # Use compile() to catch from __future__ placement errors
             # that ast.parse() silently accepts
-            compile(source, str(p), 'exec')
+            compile(source, str(p), "exec")
             scanned += 1
         except SyntaxError as e:
-            errors_list.append({
-                "file": str(p),
-                "line": e.lineno,
-                "msg": e.msg,
-            })
+            errors_list.append(
+                {
+                    "file": str(p),
+                    "line": e.lineno,
+                    "msg": e.msg,
+                }
+            )
 
     return {
         "scanned": scanned,
@@ -82,11 +96,14 @@ def main() -> None:
         description="Check Python syntax using AST (no .pyc files written).",
     )
     parser.add_argument(
-        "--json", action="store_true",
+        "--json",
+        action="store_true",
         help="Output results as JSON.",
     )
     parser.add_argument(
-        "path", nargs="?", default=".",
+        "path",
+        nargs="?",
+        default=".",
         help="Directory to scan (default: current directory).",
     )
     args = parser.parse_args()
@@ -99,16 +116,16 @@ def main() -> None:
         if result["errors"]:
             for e in result["error_details"]:
                 print(
-                    f'FAIL: {e["file"]}: line {e["line"]}: {e["msg"]}',
+                    f"FAIL: {e['file']}: line {e['line']}: {e['msg']}",
                     file=sys.stderr,
                 )
             print(
-                f'{result["errors"]} file(s) have syntax errors',
+                f"{result['errors']} file(s) have syntax errors",
                 file=sys.stderr,
             )
         print(
-            f'All {result["scanned"]} scanned Python file(s) '
-            f'have valid syntax ({result["skipped"]} skipped)'
+            f"All {result['scanned']} scanned Python file(s) "
+            f"have valid syntax ({result['skipped']} skipped)"
         )
 
     sys.exit(1 if result["errors"] else 0)

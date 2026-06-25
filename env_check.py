@@ -14,6 +14,7 @@ Gebruik:
     python env_check.py <path> --json
     python env_check.py init <path>            # Genereer een .env.example
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -136,20 +137,25 @@ def extract_referenced_env_vars(root: Path) -> set[str]:
     refs = set()
     env_pattern = re.compile(
         r'(?:os\.(?:getenv|environ(?:\[|\.get)\s*\()[\s"\']*(\w+)|'
-        r'process\.env\.(\w+)|'
+        r"process\.env\.(\w+)|"
         r'env\s*[\[.]\s*["\'](\w+)["\']|'
-        r'\$(\w+)\b)'
+        r"\$(\w+)\b)"
     )
 
-    EXCLUDE_DIRS = frozenset({"node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-        ".backups",
-
-        ".rsi_backups",
-
-        ".rsi_reports",
-
-        ".self_improve_reports",
-        })
+    EXCLUDE_DIRS = frozenset(
+        {
+            "node_modules",
+            "target",
+            ".git",
+            "__pycache__",
+            ".venv",
+            "venv",
+            ".backups",
+            ".rsi_backups",
+            ".rsi_reports",
+            ".self_improve_reports",
+        }
+    )
 
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
@@ -174,49 +180,59 @@ def check_project_dotenv(root: Path) -> list[dict]:
     env_example = root / ".env.example"
 
     if not env_path.exists():
-        issues.append({
-            "severity": "WARN",
-            "message": ".env bestand niet gevonden",
-            "detail": "Maak een .env bestand aan met je omgevingsvariabelen",
-            "fix": f"cp .env.example .env  # als .env.example bestaat",
-        })
+        issues.append(
+            {
+                "severity": "WARN",
+                "message": ".env bestand niet gevonden",
+                "detail": "Maak een .env bestand aan met je omgevingsvariabelen",
+                "fix": f"cp .env.example .env  # als .env.example bestaat",
+            }
+        )
 
     if env_path.exists():
         env_vars = parse_env_file(env_path)
         if not env_vars:
-            issues.append({
-                "severity": "WARN",
-                "message": ".env bestand is leeg",
-                "detail": "Geen variabelen gevonden in .env",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "message": ".env bestand is leeg",
+                    "detail": "Geen variabelen gevonden in .env",
+                }
+            )
 
     if not env_example.exists():
-        issues.append({
-            "severity": "INFO",
-            "message": ".env.example niet gevonden",
-            "detail": "Een .env.example helpt andere developers met de juiste variabelen",
-            "fix": "python env_check.py init .  # genereer .env.example",
-        })
+        issues.append(
+            {
+                "severity": "INFO",
+                "message": ".env.example niet gevonden",
+                "detail": "Een .env.example helpt andere developers met de juiste variabelen",
+                "fix": "python env_check.py init .  # genereer .env.example",
+            }
+        )
 
     if env_path.exists() and env_example.exists():
         env_vars = parse_env_file(env_path)
         example_vars = parse_env_file(env_example)
         missing = set(example_vars.keys()) - set(env_vars.keys())
         for var in sorted(missing):
-            issues.append({
-                "severity": "WARN",
-                "message": f"Ontbrekende variabele in .env: {var}",
-                "detail": f"Staat wel in .env.example maar niet in .env",
-                "fix": f"Voeg {var} toe aan .env",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "message": f"Ontbrekende variabele in .env: {var}",
+                    "detail": f"Staat wel in .env.example maar niet in .env",
+                    "fix": f"Voeg {var} toe aan .env",
+                }
+            )
 
         extra = set(env_vars.keys()) - set(example_vars.keys())
         for var in sorted(extra):
-            issues.append({
-                "severity": "INFO",
-                "message": f"Extra variabele in .env (niet in .env.example): {var}",
-                "detail": "Overweeg om deze aan .env.example toe te voegen",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "message": f"Extra variabele in .env (niet in .env.example): {var}",
+                    "detail": "Overweeg om deze aan .env.example toe te voegen",
+                }
+            )
 
     return issues
 
@@ -226,12 +242,14 @@ def check_required_files(root: Path) -> list[dict]:
     issues = []
     for filename, description in REQUIRED_FILES.items():
         if not (root / filename).exists():
-            issues.append({
-                "severity": "WARN",
-                "message": f"Ontbrekend bestand: {filename}",
-                "detail": f"({description})",
-                "fix": f"Maak een {filename} aan in de project root",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "message": f"Ontbrekend bestand: {filename}",
+                    "detail": f"({description})",
+                    "fix": f"Maak een {filename} aan in de project root",
+                }
+            )
     return issues
 
 
@@ -247,22 +265,26 @@ def check_env_references(root: Path) -> list[dict]:
         info = COMMON_ENV_VARS.get(var, {})
         desc = info.get("description", "Onbekende variabele")
         cat = info.get("category", "general")
-        issues.append({
-            "severity": "WARN",
-            "message": f"Gebruikte maar niet-gedefinieerde env var: {var}",
-            "detail": f"Categorie: {cat} — {desc}",
-            "fix": f"Voeg {var}=<waarde> toe aan .env",
-        })
+        issues.append(
+            {
+                "severity": "WARN",
+                "message": f"Gebruikte maar niet-gedefinieerde env var: {var}",
+                "detail": f"Categorie: {cat} — {desc}",
+                "fix": f"Voeg {var}=<waarde> toe aan .env",
+            }
+        )
 
     defined_env = set(env_vars.keys()) | set(os.environ.keys())
     unused = defined_env - referenced - {"PATH", "HOME", "USER", "SHELL", "TERM", "LANG"}
     for var in sorted(unused):
-        issues.append({
-            "severity": "INFO",
-            "message": f"Ongebruikte env var in .env: {var}",
-            "detail": "Wordt nergens in de code gerefereerd",
-            "fix": f"Overweeg om {var} uit .env te verwijderen",
-        })
+        issues.append(
+            {
+                "severity": "INFO",
+                "message": f"Ongebruikte env var in .env: {var}",
+                "detail": "Wordt nergens in de code gerefereerd",
+                "fix": f"Overweeg om {var} uit .env te verwijderen",
+            }
+        )
 
     return issues
 
@@ -300,12 +322,14 @@ def check_common_vars(root: Path) -> list[dict]:
             typical_missing = [v for v in vars_in_cat if v not in defined]
             for var in typical_missing:
                 info = COMMON_ENV_VARS[var]
-                issues.append({
-                    "severity": "INFO",
-                    "message": f"Mogelijk ontbrekende {cat_names.get(cat, cat)} var: {var}",
-                    "detail": info["description"],
-                    "fix": f"Overweeg {var}=<waarde> in .env (indien van toepassing)",
-                })
+                issues.append(
+                    {
+                        "severity": "INFO",
+                        "message": f"Mogelijk ontbrekende {cat_names.get(cat, cat)} var: {var}",
+                        "detail": info["description"],
+                        "fix": f"Overweeg {var}=<waarde> in .env (indien van toepassing)",
+                    }
+                )
 
     return issues
 
@@ -323,9 +347,19 @@ def generate_env_example(root: Path) -> None:
         return
 
     # Sort: database first, then auth, then rest
-    category_order = ["database", "auth", "cache", "ai", "bot",
-                      "network", "storage", "email", "logging",
-                      "env", "general"]
+    category_order = [
+        "database",
+        "auth",
+        "cache",
+        "ai",
+        "bot",
+        "network",
+        "storage",
+        "email",
+        "logging",
+        "env",
+        "general",
+    ]
     by_cat_order = {}
     for var in all_vars:
         info = COMMON_ENV_VARS.get(var, {})
@@ -373,16 +407,20 @@ def generate_env_example(root: Path) -> None:
     print(f" ✅ .env.example gegenereerd met {len(all_vars)} variabelen → {example_path}")
 
 
-def print_results(env_issues: list[dict], file_issues: list[dict],
-                  ref_issues: list[dict], common_issues: list[dict]) -> None:
+def print_results(
+    env_issues: list[dict],
+    file_issues: list[dict],
+    ref_issues: list[dict],
+    common_issues: list[dict],
+) -> None:
     """Print all results in a formatted way."""
     all_issues = env_issues + file_issues + ref_issues + common_issues
     warnings = [i for i in all_issues if i["severity"] == "WARN"]
     infos = [i for i in all_issues if i["severity"] == "INFO"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🌍 ENVIRONMENT CHECK")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   ⚠  Warnings: {len(warnings)}")
     print(f"   💡 Info:     {len(infos)}")
     print()
@@ -426,8 +464,7 @@ def print_results(env_issues: list[dict], file_issues: list[dict],
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="env_check.py — Check environment variables and config files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -440,10 +477,13 @@ Examples:
   python env_check.py init .                   # Generate .env.example
         """,
     )
-    parser.add_argument("action", nargs="?", default="check",
-                        help="'check' (default) of 'init' (genereer .env.example)")
-    parser.add_argument("path", nargs="?", default=".",
-                        help="Project root directory")
+    parser.add_argument(
+        "action",
+        nargs="?",
+        default="check",
+        help="'check' (default) of 'init' (genereer .env.example)",
+    )
+    parser.add_argument("path", nargs="?", default=".", help="Project root directory")
     parser.add_argument("--template", "-t", help="Path to .env.example template")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
     parser.add_argument("--version", action="version", version="env_check.py v1.0.0")
@@ -474,7 +514,9 @@ Examples:
         return
 
     if target_action != "check":
-        print(f" ❌ Onbekende actie: '{target_action}'. Gebruik 'check' of 'init'.", file=sys.stderr)
+        print(
+            f" ❌ Onbekende actie: '{target_action}'. Gebruik 'check' of 'init'.", file=sys.stderr
+        )
         sys.exit(1)
 
     print(f"\n🔍 Environment Check v1.0.0 — {target}")

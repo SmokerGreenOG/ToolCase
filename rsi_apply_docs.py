@@ -45,26 +45,31 @@ def find_undocumented_functions(filepath: Path) -> list[dict]:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             # Check of er een docstring is
             has_docstring = False
-            if (node.body and isinstance(node.body[0], ast.Expr)
-                    and isinstance(node.body[0].value, ast.Constant)
-                    and isinstance(node.body[0].value.value, str)):
+            if (
+                node.body
+                and isinstance(node.body[0], ast.Expr)
+                and isinstance(node.body[0].value, ast.Constant)
+                and isinstance(node.body[0].value.value, str)
+            ):
                 has_docstring = True
 
             if not has_docstring:
                 # Skip dunder methods en hele korte functies
-                if node.name.startswith('__') and node.name.endswith('__'):
+                if node.name.startswith("__") and node.name.endswith("__"):
                     continue
                 # Skip inner/nested functions zonder echte body
                 if not node.body:
                     continue
 
                 args = [a.arg for a in node.args.args]
-                undocumented.append({
-                    "name": node.name,
-                    "lineno": node.lineno,
-                    "args": args,
-                    "is_async": isinstance(node, ast.AsyncFunctionDef),
-                })
+                undocumented.append(
+                    {
+                        "name": node.name,
+                        "lineno": node.lineno,
+                        "args": args,
+                        "is_async": isinstance(node, ast.AsyncFunctionDef),
+                    }
+                )
 
     return undocumented
 
@@ -72,76 +77,76 @@ def find_undocumented_functions(filepath: Path) -> list[dict]:
 def generate_docstring(func_name: str, args: list[str], is_async: bool = False) -> str:
     """Genereer een zinnige docstring op basis van de functienaam en arguments."""
     # Converteer snake_case naar leesbare tekst
-    readable = func_name.replace('_', ' ')
+    readable = func_name.replace("_", " ")
 
     # Patterns voor bekende prefixes
     prefixes = {
-        'get_': 'Get',
-        'set_': 'Set',
-        'find_': 'Find',
-        'check_': 'Check',
-        'is_': 'Check if',
-        'has_': 'Check if',
-        'can_': 'Check if',
-        'should_': 'Check if',
-        'load_': 'Load',
-        'save_': 'Save',
-        'read_': 'Read',
-        'write_': 'Write',
-        'parse_': 'Parse',
-        'scan_': 'Scan',
-        'run_': 'Run',
-        'build_': 'Build',
-        'create_': 'Create',
-        'delete_': 'Delete',
-        'update_': 'Update',
-        'validate_': 'Validate',
-        'format_': 'Format',
-        'generate_': 'Generate',
-        'compute_': 'Compute',
-        'calculate_': 'Calculate',
-        'fetch_': 'Fetch',
-        'send_': 'Send',
-        'apply_': 'Apply',
-        'collect_': 'Collect',
-        'detect_': 'Detect',
-        'extract_': 'Extract',
-        'convert_': 'Convert',
-        'normalize_': 'Normalize',
-        'resolve_': 'Resolve',
-        'process_': 'Process',
-        'handle_': 'Handle',
-        'setup_': 'Set up',
-        'init_': 'Initialize',
-        'clean_': 'Clean',
-        'merge_': 'Merge',
-        'copy_': 'Copy',
-        'move_': 'Move',
-        'list_': 'List',
-        'show_': 'Show',
-        'print_': 'Print',
-        'download_': 'Download',
-        'upload_': 'Upload',
-        'install_': 'Install',
-        'uninstall_': 'Uninstall',
-        'verify_': 'Verify',
-        'ensure_': 'Ensure',
-        'require_': 'Require',
-        'register_': 'Register',
-        'unregister_': 'Unregister',
+        "get_": "Get",
+        "set_": "Set",
+        "find_": "Find",
+        "check_": "Check",
+        "is_": "Check if",
+        "has_": "Check if",
+        "can_": "Check if",
+        "should_": "Check if",
+        "load_": "Load",
+        "save_": "Save",
+        "read_": "Read",
+        "write_": "Write",
+        "parse_": "Parse",
+        "scan_": "Scan",
+        "run_": "Run",
+        "build_": "Build",
+        "create_": "Create",
+        "delete_": "Delete",
+        "update_": "Update",
+        "validate_": "Validate",
+        "format_": "Format",
+        "generate_": "Generate",
+        "compute_": "Compute",
+        "calculate_": "Calculate",
+        "fetch_": "Fetch",
+        "send_": "Send",
+        "apply_": "Apply",
+        "collect_": "Collect",
+        "detect_": "Detect",
+        "extract_": "Extract",
+        "convert_": "Convert",
+        "normalize_": "Normalize",
+        "resolve_": "Resolve",
+        "process_": "Process",
+        "handle_": "Handle",
+        "setup_": "Set up",
+        "init_": "Initialize",
+        "clean_": "Clean",
+        "merge_": "Merge",
+        "copy_": "Copy",
+        "move_": "Move",
+        "list_": "List",
+        "show_": "Show",
+        "print_": "Print",
+        "download_": "Download",
+        "upload_": "Upload",
+        "install_": "Install",
+        "uninstall_": "Uninstall",
+        "verify_": "Verify",
+        "ensure_": "Ensure",
+        "require_": "Require",
+        "register_": "Register",
+        "unregister_": "Unregister",
     }
 
     action = f"{readable}."
     for prefix, replacement in prefixes.items():
         if func_name.startswith(prefix):
-            rest = func_name[len(prefix):].replace('_', ' ')
+            rest = func_name[len(prefix) :].replace("_", " ")
             action = f"{replacement} {rest}."
             break
 
     # Args toevoegen
     arg_part = ""
     if args:
-        arg_names = [a for a in args if a not in ('self', 'cls')]
+        arg_names = [a for a in args if a not in ("self", "cls")]
         if arg_names:
             arg_part = f"\n\n    Args:\n        " + "\n        ".join(
                 f"{a}: Description." for a in arg_names
@@ -167,9 +172,9 @@ def apply_docstrings(filepath: Path, dry_run: bool = False) -> dict:
     modified = list(lines)
 
     # Sort op lineno reversed (van onder naar boven om line numbers stabiel te houden)
-    for func in sorted(undocumented, key=lambda f: f['lineno'], reverse=True):
+    for func in sorted(undocumented, key=lambda f: f["lineno"], reverse=True):
         try:
-            lineno = func['lineno'] - 1  # 0-indexed
+            lineno = func["lineno"] - 1  # 0-indexed
             # Vind de functie definitie lijn
             if lineno >= len(modified):
                 continue
@@ -181,8 +186,8 @@ def apply_docstrings(filepath: Path, dry_run: bool = False) -> dict:
             # De docstring moet na de functie-definitie komen
             # Maar voor de body (als er een body is)
             doc_indent = indent + 4  # Standaard 4-spaces indent
-            docstring = generate_docstring(func['name'], func['args'], func['is_async'])
-            doc_lines = [(" " * doc_indent) + line for line in docstring.split('\n')]
+            docstring = generate_docstring(func["name"], func["args"], func["is_async"])
+            doc_lines = [(" " * doc_indent) + line for line in docstring.split("\n")]
 
             # Bepaal of de functie een inline body heeft of multi-line
             if lineno + 1 < len(modified):
@@ -230,10 +235,10 @@ def process_queue(dry_run: bool = False) -> dict:
         print("Geen doc-requests in queue.")
         return {"processed": 0, "total_fixed": 0, "failed": 0}
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  📝 DOCSTRING BATCH FIXER")
     print(f"  {len(doc_requests)} doc-requests in queue")
-    print(f"  {'='*60}")
+    print(f"  {'=' * 60}")
 
     total_fixed = 0
     total_failed = 0
@@ -241,7 +246,7 @@ def process_queue(dry_run: bool = False) -> dict:
 
     for req in doc_requests:
         filepath = Path(req.file_path).resolve()
-        
+
         # ── Workspace containment ──
         try:
             filepath.relative_to(bridge.workspace.resolve())
@@ -249,7 +254,7 @@ def process_queue(dry_run: bool = False) -> dict:
             print(f"  🚫 {filepath.name}: Buiten workspace — overgeslagen")
             total_failed += 1
             continue
-            
+
         if not filepath.exists():
             print(f"  ⚠ {filepath.name}: Bestand niet gevonden")
             total_failed += 1
@@ -308,10 +313,10 @@ def process_queue(dry_run: bool = False) -> dict:
         "failed": total_failed,
     }
 
-    print(f"\n  {'='*60}")
+    print(f"\n  {'=' * 60}")
     print(f"  ✅ {total_fixed} docstrings toegevoegd in {processed} bestanden")
     print(f"  ❌ {total_failed} gefaald")
-    print(f"  {'='*60}")
+    print(f"  {'=' * 60}")
 
     return summary
 
@@ -321,8 +326,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Batch docstring applicator voor RSI LLM queue",
     )
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Toon wat er zou gebeuren zonder te schrijven")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Toon wat er zou gebeuren zonder te schrijven"
+    )
     parser.add_argument("--id", help="Verwerk alleen deze request ID")
     parser.add_argument("--version", action="version", version="rsi_apply_docs v1.0.0")
 
@@ -341,14 +347,14 @@ def main() -> None:
             sys.exit(1)
         data = json.loads(req_file.read_text(encoding="utf-8"))
         filepath = Path(data["file_path"]).resolve()
-        
+
         # ── Workspace containment for --id path ──
         try:
             filepath.relative_to(bridge.workspace.resolve())
         except ValueError:
             print(f"❌ File outside workspace: {filepath}")
             sys.exit(1)
-            
+
         result = apply_docstrings(filepath, dry_run=args.dry_run)
         for d in result["details"]:
             print(d)

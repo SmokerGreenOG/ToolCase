@@ -16,14 +16,15 @@ Gebruik:
     python php_checker.py <directory> --recursive --json
     python php_checker.py <file.php> --limit 120
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import json
 import re
 import shutil
-import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -36,9 +37,19 @@ from typing import Optional
 DEFAULT_MAX_LINE_LENGTH = 120
 
 EXCLUDE_DIRS = {
-    "node_modules", "vendor", ".git", "__pycache__", "tests/fixtures",
-    ".venv", "venv", "dist", "build", ".cache",
-    "storage", "bootstrap/cache", "wp-content/cache",
+    "node_modules",
+    "vendor",
+    ".git",
+    "__pycache__",
+    "tests/fixtures",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".cache",
+    "storage",
+    "bootstrap/cache",
+    "wp-content/cache",
 }
 
 PHP_VERSION = shutil.which("php")  # Path to PHP binary or None
@@ -171,36 +182,93 @@ CODE_QUALITY_PATTERNS = {
 # ══════════════════════════════════════════════════════════════════════════════
 
 FIX_SUGGESTIONS = {
-    "sql_injection_concat": "Use prepared statements (PDO::prepare + bindParam, or mysqli_prepare + bind_param)",
-    "sql_injection_string": "Never concatenate user input into SQL strings. Use parameterized queries with PDO or MySQLi",
-    "xss_reflected": "Wrap output in htmlspecialchars($var, ENT_QUOTES, 'UTF-8') before echoing",
-    "xss_raw": "Always sanitize output: echo htmlspecialchars($_GET['key'], ENT_QUOTES, 'UTF-8')",
-    "file_inclusion": "Never include/require files based on user input. Use a whitelist of allowed files",
-    "command_injection": "Never pass user input to system/exec/passthru/shell_exec. Use escapeshellarg() if unavoidable",
+    "sql_injection_concat": (
+        "Use prepared statements (PDO::prepare + bindParam, or mysqli_prepare + bind_param)"
+    ),
+    "sql_injection_string": (
+        "Never concatenate user input into SQL strings."
+        " Use parameterized queries with PDO or MySQLi"
+    ),
+    "xss_reflected": (
+        "Wrap output in htmlspecialchars($var, ENT_QUOTES, 'UTF-8') before echoing"
+    ),
+    "xss_raw": (
+        "Always sanitize output: echo htmlspecialchars($_GET['key'], ENT_QUOTES, 'UTF-8')"
+    ),
+    "file_inclusion": (
+        "Never include/require files based on user input. Use a whitelist of allowed files"
+    ),
+    "command_injection": (
+        "Never pass user input to system/exec/passthru/shell_exec."
+        " Use escapeshellarg() if unavoidable"
+    ),
     "backtick_exec": "Backtick operator executes shell commands - avoid with user input",
-    "eval_injection": "Never call eval() with user-supplied data. There is always a safer alternative",  # toolcase: ignore-security
-    "assert_code": "assert() can execute code - avoid in production or never pass dynamic strings",
-    "preg_replace_e_modifier": "The /e modifier is deprecated and dangerous - use preg_replace_callback() instead",
-    "hardcoded_password": "Move credentials to .env or environment variables - never hardcode secrets",
-    "hardcoded_db_creds": "Use .env or config files outside web root - never hardcode in PHP files",
-    "unsafe_unserialize": "Never unserialize() user input - can lead to object injection attacks. Use JSON instead",
-    "create_function": "create_function() is deprecated since PHP 7.2 and uses eval internally. Use anonymous functions",
-    "extract_on_globals": "extract() on $_GET/$_POST overwrites local variables - use explicit assignments",
-    "parse_str_no_arg2": "parse_str() without second argument writes to global scope. Always provide an array",
+    "eval_injection": (
+        "Never call eval() with user-supplied data."
+        " There is always a safer alternative"
+    ),  # toolcase: ignore-security
+    "assert_code": (
+        "assert() can execute code - avoid in production or never pass dynamic strings"
+    ),
+    "preg_replace_e_modifier": (
+        "The /e modifier is deprecated and dangerous"
+        " - use preg_replace_callback() instead"
+    ),
+    "hardcoded_password": (
+        "Move credentials to .env or environment variables - never hardcode secrets"
+    ),
+    "hardcoded_db_creds": (
+        "Use .env or config files outside web root - never hardcode in PHP files"
+    ),
+    "unsafe_unserialize": (
+        "Never unserialize() user input - can lead to object injection attacks."
+        " Use JSON instead"
+    ),
+    "create_function": (
+        "create_function() is deprecated since PHP 7.2"
+        " and uses eval internally. Use anonymous functions"
+    ),
+    "extract_on_globals": (
+        "extract() on $_GET/$_POST overwrites local variables"
+        " - use explicit assignments"
+    ),
+    "parse_str_no_arg2": (
+        "parse_str() without second argument writes to global scope."
+        " Always provide an array"
+    ),
     "md5_for_password": "md5() is cryptographically broken. Use password_hash() with bcrypt",
     "sha1_for_password": "sha1() is cryptographically broken. Use password_hash() with bcrypt",
     "php_self_xss": "$_SERVER['PHP_SELF'] can be exploited for XSS. Wrap in htmlspecialchars()",
-    "file_get_contents_user_input": "Validate/sanitize user input before passing to file_get_contents()",
-    "no_csrf_token": "Add CSRF token to this form to prevent cross-site request forgery attacks",
+    "file_get_contents_user_input": (
+        "Validate/sanitize user input before passing to file_get_contents()"
+    ),
+    "no_csrf_token": (
+        "Add CSRF token to this form to prevent cross-site request forgery attacks"
+    ),
     "short_open_tag": "Use <?php instead of <? for better compatibility",
-    "display_errors_on": "display_errors should be off in production - exposes sensitive info to users",
-    "error_reporting_all": "Showing all errors in production leaks path/DB info. Use error_reporting(0) or log only",
+    "display_errors_on": (
+        "display_errors should be off in production - exposes sensitive info to users"
+    ),
+    "error_reporting_all": (
+        "Showing all errors in production leaks path/DB info."
+        " Use error_reporting(0) or log only"
+    ),
     "deprecated_mysql": "mysql_* functions are removed in PHP 7.0+. Use MySQLi or PDO",
-    "error_suppression": "The @ operator hides errors - handle them with try/catch or proper checks instead",
-    "var_dump_production": "Remove var_dump() - it's debug output that shouldn't be in production",
-    "print_r_production": "Remove print_r() - it's debug output that shouldn't be in production",
+    "error_suppression": (
+        "The @ operator hides errors"
+        " - handle them with try/catch or proper checks instead"
+    ),
+    "var_dump_production": (
+        "Remove var_dump() - it's debug output that shouldn't be in production"
+    ),
+    "print_r_production": (
+        "Remove print_r() - it's debug output that shouldn't be in production"
+    ),
     "die_debug": "Remove debug die() statement - use proper error handling instead",
-    "nested_ternary": "Nested ternary operators are hard to read. Use if/else or extract to well-named variables",
+    "nested_ternary": (
+        "Nested ternary operators are hard to read."
+        " Use if/else or extract to well-named variables"
+    ),
 }
 
 # Labels for report output (short readable names)
@@ -249,7 +317,7 @@ def check_php_syntax(filepath: Path) -> tuple:
         return (True, "PHP not installed - syntax check skipped")
 
     try:
-        result = subprocess.run(
+        result = safe_run(
             [PHP_VERSION, "-l", str(filepath)],
             capture_output=True,
             text=True,
@@ -263,7 +331,7 @@ def check_php_syntax(filepath: Path) -> tuple:
             return (False, lines[-2] if len(lines) >= 2 else output)
         else:
             return (result.returncode == 0, output)
-    except subprocess.TimeoutExpired:
+    except TimeoutError:
         return (True, "PHP syntax check timed out")
     except Exception as e:
         return (True, f"Could not run php -l: {e}")
@@ -301,94 +369,135 @@ def check_php_file(filepath: Path, max_line: int, security_only: bool = False) -
         if not security_only:
             # Line length
             if len(stripped) > max_line:
-                issues.append({
-                    "line": i, "type": "quality", "category": "line_length",
-                    "message": f"Line too long ({len(stripped)} > {max_line})",
-                })
+                issues.append(
+                    {
+                        "line": i,
+                        "type": "quality",
+                        "category": "line_length",
+                        "message": f"Line too long ({len(stripped)} > {max_line})",
+                    }
+                )
 
             # Trailing whitespace
             if stripped != stripped.rstrip():
-                issues.append({
-                    "line": i, "type": "quality", "category": "trailing_ws",
-                    "message": "Trailing whitespace",
-                })
+                issues.append(
+                    {
+                        "line": i,
+                        "type": "quality",
+                        "category": "trailing_ws",
+                        "message": "Trailing whitespace",
+                    }
+                )
 
-    # Task markers in comments
+            # Task markers in comments
             comment_match = re.search(
                 r"(?://|#|/\*).*?\b(TODO|FIXME|HACK|XXX|BUG)\b",
-                stripped, re.IGNORECASE,
+                stripped,
+                re.IGNORECASE,
             )
             if comment_match:
-                issues.append({
-                    "line": i, "type": "info", "category": "marker",
-                    "message": f"Contains '{comment_match.group(1)}'",
-                })
+                issues.append(
+                    {
+                        "line": i,
+                        "type": "info",
+                        "category": "marker",
+                        "message": f"Contains '{comment_match.group(1)}'",
+                    }
+                )
 
             # Short open tag
             short_match = CODE_QUALITY_PATTERNS["short_open_tag"].search(stripped)
             if short_match and "<?php" not in stripped and "<?" in stripped:
-                issues.append({
-                    "line": i, "type": "quality", "category": "short_open_tag",
-                    "message": "Short open tag - use <?php",
-                    "fix": FIX_SUGGESTIONS["short_open_tag"],
-                })
+                issues.append(
+                    {
+                        "line": i,
+                        "type": "quality",
+                        "category": "short_open_tag",
+                        "message": "Short open tag - use <?php",
+                        "fix": FIX_SUGGESTIONS["short_open_tag"],
+                    }
+                )
 
             # @ error suppression (skip if in regex or string context)
             if CODE_QUALITY_PATTERNS["error_suppression"].search(stripped):
-                issues.append({
-                    "line": i, "type": "quality", "category": "error_suppression",
-                    "message": "@ error suppression operator",
-                    "fix": FIX_SUGGESTIONS["error_suppression"],
-                })
+                issues.append(
+                    {
+                        "line": i,
+                        "type": "quality",
+                        "category": "error_suppression",
+                        "message": "@ error suppression operator",
+                        "fix": FIX_SUGGESTIONS["error_suppression"],
+                    }
+                )
 
             # var_dump / print_r / die debug
             for cat in ["var_dump_production", "print_r_production", "die_debug"]:
                 if CODE_QUALITY_PATTERNS[cat].search(stripped):
                     name = cat.replace("_production", "").replace("_", " ")
-                    issues.append({
-                        "line": i, "type": "quality", "category": cat,
-                        "message": f"Debug {name} - remove before production",
-                        "fix": FIX_SUGGESTIONS[cat],
-                    })
+                    issues.append(
+                        {
+                            "line": i,
+                            "type": "quality",
+                            "category": cat,
+                            "message": f"Debug {name} - remove before production",
+                            "fix": FIX_SUGGESTIONS[cat],
+                        }
+                    )
                     break  # one debug marker per line
 
         # ═══ Security: HIGH risk ═══
         for key, pattern in HIGH_RISK_PATTERNS.items():
             match = pattern.search(stripped)
             if match:
-                issues.append({
-                    "line": i, "type": "security", "category": key,
-                    "severity": "HIGH",
-                    "message": PATTERN_LABELS.get(key, key),
-                    "fix": FIX_SUGGESTIONS.get(key, ""),
-                })
+                issues.append(
+                    {
+                        "line": i,
+                        "type": "security",
+                        "category": key,
+                        "severity": "HIGH",
+                        "message": PATTERN_LABELS.get(key, key),
+                        "fix": FIX_SUGGESTIONS.get(key, ""),
+                    }
+                )
 
         # ═══ Security: MEDIUM risk ═══
         for key, pattern in MEDIUM_RISK_PATTERNS.items():
             match = pattern.search(stripped)
             if match:
-                issues.append({
-                    "line": i, "type": "security", "category": key,
-                    "severity": "MEDIUM",
-                    "message": PATTERN_LABELS.get(key, key),
-                    "fix": FIX_SUGGESTIONS.get(key, ""),
-                })
+                issues.append(
+                    {
+                        "line": i,
+                        "type": "security",
+                        "category": key,
+                        "severity": "MEDIUM",
+                        "message": PATTERN_LABELS.get(key, key),
+                        "fix": FIX_SUGGESTIONS.get(key, ""),
+                    }
+                )
 
         # ═══ Deprecated mysql_* functions ═══
         if not security_only and CODE_QUALITY_PATTERNS["deprecated_mysql"].search(stripped):
-            issues.append({
-                "line": i, "type": "quality", "category": "deprecated_mysql",
-                "message": "Deprecated mysql_* function - use MySQLi or PDO",
-                "fix": FIX_SUGGESTIONS["deprecated_mysql"],
-            })
+            issues.append(
+                {
+                    "line": i,
+                    "type": "quality",
+                    "category": "deprecated_mysql",
+                    "message": "Deprecated mysql_* function - use MySQLi or PDO",
+                    "fix": FIX_SUGGESTIONS["deprecated_mysql"],
+                }
+            )
 
         # ═══ Nested ternary ═══
         if not security_only and CODE_QUALITY_PATTERNS["nested_ternary"].search(stripped):
-            issues.append({
-                "line": i, "type": "quality", "category": "nested_ternary",
-                "message": "Nested ternary - hard to read",
-                "fix": FIX_SUGGESTIONS["nested_ternary"],
-            })
+            issues.append(
+                {
+                    "line": i,
+                    "type": "quality",
+                    "category": "nested_ternary",
+                    "message": "Nested ternary - hard to read",
+                    "fix": FIX_SUGGESTIONS["nested_ternary"],
+                }
+            )
 
     # ═══ Whole-file checks ═══
     full_source = "\n".join(lines)
@@ -396,36 +505,57 @@ def check_php_file(filepath: Path, max_line: int, security_only: bool = False) -
     if not security_only:
         # display_errors / error_reporting in production
         if CODE_QUALITY_PATTERNS["display_errors_on"].search(full_source):
-            issues.append({
-                "line": 0, "type": "quality", "category": "display_errors_on",
-                "message": "display_errors enabled - turn off in production",
-                "fix": FIX_SUGGESTIONS["display_errors_on"],
-            })
+            issues.append(
+                {
+                    "line": 0,
+                    "type": "quality",
+                    "category": "display_errors_on",
+                    "message": "display_errors enabled - turn off in production",
+                    "fix": FIX_SUGGESTIONS["display_errors_on"],
+                }
+            )
         elif CODE_QUALITY_PATTERNS["error_reporting_all"].search(full_source):
-            issues.append({
-                "line": 0, "type": "quality", "category": "error_reporting_all",
-                "message": "error_reporting(E_ALL) - don't show in production",
-                "fix": FIX_SUGGESTIONS["error_reporting_all"],
-            })
+            issues.append(
+                {
+                    "line": 0,
+                    "type": "quality",
+                    "category": "error_reporting_all",
+                    "message": "error_reporting(E_ALL) - don't show in production",
+                    "fix": FIX_SUGGESTIONS["error_reporting_all"],
+                }
+            )
 
         # EOF newline
         if lines and lines[-1] != "":
-            issues.append({
-                "line": line_count, "type": "quality", "category": "eof_newline",
-                "message": "No newline at end of file",
-            })
+            issues.append(
+                {
+                    "line": line_count,
+                    "type": "quality",
+                    "category": "eof_newline",
+                    "message": "No newline at end of file",
+                }
+            )
 
     # ═══ Compute counts ═══
-    security_high = sum(1 for i in issues if i["type"] == "security" and i.get("severity") == "HIGH")
-    security_medium = sum(1 for i in issues if i["type"] == "security" and i.get("severity") == "MEDIUM")
+    security_high = sum(
+        1 for i in issues if i["type"] == "security" and i.get("severity") == "HIGH"
+    )
+    security_medium = sum(
+        1 for i in issues if i["type"] == "security" and i.get("severity") == "MEDIUM"
+    )
     quality = sum(1 for i in issues if i["type"] == "quality")
 
     # Add syntax error as an issue
     if not syntax_ok:
-        issues.insert(0, {
-            "line": 0, "type": "error", "category": "syntax",
-            "message": f"PHP Syntax Error: {syntax_msg}",
-        })
+        issues.insert(
+            0,
+            {
+                "line": 0,
+                "type": "error",
+                "category": "syntax",
+                "message": f"PHP Syntax Error: {syntax_msg}",
+            },
+        )
 
     return {
         "file": str(filepath),
@@ -573,26 +703,28 @@ def print_json(results: list, max_line: int) -> None:
     }
 
     for report in results:
-        output["files"].append({
-            "file": report["file"],
-            "lines": report.get("lines", 0),
-            "syntax_ok": report.get("syntax_ok", True),
-            "security_high": report.get("security_high", 0),
-            "security_medium": report.get("security_medium", 0),
-            "quality": report.get("quality", 0),
-            "total_issues": report.get("total_issues", 0),
-            "issues": [
-                {
-                    "line": i["line"],
-                    "type": i["type"],
-                    "severity": i.get("severity", ""),
-                    "category": i.get("category", ""),
-                    "message": i["message"],
-                    "fix": i.get("fix", ""),
-                }
-                for i in report.get("issues", [])
-            ],
-        })
+        output["files"].append(
+            {
+                "file": report["file"],
+                "lines": report.get("lines", 0),
+                "syntax_ok": report.get("syntax_ok", True),
+                "security_high": report.get("security_high", 0),
+                "security_medium": report.get("security_medium", 0),
+                "quality": report.get("quality", 0),
+                "total_issues": report.get("total_issues", 0),
+                "issues": [
+                    {
+                        "line": i["line"],
+                        "type": i["type"],
+                        "severity": i.get("severity", ""),
+                        "category": i.get("category", ""),
+                        "message": i["message"],
+                        "fix": i.get("fix", ""),
+                    }
+                    for i in report.get("issues", [])
+                ],
+            }
+        )
 
     print(json.dumps(output, indent=2, ensure_ascii=False))
 
@@ -603,8 +735,7 @@ def print_json(results: list, max_line: int) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="php_checker.py - PHP code quality & security checker",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -618,14 +749,20 @@ Examples:
         """,
     )
     parser.add_argument("path", help="PHP file or directory to scan")
-    parser.add_argument("--recursive", "-r", action="store_true",
-                        help="Recursively scan directories")
-    parser.add_argument("--limit", "-l", type=int, default=DEFAULT_MAX_LINE_LENGTH,
-                        help=f"Maximum line length (default: {DEFAULT_MAX_LINE_LENGTH})")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output as JSON")
-    parser.add_argument("--security-only", action="store_true",
-                        help="Only run security checks (skip code quality)")
+    parser.add_argument(
+        "--recursive", "-r", action="store_true", help="Recursively scan directories"
+    )
+    parser.add_argument(
+        "--limit",
+        "-l",
+        type=int,
+        default=DEFAULT_MAX_LINE_LENGTH,
+        help=f"Maximum line length (default: {DEFAULT_MAX_LINE_LENGTH})",
+    )
+    parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
+    parser.add_argument(
+        "--security-only", action="store_true", help="Only run security checks (skip code quality)"
+    )
     parser.add_argument("--version", action="version", version="php_checker.py v1.0.0")
 
     args = parser.parse_args()

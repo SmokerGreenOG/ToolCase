@@ -14,6 +14,7 @@ Gebruik:
     python dependency_audit.py <path> --json
     python dependency_audit.py <path> --check-versions
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -38,16 +39,20 @@ except ImportError:
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # Well-known insecure/outdated packages (name -> issue)
 KNOWN_ISSUES = {
@@ -97,24 +102,28 @@ def get_python_deps(root: Path) -> list[dict]:
                 if not line or line.startswith(("#", "-", "git+")):
                     continue
                 # Parse name and version
-                m = re.match(r'^([a-zA-Z0-9_.-]+)\s*([<>=!~]+)\s*([\d.]+)', line)
+                m = re.match(r"^([a-zA-Z0-9_.-]+)\s*([<>=!~]+)\s*([\d.]+)", line)
                 if m:
-                    deps.append({
-                        "name": m.group(1).lower(),
-                        "constraint": m.group(2) + m.group(3),
-                        "version": m.group(3),
-                        "source": "requirements.txt",
-                    })
+                    deps.append(
+                        {
+                            "name": m.group(1).lower(),
+                            "constraint": m.group(2) + m.group(3),
+                            "version": m.group(3),
+                            "source": "requirements.txt",
+                        }
+                    )
                 else:
                     # Name only (no version)
                     name = line.split("#")[0].strip()
                     if name and not name.startswith("-"):
-                        deps.append({
-                            "name": name.lower(),
-                            "constraint": "",
-                            "version": "",
-                            "source": "requirements.txt",
-                        })
+                        deps.append(
+                            {
+                                "name": name.lower(),
+                                "constraint": "",
+                                "version": "",
+                                "source": "requirements.txt",
+                            }
+                        )
         except Exception as e:
             deps.append({"name": f"Error reading requirements.txt: {e}", "source": "error"})
 
@@ -132,7 +141,7 @@ def get_python_deps(root: Path) -> list[dict]:
                 build_requires = data.get("build-system", {}).get("requires", [])
 
                 def _parse_pep508(spec: str) -> dict | None:
-                    m = re.match(r'^([a-zA-Z0-9_.-]+)\s*([<>=!~]+)\s*([\d.]+)', spec)
+                    m = re.match(r"^([a-zA-Z0-9_.-]+)\s*([<>=!~]+)\s*([\d.]+)", spec)
                     if m:
                         return {
                             "name": m.group(1).lower(),
@@ -159,7 +168,9 @@ def get_python_deps(root: Path) -> list[dict]:
                     for spec in specs:
                         dep = _parse_pep508(spec)
                         if dep:
-                            dep["source"] = f"pyproject.toml [project.optional-dependencies.{section}]"
+                            dep["source"] = (
+                                f"pyproject.toml [project.optional-dependencies.{section}]"
+                            )
                             deps.append(dep)
 
                 for spec in build_requires:
@@ -182,12 +193,14 @@ def get_python_deps(root: Path) -> list[dict]:
                     if in_deps and stripped and not stripped.startswith("#"):
                         name = stripped.strip().strip('",').split("[")[0].split(";")[0].strip()
                         if name:
-                            deps.append({
-                                "name": name.lower(),
-                                "constraint": "",
-                                "version": "",
-                                "source": "pyproject.toml",
-                            })
+                            deps.append(
+                                {
+                                    "name": name.lower(),
+                                    "constraint": "",
+                                    "version": "",
+                                    "source": "pyproject.toml",
+                                }
+                            )
         except Exception as e:
             deps.append({"name": f"Error reading pyproject.toml: {e}", "source": "error"})
 
@@ -204,19 +217,25 @@ def get_node_deps(root: Path) -> list[dict]:
             content = pkg.read_text(encoding="utf-8")
             data = json.loads(content)
 
-            dep_sections = ["dependencies", "devDependencies",
-                              "peerDependencies", "optionalDependencies"]
+            dep_sections = [
+                "dependencies",
+                "devDependencies",
+                "peerDependencies",
+                "optionalDependencies",
+            ]
             for section in dep_sections:
                 if section in data:
                     for name, version in data[section].items():
-                        m = re.match(r'[\^~]?([\d.]+)', version)
+                        m = re.match(r"[\^~]?([\d.]+)", version)
                         ver = m.group(1) if m else version
-                        deps.append({
-                            "name": name.lower(),
-                            "constraint": version,
-                            "version": ver,
-                            "source": f"package.json ({section})",
-                        })
+                        deps.append(
+                            {
+                                "name": name.lower(),
+                                "constraint": version,
+                                "version": ver,
+                                "source": f"package.json ({section})",
+                            }
+                        )
         except Exception as e:
             deps.append({"name": f"Error reading package.json: {e}", "source": "error"})
 
@@ -254,14 +273,16 @@ def get_rust_deps(root: Path) -> list[dict]:
                     name = parts[0].strip()
                     version = parts[1].strip().strip("\"'")
                     if name and version:
-                        m = re.match(r'[\"\' ]*([\d.]+)', version)
+                        m = re.match(r"[\"\' ]*([\d.]+)", version)
                         ver = m.group(1) if m else version
-                        deps.append({
-                            "name": name.lower(),
-                            "constraint": version,
-                            "version": ver,
-                            "source": "Cargo.toml",
-                        })
+                        deps.append(
+                            {
+                                "name": name.lower(),
+                                "constraint": version,
+                                "version": ver,
+                                "source": "Cargo.toml",
+                            }
+                        )
         except Exception as e:
             deps.append({"name": f"Error reading Cargo.toml: {e}", "source": "error"})
 
@@ -278,38 +299,41 @@ def audit_deps(all_deps: list[dict]) -> list[dict]:
 
         # Check known issues
         if name in KNOWN_ISSUES:
-            issues.append({
-                "severity": "WARN",
-                "type": "known_issue",
-                "name": name,
-                "version": version,
-                "source": dep["source"],
-                "message": f"{name} {version}: {KNOWN_ISSUES[name]}",
-            })
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "known_issue",
+                    "name": name,
+                    "version": version,
+                    "source": dep["source"],
+                    "message": f"{name} {version}: {KNOWN_ISSUES[name]}",
+                }
+            )
 
         # Check if version pin is missing
         if not dep["constraint"] and dep["source"] not in ("error",):
-            issues.append({
-                "severity": "INFO",
-                "type": "unpinned",
-                "name": name,
-                "version": "none",
-                "source": dep["source"],
-                "message": f"{name}: geen versie vastgepind — kan onverwachte upgrades veroorzaken",
-            })
+            issues.append(
+                {
+                    "severity": "INFO",
+                    "type": "unpinned",
+                    "name": name,
+                    "version": "none",
+                    "source": dep["source"],
+                    "message": f"{name}: geen versie vastgepind — kan onverwachte upgrades veroorzaken",
+                }
+            )
 
     return issues
 
 
-def print_report(deps_by_source: dict, issues: list[dict],
-                 total_deps: int) -> None:
+def print_report(deps_by_source: dict, issues: list[dict], total_deps: int) -> None:
     """Print formatted dependency audit report."""
     warnings = [i for i in issues if i["severity"] == "WARN"]
     infos = [i for i in issues if i["severity"] == "INFO"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 📦 DEPENDENCY AUDIT")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Totaal dependencies: {total_deps}")
     print(f"   ⚠  Known issues:     {len(warnings)}")
     print(f"   💡 Unpinned:          {len(infos)}")
@@ -345,8 +369,7 @@ def print_report(deps_by_source: dict, issues: list[dict],
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="dependency_audit.py — Audit project dependencies",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -359,8 +382,9 @@ Examples:
     )
     parser.add_argument("path", nargs="?", default=".", help="Project root")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--check-versions", "-v", action="store_true",
-                        help="Check minimum recommended versions")
+    parser.add_argument(
+        "--check-versions", "-v", action="store_true", help="Check minimum recommended versions"
+    )
     parser.add_argument("--version", action="version", version="dependency_audit.py v1.0.0")
 
     args = parser.parse_args()

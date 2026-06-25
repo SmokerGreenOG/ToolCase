@@ -5,6 +5,10 @@ REM  pip install, compile check, test run, release readiness.
 REM  HARD FAIL on every check — no warnings tolerated.
 REM  Maker: SmokerGreenOG
 REM =====================================================================
+REM ── UTF-8 encoding for emoji/Unicode output ──
+chcp 65001 >nul 2>&1
+set "PYTHONUTF8=1"
+set "PYTHONIOENCODING=utf-8"
 setlocal enabledelayedexpansion
 
 echo.

@@ -13,6 +13,7 @@ Gebruik:
     python php_dead_code.py <path> --recursive
     python php_dead_code.py <path> --json
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -23,39 +24,50 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", "tests/fixtures", ".venv", "venv", "dist", "build", ".cache"}
+EXCLUDE_DIRS = {
+    "node_modules",
+    "vendor",
+    ".git",
+    "__pycache__",
+    "tests/fixtures",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".cache",
+}
 
 # Function definition: function name(...)
 FUNC_DEF = re.compile(
-    r'^\s*(?:(?:public|private|protected|static|abstract|final)\s+)*'
-    r'function\s+(\w+)\s*\(',
+    r"^\s*(?:(?:public|private|protected|static|abstract|final)\s+)*"
+    r"function\s+(\w+)\s*\(",
     re.MULTILINE,
 )
 # Class definition
 CLASS_DEF = re.compile(
-    r'^\s*(?:abstract\s+)?(?:final\s+)?class\s+(\w+)',
+    r"^\s*(?:abstract\s+)?(?:final\s+)?class\s+(\w+)",
     re.MULTILINE,
 )
 # Commented-out code (> 3 lines)
 COMMENTED_BLOCK = re.compile(
-    r'(?:/\*[\s\S]*?\*/|(?:^\s*//\s*\$\w+.*\n){3,})',
+    r"(?:/\*[\s\S]*?\*/|(?:^\s*//\s*\$\w+.*\n){3,})",
     re.MULTILINE,
 )
 # Empty function body
 EMPTY_FUNC = re.compile(
-    r'function\s+\w+\s*\([^)]*\)\s*\{\s*\}',
+    r"function\s+\w+\s*\([^)]*\)\s*\{\s*\}",
 )
 
 
 def discover_php_files(root: Path) -> list[Path]:
     """discover php files.
 
-        Args:
-            root: Description.
+    Args:
+        root: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     files = []
     for f in root.rglob("*.php"):
         try:
@@ -71,28 +83,38 @@ def discover_php_files(root: Path) -> list[Path]:
 def analyze_file(filepath: Path) -> dict:
     """analyze file.
 
-        Args:
-            filepath: Description.
+    Args:
+        filepath: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
     except (OSError, UnicodeDecodeError):
-        return {"file": str(filepath), "functions": [], "classes": [], "commented_blocks": 0, "empty_funcs": []}
+        return {
+            "file": str(filepath),
+            "functions": [],
+            "classes": [],
+            "commented_blocks": 0,
+            "empty_funcs": [],
+        }
 
     # Extract function names and class names
-    functions = [{"name": m.group(1), "line": source[:m.start()].count('\n') + 1} for m in FUNC_DEF.finditer(source)]
+    functions = [
+        {"name": m.group(1), "line": source[: m.start()].count("\n") + 1}
+        for m in FUNC_DEF.finditer(source)
+    ]
     classes = [m.group(1) for m in CLASS_DEF.finditer(source)]
 
     # Commented-out code blocks
     commented_blocks = len(COMMENTED_BLOCK.findall(source))
 
     # Empty functions
-    empty_funcs = [{"name": m.group(1), "line": source[:m.start()].count('\n') + 1} for m in re.finditer(
-        r'function\s+(\w+)\s*\([^)]*\)\s*\{\s*\}', source
-    )]
+    empty_funcs = [
+        {"name": m.group(1), "line": source[: m.start()].count("\n") + 1}
+        for m in re.finditer(r"function\s+(\w+)\s*\([^)]*\)\s*\{\s*\}", source)
+    ]
 
     return {
         "file": str(filepath),
@@ -119,16 +141,67 @@ def find_unused(project_results: list[dict]) -> dict:
             all_defs.setdefault(f["name"], []).append((r["file"], f["line"]))
 
         # Find function calls (foo(, $obj->foo(, Class::foo(, self::foo()
-        for match in re.finditer(r'(?:\$?\w+(?:->|::))?(\w+)\s*\(', source):
+        for match in re.finditer(r"(?:\$?\w+(?:->|::))?(\w+)\s*\(", source):
             call_name = match.group(1)
-            if call_name not in ('if', 'for', 'while', 'foreach', 'switch', 'return', 'echo', 'print',
-                                'array', 'list', 'isset', 'empty', 'unset', 'die', 'exit', 'include',
-                                'require', 'function', 'class', 'new', 'throw', 'catch', 'try', 'case',
-                                'default', 'clone', 'instanceof', 'global', 'static', 'public', 'private',
-                                'protected', 'abstract', 'final', 'namespace', 'use', 'as', 'break',
-                                'continue', 'declare', 'endfor', 'endforeach', 'endwhile', 'endswitch',
-                                'endif', 'enddeclare', 'extends', 'implements', 'trait', 'insteadof',
-                                'callable', 'goto', 'const', 'var', 'yield', 'from', 'match'):
+            if call_name not in (
+                "if",
+                "for",
+                "while",
+                "foreach",
+                "switch",
+                "return",
+                "echo",
+                "print",
+                "array",
+                "list",
+                "isset",
+                "empty",
+                "unset",
+                "die",
+                "exit",
+                "include",
+                "require",
+                "function",
+                "class",
+                "new",
+                "throw",
+                "catch",
+                "try",
+                "case",
+                "default",
+                "clone",
+                "instanceof",
+                "global",
+                "static",
+                "public",
+                "private",
+                "protected",
+                "abstract",
+                "final",
+                "namespace",
+                "use",
+                "as",
+                "break",
+                "continue",
+                "declare",
+                "endfor",
+                "endforeach",
+                "endwhile",
+                "endswitch",
+                "endif",
+                "enddeclare",
+                "extends",
+                "implements",
+                "trait",
+                "insteadof",
+                "callable",
+                "goto",
+                "const",
+                "var",
+                "yield",
+                "from",
+                "match",
+            ):
                 all_calls.add(call_name)
 
     unused = {}
@@ -142,13 +215,13 @@ def find_unused(project_results: list[dict]) -> dict:
 def print_report(results: list[dict], unused: dict) -> None:
     """Print report.
 
-        Args:
-            results: Description.
-            unused: Description.
+    Args:
+        results: Description.
+        unused: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     total_funcs = sum(len(r["functions"]) for r in results)
     total_classes = sum(len(r["classes"]) for r in results)
     total_commented = sum(r["commented_blocks"] for r in results)
@@ -191,13 +264,13 @@ def print_report(results: list[dict], unused: dict) -> None:
 def print_json(results: list[dict], unused: dict) -> None:
     """Print json.
 
-        Args:
-            results: Description.
-            unused: Description.
+    Args:
+        results: Description.
+        unused: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     output = {
         "summary": {
             "total_files": len(results),
@@ -207,15 +280,16 @@ def print_json(results: list[dict], unused: dict) -> None:
             "commented_blocks": sum(r["commented_blocks"] for r in results),
             "unused_functions": len(unused),
         },
-        "unused_functions": {name: [{"file": f, "line": l} for f, l in locs] for name, locs in unused.items()},
+        "unused_functions": {
+            name: [{"file": f, "line": l} for f, l in locs] for name, locs in unused.items()
+        },
         "files": results,
     }
     print(json.dumps(output, indent=2, ensure_ascii=False))
 
 
 def main():
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="php_dead_code.py - PHP dead code finder")
     parser.add_argument("path", help="PHP file or directory")
     parser.add_argument("--recursive", "-r", action="store_true")
@@ -225,11 +299,17 @@ def main():
     args = parser.parse_args()
     target = Path(args.path)
     if not target.exists():
-        print(f"Not found", file=sys.stderr); sys.exit(1)
+        print(f"Not found", file=sys.stderr)
+        sys.exit(1)
 
-    files = [target] if target.is_file() else (discover_php_files(target) if args.recursive else sorted(target.glob("*.php")))
+    files = (
+        [target]
+        if target.is_file()
+        else (discover_php_files(target) if args.recursive else sorted(target.glob("*.php")))
+    )
     if not files:
-        print("No PHP files"); sys.exit(0)
+        print("No PHP files")
+        sys.exit(0)
 
     print(f"\n💀 PHP Dead Code v1.0.0 — {len(files)} file(s)")
     print(f"{'=' * 70}")

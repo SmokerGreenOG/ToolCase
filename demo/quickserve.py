@@ -9,6 +9,7 @@ Gebruik:
     python quickserve.py . --port 3000
     python quickserve.py D:/docs --no-browser
 """
+
 __maker__ = "SmokerGreenOG"
 
 import argparse
@@ -67,32 +68,20 @@ def get_local_ips() -> list[str]:
 
 
 def main():
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="QuickServe — minimale HTTP file server",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "directory", nargs="?", default=".",
-        help="Directory om te serveren (default: .)"
+        "directory", nargs="?", default=".", help="Directory om te serveren (default: .)"
     )
+    parser.add_argument("--port", "-p", type=int, default=8080, help="Poort (default: 8080)")
+    parser.add_argument("--bind", "-b", default="0.0.0.0", help="Bind adres (default: 0.0.0.0)")
     parser.add_argument(
-        "--port", "-p", type=int, default=8080,
-        help="Poort (default: 8080)"
+        "--no-browser", action="store_true", help="Open niet automatisch de browser"
     )
-    parser.add_argument(
-        "--bind", "-b", default="0.0.0.0",
-        help="Bind adres (default: 0.0.0.0)"
-    )
-    parser.add_argument(
-        "--no-browser", action="store_true",
-        help="Open niet automatisch de browser"
-    )
-    parser.add_argument(
-        "--version", action="version",
-        version="quickserve.py v1.0.0"
-    )
+    parser.add_argument("--version", action="version", version="quickserve.py v1.0.0")
     args = parser.parse_args()
 
     # Valideer directory

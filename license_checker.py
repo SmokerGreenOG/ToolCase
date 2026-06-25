@@ -7,6 +7,7 @@ Checkt:
   - import _protect aanwezig
   - LICENSE file bestaat
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -22,12 +23,12 @@ EXPECTED_MAKER = "SmokerGreenOG"
 def check_file(fp: Path) -> dict:
     """Check file.
 
-        Args:
-            fp: Description.
+    Args:
+        fp: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     try:
         content = fp.read_text(encoding="utf-8", errors="replace")
     except Exception:
@@ -62,8 +63,7 @@ def check_file(fp: Path) -> dict:
 
 
 def check_all() -> list[dict]:
-    """Check all.
-        """
+    """Check all."""
     results = []
     for fp in sorted(ROOT.glob("*.py")):
         results.append(check_file(fp))
@@ -77,11 +77,14 @@ def check_all() -> list[dict]:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="License Checker")
-    parser.add_argument("target", nargs="?", default=None,
-                        help="Optional target path (default: ToolCase project root)")
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="Optional target path (default: ToolCase project root)",
+    )
     parser.add_argument("--json", "-j", action="store_true")
     args = parser.parse_args()
 
@@ -91,15 +94,21 @@ def main() -> None:
     bad_count = sum(1 for r in tools if not r.get("ok"))
 
     if args.json:
-        print(json.dumps({
-            "tools_checked": len(tools),
-            "ok": ok_count,
-            "missing": bad_count,
-            "details": [
-                {"file": r["file"], "issues": r.get("issues", [])}
-                for r in tools if not r.get("ok")
-            ]
-        }, indent=2))
+        print(
+            json.dumps(
+                {
+                    "tools_checked": len(tools),
+                    "ok": ok_count,
+                    "missing": bad_count,
+                    "details": [
+                        {"file": r["file"], "issues": r.get("issues", [])}
+                        for r in tools
+                        if not r.get("ok")
+                    ],
+                },
+                indent=2,
+            )
+        )
     else:
         print()
         print("=" * 60)

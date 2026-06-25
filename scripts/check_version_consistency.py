@@ -7,6 +7,7 @@ SECURITY.md, RELEASING.md, i18n.py.
 
 All files are MANDATORY — missing files cause failure.
 """
+
 import json
 import re
 import subprocess
@@ -60,6 +61,7 @@ def check_version(path: str, label: str, pattern: str, content: str = None) -> N
     if found != canonical:
         errors.append(f"{path}: {found} != {canonical} ({label})")
 
+
 # ── Mandatory config files ─────────────────────────────
 try:
     with open(ROOT / "manifest.json") as f:
@@ -85,7 +87,9 @@ try:
             mf_data = json.load(mf)
         mf_count = len(mf_data.get("tools", []))
         if tc_count != mf_count:
-            errors.append(f"tools_config.json ({tc_count} tools) != manifest.json ({mf_count} tools)")
+            errors.append(
+                f"tools_config.json ({tc_count} tools) != manifest.json ({mf_count} tools)"
+            )
     except Exception:
         pass  # manifest check is done separately below
 except FileNotFoundError:
@@ -102,7 +106,9 @@ if canonical:
     try:
         result = subprocess.run(
             [sys.executable, str(ROOT / "improve.py"), "--version"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         cli_out = result.stdout.strip()
         cli_expected = f"improve.py v{canonical}"
@@ -131,7 +137,7 @@ if dashboard:
 # ── SECURITY.md ────────────────────────────────────────
 security = require_file("SECURITY.md", "security policy")
 if security:
-    m = re.search(r'\|\s*([\d.]+)\.x\s*\|', security)
+    m = re.search(r"\|\s*([\d.]+)\.x\s*\|", security)
     if m and not canonical.startswith(m.group(1)):
         errors.append(f"SECURITY.md: supports {m.group(1)}.x != {canonical}")
 
@@ -199,6 +205,35 @@ except FileNotFoundError as e:
 except Exception as e:
     errors.append(f"Cross-check error: {type(e).__name__}: {e}")
 
+# ── Documentation tool-count validation ──────────────────
+# Count actual tools from manifest
+actual_tool_count = len(mf.get("tools", []))
+_tc_count = actual_tool_count  # for final summary line
+
+# Check README.md claims
+readme = require_file("README.md", "README.md tool count")
+if readme:
+    # Check "62 tools" / "62-tool" references
+    readme_counts = set()
+    for m in re.finditer(r"(\d+)[- ]tool", readme):
+        readme_counts.add(int(m.group(1)))
+    for count in readme_counts:
+        if count != actual_tool_count:
+            errors.append(f"README.md claims {count} tools, manifest has {actual_tool_count}")
+    # Check license compliance count
+    for m in re.finditer(r"License compliance\s*\|\s*\*?\*?(\d+)/(\d+)", readme):
+        if int(m.group(1)) != actual_tool_count or int(m.group(2)) != actual_tool_count:
+            errors.append(
+                f"README.md license compliance {m.group(1)}/{m.group(2)} != {actual_tool_count}/{actual_tool_count}"
+            )
+
+# Check install_toolcase.bat claims
+bat = require_file("install_toolcase.bat", "install_toolcase.bat tool count")
+if bat:
+    for m in re.finditer(r"(\d+) tools", bat):
+        if int(m.group(1)) != actual_tool_count:
+            errors.append(f"install_toolcase.bat claims {m.group(1)} tools, manifest has {actual_tool_count}")
+
 # ── Report ─────────────────────────────────────────────
 if errors:
     print(f"VERSION/CONFIG INCONSISTENCIES ({len(errors)}):", file=sys.stderr)
@@ -206,5 +241,4 @@ if errors:
         print(f"  FAIL: {e}", file=sys.stderr)
     sys.exit(1)
 
-tc_count = tc_count if 'tc_count' in dir() else "?"
-print(f"✅ Version {canonical} consistent across all sources, {tc_count} tools in sync")
+print(f"✅ Version {canonical} consistent across all sources, {_tc_count} tools in sync")

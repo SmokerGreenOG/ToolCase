@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 """
 recursive_self_improve.py — Recursive Self-Improvement System (RSI) v2.0.
 
@@ -49,6 +50,7 @@ __maker__ = "SmokerGreenOG"
 __version__ = "2.0.0"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import ast
 import hashlib
@@ -57,7 +59,6 @@ import math
 import os
 import re
 import shutil
-import subprocess
 import sys
 import time
 from collections import defaultdict
@@ -88,25 +89,37 @@ TIMEOUT_MEDIUM = 60
 DEFAULT_WEIGHTS = {
     "syntax_errors": 10.0,
     "type_coverage": 3.0,
-    "docstring_coverage": 3.5,    # Verhoogd in v2.0
-    "e501_long_lines": 2.0,       # Verlaagd — minder impactvol
-    "e302_blank_lines": 1.0,      # Verlaagd — cosmetisch
-    "test_coverage": 5.0,         # Verhoogd in v2.0
+    "docstring_coverage": 3.5,  # Verhoogd in v2.0
+    "e501_long_lines": 2.0,  # Verlaagd — minder impactvol
+    "e302_blank_lines": 1.0,  # Verlaagd — cosmetisch
+    "test_coverage": 5.0,  # Verhoogd in v2.0
     "complexity": 2.5,
     "dead_code": 5.0,
     "security_issues": 8.0,
     "todo_markers": 1.5,
     "cross_file_duplication": 4.0,  # Nieuw in v2.0
-    "import_hygiene": 3.0,          # Nieuw in v2.0
-    "error_handling": 4.0,          # Nieuw in v2.0
-    "naming_conventions": 2.0,      # Nieuw in v2.0
+    "import_hygiene": 3.0,  # Nieuw in v2.0
+    "error_handling": 4.0,  # Nieuw in v2.0
+    "naming_conventions": 2.0,  # Nieuw in v2.0
 }
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", "__pycache__", ".venv", "venv",
-    ".backups", ".self_improve_reports", "release", "build", "dist",
-    ".rsi_reports", ".rsi_backups", ".rsi_fix_queue",
-})
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".backups",
+        ".self_improve_reports",
+        "release",
+        "build",
+        "dist",
+        ".rsi_reports",
+        ".rsi_backups",
+        ".rsi_fix_queue",
+    }
+)
 
 # Mapping van focus -> issue types die de LLM kan fixen
 FOCUS_TO_ISSUE_TYPES = {
@@ -125,27 +138,34 @@ FOCUS_TO_ISSUE_TYPES = {
 
 
 def _c(text: str, code: str = "") -> str:
-    """ c.
+    """c.
 
-        Args:
-            text: Description.
-            code: Description.
+    Args:
+        text: Description.
+        code: Description.
 
-        Returns:
-            Description.
-        """
-    codes = {"green": "32", "yellow": "33", "red": "31",
-             "cyan": "36", "magenta": "35", "bold": "1", "dim": "2",
-             "blue": "34", "white": "37"}
+    Returns:
+        Description.
+    """
+    codes = {
+        "green": "32",
+        "yellow": "33",
+        "red": "31",
+        "cyan": "36",
+        "magenta": "35",
+        "bold": "1",
+        "dim": "2",
+        "blue": "34",
+        "white": "37",
+    }
     c_code = codes.get(code, "")
     return f"\033[{c_code}m{text}\033[0m" if c_code else text
 
 
 # === DATA CLASSES ===
 
+
 @dataclass
-
-
 class MetricSnapshot:
     file: str = ""
     syntax_ok: bool = True
@@ -161,10 +181,10 @@ class MetricSnapshot:
     dead_imports: int = 0
     security_issues: int = 0
     # Nieuwe metrics v2.0
-    error_handlers: int = 0      # try/except blocks
-    naming_issues: int = 0        # Niet-Pythonic names
-    import_count: int = 0         # Aantal imports
-    test_functions: int = 0       # Aantal test functies
+    error_handlers: int = 0  # try/except blocks
+    naming_issues: int = 0  # Niet-Pythonic names
+    import_count: int = 0  # Aantal imports
+    test_functions: int = 0  # Aantal test functies
 
     def quality_score(self) -> float:
         """Overall quality 0.0-1.0. 1.0 = excellent, negligible issues."""
@@ -188,7 +208,7 @@ class MetricSnapshot:
                 penalty += docs_missing * 5.0
             # Types: skip test files (test_*.py, *_test.py)
             fname = Path(self.file).name
-            is_test = fname.startswith('test_') or fname.endswith('_test.py')
+            is_test = fname.startswith("test_") or fname.endswith("_test.py")
             if not is_test:
                 types_missing = 1.0 - (self.type_hints / max(1, self.functions_total * 2))
                 if types_missing > 0.85 and self.functions_total >= 5:
@@ -199,14 +219,11 @@ class MetricSnapshot:
         return 1.0 if raw > 0.995 else raw
 
     def to_dict(self) -> dict:
-        """to dict.
-            """
+        """to dict."""
         return asdict(self)
 
 
 @dataclass
-
-
 class ImprovementAttempt:
     cycle: int = 0
     category: str = ""
@@ -219,18 +236,15 @@ class ImprovementAttempt:
     metric_after: float = 0.0
     duration_ms: int = 0
     error: str = ""
-    fix_method: str = "auto"    # "auto" | "llm_bridge"
-    bridge_request_id: str = "" # ID van de LLM bridge request
+    fix_method: str = "auto"  # "auto" | "llm_bridge"
+    bridge_request_id: str = ""  # ID van de LLM bridge request
 
     def to_dict(self) -> dict:
-        """to dict.
-            """
+        """to dict."""
         return asdict(self)
 
 
 @dataclass
-
-
 class LearnedPattern:
     pattern_id: str = ""
     category: str = ""
@@ -240,23 +254,19 @@ class LearnedPattern:
     avg_improvement: float = 0.0
     last_used_cycle: int = 0
     code: str = ""
-    fix_method: str = "auto"    # "auto" | "llm_bridge"
+    fix_method: str = "auto"  # "auto" | "llm_bridge"
 
     @property
     def success_rate(self) -> float:
-        """success rate.
-            """
+        """success rate."""
         return self.times_success / max(1, self.times_tried)
 
     def to_dict(self) -> dict:
-        """to dict.
-            """
+        """to dict."""
         return asdict(self)
 
 
 @dataclass
-
-
 class CycleReport:
     cycle: int = 0
     focus: str = "all"
@@ -267,7 +277,7 @@ class CycleReport:
     improvements_attempted: int = 0
     improvements_succeeded: int = 0
     improvements_failed: int = 0
-    improvements_queued: int = 0    # Nieuw: naar LLM queue
+    improvements_queued: int = 0  # Nieuw: naar LLM queue
     patterns_used: int = 0
     patterns_learned: int = 0
     metrics: list[MetricSnapshot] = field(default_factory=list)
@@ -279,8 +289,7 @@ class CycleReport:
     llm_queue_size: int = 0
 
     def to_dict(self) -> dict:
-        """to dict.
-            """
+        """to dict."""
         return {
             "cycle": self.cycle,
             "focus": self.focus,
@@ -314,12 +323,11 @@ class ImprovementMemory:
         self.patterns: list[LearnedPattern] = []
         self.history: list[ImprovementAttempt] = []
         self.total_cycles = 0
-        self.llm_fixes_count = 0   # Nieuw: track LLM fixes
+        self.llm_fixes_count = 0  # Nieuw: track LLM fixes
         self._load()
 
     def _load(self) -> None:
-        """ load.
-            """
+        """load."""
         if self.path.exists():
             try:
                 data = json.loads(self.path.read_text(encoding="utf-8"))
@@ -332,8 +340,7 @@ class ImprovementMemory:
                 pass
 
     def save(self) -> None:
-        """save.
-            """
+        """save."""
         data = {
             "weights": self.weights,
             "patterns": [p.to_dict() for p in self.patterns],
@@ -348,12 +355,12 @@ class ImprovementMemory:
     def record_attempt(self, attempt: ImprovementAttempt) -> None:
         """record attempt.
 
-            Args:
-                attempt: Description.
+        Args:
+            attempt: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         self.history.append(attempt)
         if attempt.fix_method == "llm_bridge":
             self.llm_fixes_count += 1
@@ -365,9 +372,8 @@ class ImprovementMemory:
                     pattern.times_success += 1
                 improvement = attempt.metric_after - attempt.metric_before
                 pattern.avg_improvement = (
-                    (pattern.avg_improvement * (pattern.times_tried - 1) + improvement)
-                    / pattern.times_tried
-                )
+                    pattern.avg_improvement * (pattern.times_tried - 1) + improvement
+                ) / pattern.times_tried
                 pattern.last_used_cycle = self.total_cycles
                 break
 
@@ -375,8 +381,9 @@ class ImprovementMemory:
             cat_key = self._cat_to_weight(attempt.category)
             if cat_key in self.weights:
                 # v2.0: adaptive learning rate based on success rate
-                recent = [a for a in self.history[-20:]
-                          if self._cat_to_weight(a.category) == cat_key]
+                recent = [
+                    a for a in self.history[-20:] if self._cat_to_weight(a.category) == cat_key
+                ]
                 if recent:
                     sr = sum(1 for a in recent if a.success) / len(recent)
                     rate = 1.02 + sr * 0.05  # 1.02 - 1.07
@@ -391,32 +398,36 @@ class ImprovementMemory:
         self.total_cycles += 1
         self.save()
 
-    def learn_pattern(self, category: str, description: str, code: str = "",
-                      fix_method: str = "auto") -> str:
+    def learn_pattern(
+        self, category: str, description: str, code: str = "", fix_method: str = "auto"
+    ) -> str:
         """Register a learned pattern, or increment tries if it already exists."""
         pid = hashlib.md5(f"{category}:{description}".encode()).hexdigest()[:12]
         for p in self.patterns:
             if p.pattern_id == pid:
                 p.times_tried += 1
                 return pid
-        pattern = LearnedPattern(pattern_id=pid, category=category,
-                                  description=description, times_tried=1,
-                                  last_used_cycle=self.total_cycles, code=code,
-                                  fix_method=fix_method)
+        pattern = LearnedPattern(
+            pattern_id=pid,
+            category=category,
+            description=description,
+            times_tried=1,
+            last_used_cycle=self.total_cycles,
+            code=code,
+            fix_method=fix_method,
+        )
         self.patterns.append(pattern)
         self.save()
         return pid
 
     def get_best_patterns(self, category: str, top_n: int = 3) -> list[LearnedPattern]:
         """Return top-N patterns weighted by success_rate * improvement."""
-        candidates = [p for p in self.patterns
-                      if p.category == category and p.times_tried >= 2]
+        candidates = [p for p in self.patterns if p.category == category and p.times_tried >= 2]
         candidates.sort(key=lambda p: p.success_rate * p.avg_improvement, reverse=True)
         return candidates[:top_n]
 
     def get_priority_categories(self) -> list[tuple[str, float]]:
-        """Get priority categories.
-            """
+        """Get priority categories."""
         impact: dict[str, float] = {}
         for key, weight in self.weights.items():
             cat_attempts = [a for a in self.history if self._weight_to_cat(key) in a.category]
@@ -428,22 +439,29 @@ class ImprovementMemory:
 
     @staticmethod
     def _cat_to_weight(category: str) -> str:
-        """ cat to weight.
+        """cat to weight.
 
-            Args:
-                category: Description.
+        Args:
+            category: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         mapping = {
-            "syntax": "syntax_errors", "types": "type_coverage",
-            "docs": "docstring_coverage", "code-quality": "e501_long_lines",
-            "tests": "test_coverage", "complexity": "complexity",
-            "dead-code": "dead_code", "dead_code": "dead_code",
-            "security": "security_issues", "todos": "todo_markers",
-            "refactor": "complexity", "performance": "complexity",
-            "imports": "import_hygiene", "error_handling": "error_handling",
+            "syntax": "syntax_errors",
+            "types": "type_coverage",
+            "docs": "docstring_coverage",
+            "code-quality": "e501_long_lines",
+            "tests": "test_coverage",
+            "complexity": "complexity",
+            "dead-code": "dead_code",
+            "dead_code": "dead_code",
+            "security": "security_issues",
+            "todos": "todo_markers",
+            "refactor": "complexity",
+            "performance": "complexity",
+            "imports": "import_hygiene",
+            "error_handling": "error_handling",
             "naming": "naming_conventions",
         }
         for k, v in mapping.items():
@@ -453,22 +471,29 @@ class ImprovementMemory:
 
     @staticmethod
     def _weight_to_cat(key: str) -> str:
-        """ weight to cat.
+        """weight to cat.
 
-            Args:
-                key: Description.
+        Args:
+            key: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         rev = {
-            "syntax_errors": "syntax", "type_coverage": "types",
-            "docstring_coverage": "docs", "e501_long_lines": "code-quality",
-            "e302_blank_lines": "code-quality", "test_coverage": "tests",
-            "complexity": "complexity", "dead_code": "dead-code",
-            "security_issues": "security", "todo_markers": "todos",
-            "cross_file_duplication": "dead-code", "import_hygiene": "imports",
-            "error_handling": "error_handling", "naming_conventions": "naming",
+            "syntax_errors": "syntax",
+            "type_coverage": "types",
+            "docstring_coverage": "docs",
+            "e501_long_lines": "code-quality",
+            "e302_blank_lines": "code-quality",
+            "test_coverage": "tests",
+            "complexity": "complexity",
+            "dead_code": "dead-code",
+            "security_issues": "security",
+            "todo_markers": "todos",
+            "cross_file_duplication": "dead-code",
+            "import_hygiene": "imports",
+            "error_handling": "error_handling",
+            "naming_conventions": "naming",
         }
         return rev.get(key, "code-quality")
 
@@ -486,14 +511,15 @@ class SelfAnalyzer:
         self._cross_file_duplicates: dict[str, list[str]] = defaultdict(list)
 
     def find_py_files(self) -> list[Path]:
-        """Find py files.
-            """
+        """Find py files."""
         files = []
         seen = set()
         for root, dirs, filenames in os.walk(self.workspace):
-            dirs[:] = [d for d in dirs
-                       if d not in EXCLUDE_DIRS and not d.startswith(".")
-                       and d != "__pycache__"]
+            dirs[:] = [
+                d
+                for d in dirs
+                if d not in EXCLUDE_DIRS and not d.startswith(".") and d != "__pycache__"
+            ]
             for fn in filenames:
                 if fn.endswith(".py"):
                     fp = Path(root) / fn
@@ -505,12 +531,12 @@ class SelfAnalyzer:
     def analyze_file(self, filepath: Path) -> MetricSnapshot:
         """analyze file.
 
-            Args:
-                filepath: Description.
+        Args:
+            filepath: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         m = MetricSnapshot(file=str(filepath))
         try:
             content = filepath.read_text(encoding="utf-8", errors="replace")
@@ -527,11 +553,11 @@ class SelfAnalyzer:
         string_lines: set[int] = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                if hasattr(node, "lineno") and hasattr(node, "end_lineno"):
                     for ln in range(node.lineno, node.end_lineno + 1):
                         string_lines.add(ln)
             elif isinstance(node, ast.JoinedStr):
-                if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                if hasattr(node, "lineno") and hasattr(node, "end_lineno"):
                     for ln in range(node.lineno, node.end_lineno + 1):
                         string_lines.add(ln)
 
@@ -556,21 +582,44 @@ class SelfAnalyzer:
                 if node.returns:
                     m.type_hints += 1
                 # Docstrings
-                if (node.body and isinstance(node.body[0], ast.Expr)
-                        and isinstance(node.body[0].value, ast.Constant)
-                        and isinstance(node.body[0].value.value, str)):
+                if (
+                    node.body
+                    and isinstance(node.body[0], ast.Expr)
+                    and isinstance(node.body[0].value, ast.Constant)
+                    and isinstance(node.body[0].value.value, str)
+                ):
                     m.docstrings += 1
                 # Complexity
-                branches = sum(1 for n in ast.walk(node)
-                               if isinstance(n, (ast.If, ast.While, ast.For,
-                                                 ast.ExceptHandler, ast.With,
-                                                 ast.AsyncFor, ast.AsyncWith)))
+                branches = sum(
+                    1
+                    for n in ast.walk(node)
+                    if isinstance(
+                        n,
+                        (
+                            ast.If,
+                            ast.While,
+                            ast.For,
+                            ast.ExceptHandler,
+                            ast.With,
+                            ast.AsyncFor,
+                            ast.AsyncWith,
+                        ),
+                    )
+                )
                 m.complexity_score += branches
                 # Naming: skip unittest API methods (setUp, tearDown, etc.) en test_* methods
-                if not re.match(r'^_?[a-z][a-z0-9_]*$', node.name) and not node.name.startswith('__'):
+                if not re.match(r"^_?[a-z][a-z0-9_]*$", node.name) and not node.name.startswith(
+                    "__"
+                ):
                     # unittest TestCase methods zijn altijd CamelCase — geen issue
-                    if node.name not in ('setUp', 'tearDown', 'setUpClass', 'tearDownClass',
-                                         'setUpModule', 'tearDownModule'):
+                    if node.name not in (
+                        "setUp",
+                        "tearDown",
+                        "setUpClass",
+                        "tearDownClass",
+                        "setUpModule",
+                        "tearDownModule",
+                    ):
                         m.naming_issues += 1
 
             # Error handlers
@@ -585,36 +634,35 @@ class SelfAnalyzer:
         m.todos = 0
         for i, line in enumerate(content.splitlines()):
             stripped = line.strip()
-            if stripped.startswith("#") and re.search(r'(?:TODO|FIXME|HACK|BUG|XXX)', stripped):
+            if stripped.startswith("#") and re.search(r"(?:TODO|FIXME|HACK|BUG|XXX)", stripped):
                 m.todos += 1
 
         # Test functions
         name = filepath.name
         if name.startswith("test_") or name.endswith("_test.py"):
-            m.test_functions = sum(1 for node in ast.walk(tree)
-                                   if isinstance(node, (ast.FunctionDef,)) and
-                                   node.name.startswith("test_"))
+            m.test_functions = sum(
+                1
+                for node in ast.walk(tree)
+                if isinstance(node, (ast.FunctionDef,)) and node.name.startswith("test_")
+            )
 
         return m
 
     def scan_all(self) -> list[MetricSnapshot]:
-        """Scan all.
-            """
+        """Scan all."""
         self.metrics = []
         for fp in self.find_py_files():
             self.metrics.append(self.analyze_file(fp))
         return self.metrics
 
     def total_quality(self) -> float:
-        """total quality.
-            """
+        """total quality."""
         if not self.metrics:
             return 0.0
         return sum(m.quality_score() for m in self.metrics) / len(self.metrics)
 
     def summary_stats(self) -> dict:
-        """summary stats.
-            """
+        """summary stats."""
         total = len(self.metrics)
         if total == 0:
             return {}
@@ -645,13 +693,13 @@ class SelfAnalyzer:
                 for node in ast.walk(tree):
                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         # Skip main() — elke tool heeft z'n eigen CLI entry point
-                        if node.name == 'main':
+                        if node.name == "main":
                             continue
                         # Maak een signatuur op basis van naam + args
                         args = [a.arg for a in node.args.args]
                         sig = f"{node.name}({','.join(args)})"
                         # Alleen functies > 3 regels (geen eenregelige wrappers)
-                        if hasattr(node, 'end_lineno') and hasattr(node, 'lineno'):
+                        if hasattr(node, "end_lineno") and hasattr(node, "lineno"):
                             if node.end_lineno - node.lineno > 3:
                                 func_sigs[sig].append((m.file, node.lineno))
             except SyntaxError:
@@ -662,28 +710,85 @@ class SelfAnalyzer:
             if len(locations) > 1:
                 files = list(set(loc[0] for loc in locations))
                 if len(files) > 1:
-                    duplicates.append({
-                        "function": sig,
-                        "files": files,
-                        "locations": locations,
-                    })
+                    duplicates.append(
+                        {
+                            "function": sig,
+                            "files": files,
+                            "locations": locations,
+                        }
+                    )
         return duplicates
 
     # Standaard bibliotheek imports die elke Python tool deelt — niet interessant
-    STDLIB_TOP_LEVEL = frozenset({
-        "sys", "os", "json", "re", "math", "time", "datetime", "pathlib",
-        "collections", "typing", "hashlib", "subprocess", "argparse",
-        "unittest", "tempfile", "shutil", "textwrap", "functools",
-        "itertools", "logging", "io", "csv", "enum", "ast", "copy",
-        "base64", "random", "string", "urllib", "http", "socket",
-        "threading", "multiprocessing", "asyncio", "traceback",
-        "warnings", "dataclasses", "abc", "ctypes", "struct",
-        "importlib", "inspect", "pdb", "pickle", "sqlite3",
-        "xml", "html", "configparser", "secrets", "getopt",
-        "plistlib", "statistics", "uuid", "zipfile", "gzip",
-        "tarfile", "glob", "fnmatch", "getpass", "platform",
-        "signal", "mmap", "decimal", "fractions", "numbers",
-    })
+    STDLIB_TOP_LEVEL = frozenset(
+        {
+            "sys",
+            "os",
+            "json",
+            "re",
+            "math",
+            "time",
+            "datetime",
+            "pathlib",
+            "collections",
+            "typing",
+            "hashlib",
+            "subprocess",
+            "argparse",
+            "unittest",
+            "tempfile",
+            "shutil",
+            "textwrap",
+            "functools",
+            "itertools",
+            "logging",
+            "io",
+            "csv",
+            "enum",
+            "ast",
+            "copy",
+            "base64",
+            "random",
+            "string",
+            "urllib",
+            "http",
+            "socket",
+            "threading",
+            "multiprocessing",
+            "asyncio",
+            "traceback",
+            "warnings",
+            "dataclasses",
+            "abc",
+            "ctypes",
+            "struct",
+            "importlib",
+            "inspect",
+            "pdb",
+            "pickle",
+            "sqlite3",
+            "xml",
+            "html",
+            "configparser",
+            "secrets",
+            "getopt",
+            "plistlib",
+            "statistics",
+            "uuid",
+            "zipfile",
+            "gzip",
+            "tarfile",
+            "glob",
+            "fnmatch",
+            "getpass",
+            "platform",
+            "signal",
+            "mmap",
+            "decimal",
+            "fractions",
+            "numbers",
+        }
+    )
     # Interne ToolCase imports (shared by design)
     INTERNAL_IMPORTS = frozenset({"_protect", "i18n"})
 
@@ -702,14 +807,18 @@ class SelfAnalyzer:
                     if isinstance(node, ast.Import):
                         for alias in node.names:
                             name = alias.name.split(".")[0]
-                            if (name not in self.STDLIB_TOP_LEVEL
-                                    and name not in self.INTERNAL_IMPORTS):
+                            if (
+                                name not in self.STDLIB_TOP_LEVEL
+                                and name not in self.INTERNAL_IMPORTS
+                            ):
                                 imports.add(name)
                     elif isinstance(node, ast.ImportFrom):
                         if node.module:
                             name = node.module.split(".")[0]
-                            if (name not in self.STDLIB_TOP_LEVEL
-                                    and name not in self.INTERNAL_IMPORTS):
+                            if (
+                                name not in self.STDLIB_TOP_LEVEL
+                                and name not in self.INTERNAL_IMPORTS
+                            ):
                                 imports.add(name)
                 if imports:
                     file_imports[m.file] = imports
@@ -725,12 +834,14 @@ class SelfAnalyzer:
                     min_size = min(len(file_imports[files[i]]), len(file_imports[files[j]]))
                     # Alleen rapporteren bij >90% overlap in niet-stdlib imports, minimaal 2
                     if min_size >= 2 and len(overlap) / min_size > 0.90:
-                        similar.append({
-                            "file_a": files[i],
-                            "file_b": files[j],
-                            "shared_imports": sorted(overlap),
-                            "overlap_ratio": round(len(overlap) / min_size, 2),
-                        })
+                        similar.append(
+                            {
+                                "file_a": files[i],
+                                "file_b": files[j],
+                                "shared_imports": sorted(overlap),
+                                "overlap_ratio": round(len(overlap) / min_size, 2),
+                            }
+                        )
         return similar
 
 
@@ -738,8 +849,9 @@ class SelfAnalyzer:
 
 
 class ImprovementPlanner:
-    def __init__(self, memory: ImprovementMemory, focus: str = "all",
-                 analyzer: Optional[SelfAnalyzer] = None):
+    def __init__(
+        self, memory: ImprovementMemory, focus: str = "all", analyzer: Optional[SelfAnalyzer] = None
+    ):
         self.memory = memory
         self.focus = focus
         self.analyzer = analyzer
@@ -752,12 +864,12 @@ class ImprovementPlanner:
         def add(a: ImprovementAttempt) -> None:
             """add.
 
-                Args:
-                    a: Description.
+            Args:
+                a: Description.
 
-                Returns:
-                    Description.
-                """
+            Returns:
+                Description.
+            """
             key = f"{a.category}:{a.file}:{a.description[:60]}"
             if key not in seen:
                 seen.add(key)
@@ -769,25 +881,43 @@ class ImprovementPlanner:
         if self.focus in ("all", "code-quality"):
             for m in metrics:
                 if m.e501_count > 3:
-                    add(ImprovementAttempt(cycle=cycle, category="code-quality",
-                        file=m.file, fix_method="auto",
-                        description=f"E501: {m.e501_count} lange regels in {Path(m.file).name}",
-                        metric_before=m.quality_score()))
+                    add(
+                        ImprovementAttempt(
+                            cycle=cycle,
+                            category="code-quality",
+                            file=m.file,
+                            fix_method="auto",
+                            description=f"E501: {m.e501_count} lange regels in {Path(m.file).name}",
+                            metric_before=m.quality_score(),
+                        )
+                    )
                 if m.e302_count > 3:
-                    add(ImprovementAttempt(cycle=cycle, category="code-quality",
-                        file=m.file, fix_method="auto",
-                        description=f"E302: {m.e302_count} ontbrekende blank lines",
-                        metric_before=m.quality_score()))
+                    add(
+                        ImprovementAttempt(
+                            cycle=cycle,
+                            category="code-quality",
+                            file=m.file,
+                            fix_method="auto",
+                            description=f"E302: {m.e302_count} ontbrekende blank lines",
+                            metric_before=m.quality_score(),
+                        )
+                    )
 
         # LLM: Docs
         if "docs" in allowed and self.focus in ("all", "docs"):
             for m in metrics:
                 if m.functions_total > 0 and m.docstrings < m.functions_total:
                     missing = m.functions_total - m.docstrings
-                    add(ImprovementAttempt(cycle=cycle, category="docs",
-                        file=m.file, fix_method="llm_bridge",
-                        description=f"Docs: {missing}/{m.functions_total} functies missen docstring in {Path(m.file).name}",
-                        metric_before=m.quality_score()))
+                    add(
+                        ImprovementAttempt(
+                            cycle=cycle,
+                            category="docs",
+                            file=m.file,
+                            fix_method="llm_bridge",
+                            description=f"Docs: {missing}/{m.functions_total} functies missen docstring in {Path(m.file).name}",
+                            metric_before=m.quality_score(),
+                        )
+                    )
 
         # LLM: Types
         if "types" in allowed and self.focus in ("all", "types"):
@@ -795,47 +925,77 @@ class ImprovementPlanner:
                 if m.functions_total > 0:
                     expected_hints = m.functions_total * 2 + m.functions_total  # args + returns
                     if m.type_hints < expected_hints * 0.3:
-                        add(ImprovementAttempt(cycle=cycle, category="types",
-                            file=m.file, fix_method="llm_bridge",
-                            description=f"Types: {m.type_hints} hints voor {m.functions_total} functies in {Path(m.file).name}",
-                            metric_before=m.quality_score()))
+                        add(
+                            ImprovementAttempt(
+                                cycle=cycle,
+                                category="types",
+                                file=m.file,
+                                fix_method="llm_bridge",
+                                description=f"Types: {m.type_hints} hints voor {m.functions_total} functies in {Path(m.file).name}",
+                                metric_before=m.quality_score(),
+                            )
+                        )
 
         # LLM: TODOs
         if self.focus in ("all", "code-quality"):
             for m in metrics:
                 if m.todos > 5:
-                    add(ImprovementAttempt(cycle=cycle, category="todos",
-                        file=m.file, fix_method="llm_bridge",
-                        description=f"TODOs: {m.todos} markers in {Path(m.file).name}",
-                        metric_before=m.quality_score()))
+                    add(
+                        ImprovementAttempt(
+                            cycle=cycle,
+                            category="todos",
+                            file=m.file,
+                            fix_method="llm_bridge",
+                            description=f"TODOs: {m.todos} markers in {Path(m.file).name}",
+                            metric_before=m.quality_score(),
+                        )
+                    )
 
         # LLM: Naming
         if "naming" in allowed and self.focus in ("all", "refactor", "code-quality"):
             for m in metrics:
                 if m.naming_issues > 2:
-                    add(ImprovementAttempt(cycle=cycle, category="naming",
-                        file=m.file, fix_method="llm_bridge",
-                        description=f"Naming: {m.naming_issues} non-Pythonic names in {Path(m.file).name}",
-                        metric_before=m.quality_score()))
+                    add(
+                        ImprovementAttempt(
+                            cycle=cycle,
+                            category="naming",
+                            file=m.file,
+                            fix_method="llm_bridge",
+                            description=f"Naming: {m.naming_issues} non-Pythonic names in {Path(m.file).name}",
+                            metric_before=m.quality_score(),
+                        )
+                    )
 
         # LLM: Error handling
         if "error_handling" in allowed and self.focus in ("all", "bugs", "architecture"):
             for m in metrics:
                 if m.functions_total > 10 and m.error_handlers < m.functions_total * 0.2:
-                    add(ImprovementAttempt(cycle=cycle, category="error_handling",
-                        file=m.file, fix_method="llm_bridge",
-                        description=f"Error handling: {m.error_handlers} handlers voor {m.functions_total} functies",
-                        metric_before=m.quality_score()))
+                    add(
+                        ImprovementAttempt(
+                            cycle=cycle,
+                            category="error_handling",
+                            file=m.file,
+                            fix_method="llm_bridge",
+                            description=f"Error handling: {m.error_handlers} handlers voor {m.functions_total} functies",
+                            metric_before=m.quality_score(),
+                        )
+                    )
 
         # Cross-file duplicates (LLM)
         if self.analyzer and self.focus in ("all", "architecture", "refactor"):
             dups = self.analyzer.find_duplicate_functions()
             for dup in dups[:5]:  # Max 5 duplicate groups
                 files_list = ", ".join(Path(f).name for f in dup["files"][:3])
-                add(ImprovementAttempt(cycle=cycle, category="dead_code",
-                    file=dup["files"][0], fix_method="llm_bridge",
-                    description=f"Cross-file duplicate: {dup['function']} in {files_list}",
-                    metric_before=0.5))
+                add(
+                    ImprovementAttempt(
+                        cycle=cycle,
+                        category="dead_code",
+                        file=dup["files"][0],
+                        fix_method="llm_bridge",
+                        description=f"Cross-file duplicate: {dup['function']} in {files_list}",
+                        metric_before=0.5,
+                    )
+                )
 
         # Prioriteer: memory-weights + metric
         priority_cats = self.memory.get_priority_categories()
@@ -844,14 +1004,16 @@ class ImprovementPlanner:
         def sort_key(a: ImprovementAttempt) -> tuple:
             """sort key.
 
-                Args:
-                    a: Description.
+            Args:
+                a: Description.
 
-                Returns:
-                    Description.
-                """
-            return (-cat_order.get(self.memory._cat_to_weight(a.category), 50),
-                    -(a.metric_before or 0))
+            Returns:
+                Description.
+            """
+            return (
+                -cat_order.get(self.memory._cat_to_weight(a.category), 50),
+                -(a.metric_before or 0),
+            )
 
         attempts.sort(key=sort_key)
         return attempts[:25]  # Max 25 per cycle
@@ -868,8 +1030,7 @@ class ImprovementExecutor:
 
     @property
     def bridge(self):
-        """bridge.
-            """
+        """bridge."""
         if self._bridge is None and LLMBridge is not None:
             self._bridge = LLMBridge(self.workspace)
         return self._bridge
@@ -877,12 +1038,12 @@ class ImprovementExecutor:
     def create_backup(self, filepath: Path) -> Optional[str]:
         """Create backup.
 
-            Args:
-                filepath: Description.
+        Args:
+            filepath: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         if not filepath.exists():
             return None
         backup_dir = self.workspace / ".rsi_backups"
@@ -897,12 +1058,12 @@ class ImprovementExecutor:
     def rollback(self, filepath: Path) -> bool:
         """rollback.
 
-            Args:
-                filepath: Description.
+        Args:
+            filepath: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         key = str(filepath)
         if key in self.backups:
             bak = Path(self.backups[key])
@@ -923,11 +1084,11 @@ class ImprovementExecutor:
                 tree = ast.parse(content)
                 for node in ast.walk(tree):
                     if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                        if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                        if hasattr(node, "lineno") and hasattr(node, "end_lineno"):
                             for ln in range(node.lineno, node.end_lineno + 1):
                                 string_lines.add(ln)
                     elif isinstance(node, ast.JoinedStr):
-                        if hasattr(node, 'lineno') and hasattr(node, 'end_lineno'):
+                        if hasattr(node, "lineno") and hasattr(node, "end_lineno"):
                             for ln in range(node.lineno, node.end_lineno + 1):
                                 string_lines.add(ln)
             except SyntaxError:
@@ -979,12 +1140,12 @@ class ImprovementExecutor:
     def apply_e302_fix(self, filepath: Path) -> tuple[bool, str]:
         """Apply e302 fix.
 
-            Args:
-                filepath: Description.
+        Args:
+            filepath: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         try:
             content = filepath.read_text(encoding="utf-8", errors="replace")
             original = content
@@ -1021,7 +1182,7 @@ class ImprovementExecutor:
             return None
 
         filepath = Path(attempt.file).resolve()
-        
+
         # ── Workspace containment: refuse files outside workspace ──
         try:
             filepath.relative_to(self.workspace.resolve())
@@ -1100,12 +1261,10 @@ class Evaluator:
         self.workspace = workspace
 
     def compile_check(self) -> tuple[bool, list[str]]:
-        """compile check.
-            """
+        """compile check."""
         errors = []
         for pyfile in sorted(self.workspace.rglob("*.py")):
-            if any(p.startswith(".") or p == "__pycache__"
-                   for p in pyfile.parts):
+            if any(p.startswith(".") or p == "__pycache__" for p in pyfile.parts):
                 continue
             try:
                 ast.parse(pyfile.read_text(encoding="utf-8", errors="replace"))
@@ -1114,28 +1273,31 @@ class Evaluator:
         return len(errors) == 0, errors
 
     def test_check(self) -> tuple[bool, list[str]]:
-        """test check.
-            """
+        """test check."""
         test_dir = self.workspace / "tests"
         if not test_dir.exists():
             return True, ["Geen tests/ directory"]
         try:
-            r = subprocess.run(
+            r = safe_run(
                 [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir)],
-                capture_output=True, text=True, timeout=60,
+                capture_output=True,
+                text=True,
+                timeout=60,
             )
             ok = r.returncode == 0
-            details = [l for l in (r.stdout + r.stderr).splitlines()
-                       if l.strip() and ("FAIL" in l or "ERROR" in l or "OK" in l)]
+            details = [
+                l
+                for l in (r.stdout + r.stderr).splitlines()
+                if l.strip() and ("FAIL" in l or "ERROR" in l or "OK" in l)
+            ]
             return ok, details or (["Alles OK"] if ok else ["Tests faalden"])
-        except subprocess.TimeoutExpired:
+        except TimeoutError:
             return False, ["Test timeout (60s)"]
         except Exception as e:
             return False, [str(e)]
 
     def evaluate(self) -> dict:
-        """evaluate.
-            """
+        """evaluate."""
         compile_ok, compile_errs = self.compile_check()
         test_ok, test_details = self.test_check()
         return {
@@ -1153,10 +1315,15 @@ class Evaluator:
 class RecursiveSelfImprove:
     """Main RSI loop v2.0 — met LLM bridge integratie."""
 
-    def __init__(self, workspace: Path, focus: str = "all",
-                 dry_run: bool = False, no_report: bool = False,
-                 memory_path: Optional[Path] = None,
-                 llm_mode: str = "auto"):
+    def __init__(
+        self,
+        workspace: Path,
+        focus: str = "all",
+        dry_run: bool = False,
+        no_report: bool = False,
+        memory_path: Optional[Path] = None,
+        llm_mode: str = "auto",
+    ):
         """
         llm_mode:
             "auto"       - Auto-fixes direct, LLM-fixes naar queue
@@ -1169,9 +1336,7 @@ class RecursiveSelfImprove:
         self.dry_run = dry_run
         self.no_report = no_report
         self.llm_mode = llm_mode
-        self.memory = ImprovementMemory(
-            memory_path or (workspace / ".rsi_memory.json")
-        )
+        self.memory = ImprovementMemory(memory_path or (workspace / ".rsi_memory.json"))
         self.analyzer = SelfAnalyzer(workspace, focus)
         self.planner = ImprovementPlanner(self.memory, focus, self.analyzer)
         self.executor = ImprovementExecutor(workspace)
@@ -1182,21 +1347,26 @@ class RecursiveSelfImprove:
     def run_cycle(self, cycle: int) -> CycleReport:
         """Run cycle.
 
-            Args:
-                cycle: Description.
+        Args:
+            cycle: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         print()
-        print(_c(f"  {'='*56}", "cyan"))
+        print(_c(f"  {'=' * 56}", "cyan"))
         print(_c(f"  RSI v2.0 — Cycle {cycle} — Focus: {self.focus.upper()}", "cyan"))
         print(_c(f"  LLM Mode: {self.llm_mode}", "dim"))
         if not self.dry_run:
-            print(_c(f"     Memory: {len(self.memory.patterns)} patterns, "
+            print(
+                _c(
+                    f"     Memory: {len(self.memory.patterns)} patterns, "
                     f"{len(self.memory.history)} attempts, "
-                    f"{self.memory.llm_fixes_count} LLM fixes", "dim"))
-        print(_c(f"  {'='*56}", "cyan"))
+                    f"{self.memory.llm_fixes_count} LLM fixes",
+                    "dim",
+                )
+            )
+        print(_c(f"  {'=' * 56}", "cyan"))
 
         start_time = time.time()
         report = CycleReport(cycle=cycle, focus=self.focus)
@@ -1209,11 +1379,15 @@ class RecursiveSelfImprove:
         report.total_quality_before = self.analyzer.total_quality()
         stats = self.analyzer.summary_stats()
 
-        print(f"     Files: {stats.get('files',0)}  |  Lines: {stats.get('lines',0)}  |  "
-              f"E501: {stats.get('e501_total',0)}")
-        print(f"     Functions: {stats.get('functions_total',0)}  |  "
-              f"Docs: {stats.get('docstrings',0)}  |  "
-              f"Types: {stats.get('type_hints',0)}")
+        print(
+            f"     Files: {stats.get('files', 0)}  |  Lines: {stats.get('lines', 0)}  |  "
+            f"E501: {stats.get('e501_total', 0)}"
+        )
+        print(
+            f"     Functions: {stats.get('functions_total', 0)}  |  "
+            f"Docs: {stats.get('docstrings', 0)}  |  "
+            f"Types: {stats.get('type_hints', 0)}"
+        )
         print(f"     Quality: {stats.get('quality_score', 0):.4f}")
 
         # ── Cross-file analyse (v2.0) ──
@@ -1270,8 +1444,9 @@ class RecursiveSelfImprove:
                     if success:
                         report.improvements_succeeded += 1
                         print(f"       + {result_msg}")
-                        self.memory.learn_pattern(attempt.category, attempt.description,
-                                                  fix_method="auto")
+                        self.memory.learn_pattern(
+                            attempt.category, attempt.description, fix_method="auto"
+                        )
                     else:
                         if result_msg:
                             print(f"       . {result_msg}")
@@ -1291,7 +1466,9 @@ class RecursiveSelfImprove:
                 report.llm_queue_size = qs["pending"]
                 print(f"     {queued} fixes in queue (totaal pending: {qs['pending']})")
                 if queued > 0:
-                    print(_c(f"     ⏳ Wacht op Hermes om {queued} fixes te verwerken...", "yellow"))
+                    print(
+                        _c(f"     ⏳ Wacht op Hermes om {queued} fixes te verwerken...", "yellow")
+                    )
 
         # STEP 5: EVALUATE
         print(_c(f"\n  5. EVALUATE — Controleren van resultaten...", "bold"))
@@ -1320,10 +1497,15 @@ class RecursiveSelfImprove:
         metrics_after = self.analyzer.scan_all()
         report.total_quality_after = self.analyzer.total_quality()
         delta = report.total_quality_after - report.total_quality_before
-        d_str = _c(f"+{delta:.4f}", "green") if delta > 0 else (
-            _c(f"{delta:.4f}", "red") if delta < 0 else _c(f"{delta:.4f}", "dim"))
-        print(f"     Kwaliteit: {report.total_quality_before:.4f} → "
-              f"{report.total_quality_after:.4f} ({d_str})")
+        d_str = (
+            _c(f"+{delta:.4f}", "green")
+            if delta > 0
+            else (_c(f"{delta:.4f}", "red") if delta < 0 else _c(f"{delta:.4f}", "dim"))
+        )
+        print(
+            f"     Kwaliteit: {report.total_quality_before:.4f} → "
+            f"{report.total_quality_after:.4f} ({d_str})"
+        )
 
         # STEP 7: LEARN
         print(_c(f"\n  7. LEARN — Opslaan van geleerde lessen...", "bold"))
@@ -1354,12 +1536,12 @@ class RecursiveSelfImprove:
     def run(self, cycles: int = 1) -> list[CycleReport]:
         """run.
 
-            Args:
-                cycles: Description.
+        Args:
+            cycles: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         mode_map = {
             "auto": _c("AUTO + LLM", "cyan"),
             "auto-only": _c("AUTO-ONLY", "yellow"),
@@ -1371,14 +1553,24 @@ class RecursiveSelfImprove:
             mode_str = _c("DRY-RUN", "yellow")
 
         print()
-        print(_c(f"  {'='*54}", "magenta"))
+        print(_c(f"  {'=' * 54}", "magenta"))
         print(_c(f"  RECURSIVE SELF-IMPROVEMENT v2.0", "magenta"))
-        print(_c(f"  Mode: {mode_str}  |  Cycles: {cycles}  |  Focus: {self.focus.upper()}", "magenta"))
+        print(
+            _c(
+                f"  Mode: {mode_str}  |  Cycles: {cycles}  |  Focus: {self.focus.upper()}",
+                "magenta",
+            )
+        )
         print(_c(f"  Workspace: {self.workspace}", "magenta"))
-        print(_c(f"  Memory: {len(self.memory.patterns)} patterns, "
+        print(
+            _c(
+                f"  Memory: {len(self.memory.patterns)} patterns, "
                 f"{len(self.memory.history)} past attempts, "
-                f"{self.memory.llm_fixes_count} LLM fixes", "magenta"))
-        print(_c(f"  {'='*54}", "magenta"))
+                f"{self.memory.llm_fixes_count} LLM fixes",
+                "magenta",
+            )
+        )
+        print(_c(f"  {'=' * 54}", "magenta"))
 
         for cycle in range(1, cycles + 1):
             report = self.run_cycle(cycle)
@@ -1394,9 +1586,9 @@ class RecursiveSelfImprove:
     def run_llm_eval(self) -> CycleReport:
         """Evalueer LLM bridge resultaten en leer ervan."""
         print()
-        print(_c(f"  {'='*54}", "magenta"))
+        print(_c(f"  {'=' * 54}", "magenta"))
         print(_c(f"  RSI v2.0 — LLM QUEUE EVALUATIE", "magenta"))
-        print(_c(f"  {'='*54}", "magenta"))
+        print(_c(f"  {'=' * 54}", "magenta"))
 
         report = CycleReport(cycle=self.memory.total_cycles + 1, focus="llm-eval")
         start_time = time.time()
@@ -1418,31 +1610,35 @@ class RecursiveSelfImprove:
                     description=f"LLM fix: {result.changes_made[:80]}",
                     fix_method="llm_bridge",
                 )
-                self.memory.record_attempt(ImprovementAttempt(
-                    cycle=report.cycle,
-                    category="docs",
-                    file=result.file_path,
-                    description=result.changes_made[:80],
-                    success=True,
-                    fix_method="llm_bridge",
-                    bridge_request_id=result.request_id,
-                    metric_before=0.5,
-                    metric_after=0.8,
-                    duration_ms=result.duration_ms,
-                ))
+                self.memory.record_attempt(
+                    ImprovementAttempt(
+                        cycle=report.cycle,
+                        category="docs",
+                        file=result.file_path,
+                        description=result.changes_made[:80],
+                        success=True,
+                        fix_method="llm_bridge",
+                        bridge_request_id=result.request_id,
+                        metric_before=0.5,
+                        metric_after=0.8,
+                        duration_ms=result.duration_ms,
+                    )
+                )
                 learned += 1
 
         for result in failed:
-            self.memory.record_attempt(ImprovementAttempt(
-                cycle=report.cycle,
-                category="unknown",
-                file=result.file_path,
-                description=result.error[:80] or "LLM fix failed",
-                success=False,
-                fix_method="llm_bridge",
-                bridge_request_id=result.request_id,
-                error=result.error,
-            ))
+            self.memory.record_attempt(
+                ImprovementAttempt(
+                    cycle=report.cycle,
+                    category="unknown",
+                    file=result.file_path,
+                    description=result.error[:80] or "LLM fix failed",
+                    success=False,
+                    fix_method="llm_bridge",
+                    bridge_request_id=result.request_id,
+                    error=result.error,
+                )
+            )
 
         report.improvements_succeeded = learned
         report.improvements_failed = len(failed)
@@ -1461,29 +1657,38 @@ class RecursiveSelfImprove:
         return report
 
     def _print_final_report(self) -> None:
-        """ print final report.
-            """
+        """print final report."""
         print()
-        print(_c(f"  {'='*54}", "magenta"))
+        print(_c(f"  {'=' * 54}", "magenta"))
         print(_c(f"  RSI v2.0 — EINDRAPPORT", "magenta"))
-        print(_c(f"  {'='*54}", "magenta"))
+        print(_c(f"  {'=' * 54}", "magenta"))
 
         if self.reports:
             first_q = self.reports[0].total_quality_before
             last_q = self.reports[-1].total_quality_after
             total_delta = last_q - first_q
-            arrow = _c("▲", "green") if total_delta > 0 else (
-                _c("▼", "red") if total_delta < 0 else _c("─", "dim"))
+            arrow = (
+                _c("▲", "green")
+                if total_delta > 0
+                else (_c("▼", "red") if total_delta < 0 else _c("─", "dim"))
+            )
 
-            print(f"\n  {'Cycle':<7s} {'Voor':>8s} {'Na':>8s} {'Delta':>8s}  {'Auto':>4s} {'LLM':>4s}  Status")
-            print(f"  {'─'*55}")
+            print(
+                f"\n  {'Cycle':<7s} {'Voor':>8s} {'Na':>8s} {'Delta':>8s}  {'Auto':>4s} {'LLM':>4s}  Status"
+            )
+            print(f"  {'─' * 55}")
             for r in self.reports:
                 d = r.total_quality_after - r.total_quality_before
-                ds = _c(f"{d:+.4f}", "green") if d > 0 else (
-                    _c(f"{d:.4f}", "red") if d < 0 else _c(f"{d:.4f}", "dim"))
-                print(f"  #{r.cycle:<4d}  {r.total_quality_before:.4f}  {r.total_quality_after:.4f}  "
-                      f"{ds}  {r.improvements_succeeded:>3d}  {r.improvements_queued:>3d}  "
-                      f"{r.status.upper()}")
+                ds = (
+                    _c(f"{d:+.4f}", "green")
+                    if d > 0
+                    else (_c(f"{d:.4f}", "red") if d < 0 else _c(f"{d:.4f}", "dim"))
+                )
+                print(
+                    f"  #{r.cycle:<4d}  {r.total_quality_before:.4f}  {r.total_quality_after:.4f}  "
+                    f"{ds}  {r.improvements_succeeded:>3d}  {r.improvements_queued:>3d}  "
+                    f"{r.status.upper()}"
+                )
 
             total_auto = sum(r.improvements_succeeded for r in self.reports)
             total_llm = sum(r.improvements_queued for r in self.reports)
@@ -1497,18 +1702,23 @@ class RecursiveSelfImprove:
                 print(_c(f"\n  ⏳ {total_llm} fixes wachten in LLM queue op Hermes!", "yellow"))
                 print(_c(f"  👉 Run: python rsi_llm_bridge.py list-pending", "cyan"))
 
-            if not self.no_report and not self.dry_run and any(r.status == "completed" or r.status == "pending_llm" for r in self.reports):
+            if (
+                not self.no_report
+                and not self.dry_run
+                and any(r.status == "completed" or r.status == "pending_llm" for r in self.reports)
+            ):
                 report_dir = self.workspace / ".rsi_reports"
                 report_dir.mkdir(parents=True, exist_ok=True)
                 ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                 rf = report_dir / f"rsi_report_{ts}.json"
-                rf.write_text(json.dumps([r.to_dict() for r in self.reports],
-                                         indent=2, ensure_ascii=False), encoding="utf-8")
+                rf.write_text(
+                    json.dumps([r.to_dict() for r in self.reports], indent=2, ensure_ascii=False),
+                    encoding="utf-8",
+                )
                 print(f"  JSON Report: {rf}")
 
     def get_json_report(self) -> dict:
-        """Get json report.
-            """
+        """Get json report."""
         return {
             "version": "2.0",
             "focus": self.focus,
@@ -1527,38 +1737,55 @@ class RecursiveSelfImprove:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="RSI v2.0 — Recursive Self-Improvement met LLM Bridge",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("path", nargs="?", default=".", help="ToolCase directory")
-    parser.add_argument("--cycles", "-c", type=int, default=1,
-                        help=f"Aantal cycli (max {MAX_CYCLES})")
-    parser.add_argument("--focus", "-f",
-                        choices=["all", "types", "docs", "code-quality", "tests",
-                                 "security", "refactor", "performance", "architecture",
-                                 "dead-code", "bugs"],
-                        default="all", help="Focus area (uitgebreid in v2.0)")
-    parser.add_argument("--dry-run", "-n", action="store_true",
-                        help="Alleen analyse, geen wijzigingen")
+    parser.add_argument(
+        "--cycles", "-c", type=int, default=1, help=f"Aantal cycli (max {MAX_CYCLES})"
+    )
+    parser.add_argument(
+        "--focus",
+        "-f",
+        choices=[
+            "all",
+            "types",
+            "docs",
+            "code-quality",
+            "tests",
+            "security",
+            "refactor",
+            "performance",
+            "architecture",
+            "dead-code",
+            "bugs",
+        ],
+        default="all",
+        help="Focus area (uitgebreid in v2.0)",
+    )
+    parser.add_argument(
+        "--dry-run", "-n", action="store_true", help="Alleen analyse, geen wijzigingen"
+    )
     parser.add_argument("--json", "-j", action="store_true", help="JSON output")
-    parser.add_argument("--no-report", action="store_true",
-                        help="Geen rapport of memory opslaan")
-    parser.add_argument("--learn-from", metavar="FILE",
-                        help="Laad memory uit bestand")
+    parser.add_argument("--no-report", action="store_true", help="Geen rapport of memory opslaan")
+    parser.add_argument("--learn-from", metavar="FILE", help="Laad memory uit bestand")
 
     # v2.0 LLM bridge modi
-    parser.add_argument("--auto-only", action="store_true",
-                        help="Alleen auto-fixes, geen LLM queue")
-    parser.add_argument("--llm-queue", action="store_true",
-                        help="Alleen LLM queue vullen, geen auto-fixes")
-    parser.add_argument("--llm-eval", action="store_true",
-                        help="Evalueer LLM queue resultaten en leer ervan")
+    parser.add_argument(
+        "--auto-only", action="store_true", help="Alleen auto-fixes, geen LLM queue"
+    )
+    parser.add_argument(
+        "--llm-queue", action="store_true", help="Alleen LLM queue vullen, geen auto-fixes"
+    )
+    parser.add_argument(
+        "--llm-eval", action="store_true", help="Evalueer LLM queue resultaten en leer ervan"
+    )
 
-    parser.add_argument("--version", action="version",
-                        version=f"recursive_self_improve.py v{__version__}")
+    parser.add_argument(
+        "--version", action="version", version=f"recursive_self_improve.py v{__version__}"
+    )
 
     args = parser.parse_args()
 
@@ -1578,8 +1805,10 @@ def main() -> None:
         llm_mode = "auto"
 
     rsi = RecursiveSelfImprove(
-        workspace=target, focus=args.focus,
-        dry_run=args.dry_run, no_report=args.no_report,
+        workspace=target,
+        focus=args.focus,
+        dry_run=args.dry_run,
+        no_report=args.no_report,
         memory_path=Path(args.learn_from).resolve() if args.learn_from else None,
         llm_mode=llm_mode,
     )

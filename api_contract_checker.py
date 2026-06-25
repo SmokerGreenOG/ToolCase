@@ -32,31 +32,41 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from toolcase_core.utils import collect_source_files, normalize_url
 
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    "build", "dist", ".next", "out", "coverage", ".tox",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        ".next",
+        "out",
+        "coverage",
+        ".tox",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # Styles — dark purple / neon theme
 STYLE = {
-    "header": "\033[95m",       # magenta / purple
-    "ok": "\033[92m",           # green
-    "warn": "\033[93m",         # yellow
-    "fail": "\033[91m",         # red
-    "info": "\033[96m",         # cyan
+    "header": "\033[95m",  # magenta / purple
+    "ok": "\033[92m",  # green
+    "warn": "\033[93m",  # yellow
+    "fail": "\033[91m",  # red
+    "info": "\033[96m",  # cyan
     "bold": "\033[1m",
     "dim": "\033[2m",
     "reset": "\033[0m",
@@ -68,7 +78,7 @@ STYLE = {
 
 # API-call patterns: method + url
 FRONTEND_CALL_METHOD_RE = re.compile(
-    r'(?P<method>get|post|put|delete|patch|request)'
+    r"(?P<method>get|post|put|delete|patch|request)"
     r'\s*\(\s*["\']([^"\']+)["\']',
     re.IGNORECASE,
 )
@@ -78,14 +88,14 @@ FRONTEND_FETCH_RE = re.compile(
 )
 
 FRONTEND_QUERY_RE = re.compile(
-    r'(?:useQuery|useMutation|useSuspenseQuery)\s*\('
+    r"(?:useQuery|useMutation|useSuspenseQuery)\s*\("
     r'(?:\s*\{[^}]*queryKey\s*:\s*\[[^\]]*["\']([^"\']+)["\'])?',
 )
 
 # Request body fields in frontend (object literal passed as second arg body/data)
 FRONTEND_BODY_FIELDS_RE = re.compile(
-    r'(?:body|data)\s*:\s*(?:JSON\.stringify\s*)?'
-    r'\{\s*([^}]+)\s*\}',
+    r"(?:body|data)\s*:\s*(?:JSON\.stringify\s*)?"
+    r"\{\s*([^}]+)\s*\}",
     re.DOTALL,
 )
 
@@ -96,38 +106,38 @@ FIELD_KEY_RE = re.compile(
 
 # Try / catch detection around API calls
 HAS_TRY_CATCH_RE = re.compile(
-    r'try\s*\{[^}]*?(?:fetch|axios|await)\s*\([^}]*\}\s*catch\s*\(',
+    r"try\s*\{[^}]*?(?:fetch|axios|await)\s*\([^}]*\}\s*catch\s*\(",
     re.DOTALL,
 )
 
 # .catch() on promises
 HAS_CATCH_RE = re.compile(
-    r'\.catch\s*\(',
+    r"\.catch\s*\(",
 )
 
 # .then() without .catch()
 THEN_ONLY_RE = re.compile(
-    r'\.then\s*\(',
+    r"\.then\s*\(",
 )
 
 # Loading state checks
 LOADING_INDICATORS_RE = re.compile(
-    r'\b(isLoading|loading|isFetching|useBoolean|setLoading|LOADING)\b',
+    r"\b(isLoading|loading|isFetching|useBoolean|setLoading|LOADING)\b",
 )
 
 # Frontend response destructuring patterns
 FRONTEND_RESPONSE_FIELDS_RE = re.compile(
-    r'(?:const|let|var)\s*\{([^}]+)\}\s*=\s*(?:res|response|data|result)\b',
+    r"(?:const|let|var)\s*\{([^}]+)\}\s*=\s*(?:res|response|data|result)\b",
 )
 
 # Frontend expects json()
 FRONTEND_JSON_EXPECT_RE = re.compile(
-    r'\.json\s*\(\)',
+    r"\.json\s*\(\)",
 )
 
 # Frontend expects text()
 FRONTEND_TEXT_EXPECT_RE = re.compile(
-    r'\.text\s*\(\)',
+    r"\.text\s*\(\)",
 )
 
 # ---------------------------------------------------------------------------
@@ -136,8 +146,8 @@ FRONTEND_TEXT_EXPECT_RE = re.compile(
 
 # Python: FastAPI / Flask / Starlette routes
 BACKEND_PYTHON_DECORATOR_RE = re.compile(
-    r'@(?:app|router|blueprint)\s*\.\s*'
-    r'(?P<method>get|post|put|delete|patch|options|route)'
+    r"@(?:app|router|blueprint)\s*\.\s*"
+    r"(?P<method>get|post|put|delete|patch|options|route)"
     r'\s*\(\s*["\']([^"\']+)["\']',
     re.IGNORECASE,
 )
@@ -149,26 +159,26 @@ BACKEND_DJANGO_URL_RE = re.compile(
 
 # Python: Pydantic / dataclass request body models
 BACKEND_PYTHON_BODY_MODEL_RE = re.compile(
-    r'class\s+(\w+)\s*\((?:BaseModel|pydantic\.BaseModel|dataclass)\)',
+    r"class\s+(\w+)\s*\((?:BaseModel|pydantic\.BaseModel|dataclass)\)",
 )
 
 # Python: Pydantic model fields
 BACKEND_PYTHON_MODEL_FIELDS_RE = re.compile(
-    r'^\s*(\w+)\s*:\s*(?:\w+\s*=\s*Field|\w+|\w+\s*=\s*None|\w+\s*=\s*\.\.\.)',
+    r"^\s*(\w+)\s*:\s*(?:\w+\s*=\s*Field|\w+|\w+\s*=\s*None|\w+\s*=\s*\.\.\.)",
     re.MULTILINE,
 )
 
 # Python: return response types
 BACKEND_PYTHON_RESPONSE_RE = re.compile(
-    r'(?:return\s+(?:JSONResponse|Response|PlainTextResponse|HTMLResponse|RedirectResponse)\s*\('
-    r'|Response\s*\('
-    r'|JSONResponse\s*\('
-    r'|PlainTextResponse\s*\('
-    r')',
+    r"(?:return\s+(?:JSONResponse|Response|PlainTextResponse|HTMLResponse|RedirectResponse)\s*\("
+    r"|Response\s*\("
+    r"|JSONResponse\s*\("
+    r"|PlainTextResponse\s*\("
+    r")",
 )
 
 BACKEND_PYTHON_JSON_RESPONSE_RE = re.compile(
-    r'(?:JSONResponse|return\s*\{|\s*return\s+\w+\s*\.\s*json\s*\()',
+    r"(?:JSONResponse|return\s*\{|\s*return\s+\w+\s*\.\s*json\s*\()",
 )
 
 BACKEND_PYTHON_TEXT_RESPONSE_RE = re.compile(
@@ -181,7 +191,7 @@ BACKEND_RUST_ROUTE_RE = re.compile(
 )
 
 BACKEND_RUST_METHOD_RE = re.compile(
-    r'(?P<method>get|post|put|delete|patch)_service\s*\(',
+    r"(?P<method>get|post|put|delete|patch)_service\s*\(",
 )
 
 BACKEND_RUST_ATTR_RE = re.compile(
@@ -191,17 +201,17 @@ BACKEND_RUST_ATTR_RE = re.compile(
 
 # Rust: struct body fields (Json<Struct> or Form<Struct>)
 BACKEND_RUST_STRUCT_FIELDS_RE = re.compile(
-    r'struct\s+(\w+)\s*\{([^}]+)\}',
+    r"struct\s+(\w+)\s*\{([^}]+)\}",
     re.DOTALL,
 )
 BACKEND_RUST_FIELD_RE = re.compile(
-    r'(\w+)\s*:\s*(?:\w+|Option<\w+>)',
+    r"(\w+)\s*:\s*(?:\w+|Option<\w+>)",
 )
 
 # TypeScript backend (Express / NestJS / tRPC)
 BACKEND_TS_ROUTE_RE = re.compile(
-    r'(?:router|app|controller|server)\s*\.\s*'
-    r'(?P<method>get|post|put|delete|patch|all)'
+    r"(?:router|app|controller|server)\s*\.\s*"
+    r"(?P<method>get|post|put|delete|patch|all)"
     r'\s*\(\s*["\']([^"\']+)["\']',
     re.IGNORECASE,
 )
@@ -213,7 +223,7 @@ BACKEND_NESTJS_DECORATOR_RE = re.compile(
 
 # TypeScript response types
 BACKEND_TS_RESPONSE_TYPE_RE = re.compile(
-    r'(?:res\.(?:json|send)\s*\(|return\s+(?:res|response)\s*\.\s*(?:json|send)\s*\()',
+    r"(?:res\.(?:json|send)\s*\(|return\s+(?:res|response)\s*\.\s*(?:json|send)\s*\()",
 )
 
 BACKEND_TS_TEXT_RESPONSE_RE = re.compile(
@@ -222,7 +232,7 @@ BACKEND_TS_TEXT_RESPONSE_RE = re.compile(
 
 # TypeScript interface / type definitions for request/response shapes
 BACKEND_TS_INTERFACE_FIELDS_RE = re.compile(
-    r'(?:interface|type)\s+(\w+)\s*(?:extends\s+\w+\s*)?\{([^}]+)\}',
+    r"(?:interface|type)\s+(\w+)\s*(?:extends\s+\w+\s*)?\{([^}]+)\}",
     re.DOTALL,
 )
 
@@ -249,23 +259,23 @@ def colorise_severity(count: int, zero_label: str = "none") -> str:
     return style(f"  {count}", "fail", "bold")
 
 
-def normalize_url(url: str) -> str:
-    """Normalise a route URL: strip query, trailing slash, collapse //."""
-    url = url.split("?")[0]
-    url = url.rstrip("/")
-    while "//" in url:
-        url = url.replace("//", "/")
-    return url
-
 
 def is_api_call(url: str, api_prefix: str) -> bool:
     """Heuristic: does this look like an API endpoint call?"""
-    return (
-        url.startswith(api_prefix)
-        or (url.startswith("/") and not url.startswith((
-            "/_next", "/static", "/favicon", "/assets", "/fonts",
-            "#", "http://", "https://",
-        )))
+    return url.startswith(api_prefix) or (
+        url.startswith("/")
+        and not url.startswith(
+            (
+                "/_next",
+                "/static",
+                "/favicon",
+                "/assets",
+                "/fonts",
+                "#",
+                "http://",
+                "https://",
+            )
+        )
     )
 
 
@@ -281,7 +291,7 @@ def extract_fields_from_body(body_snippet: str) -> set[str]:
 def extract_fields_from_interface(body: str) -> set[str]:
     """Extract field names from a TypeScript interface/type body."""
     fields: set[str] = set()
-    for m in re.finditer(r'^\s*(\w+)\s*[?:]\s*\w+', body, re.MULTILINE):
+    for m in re.finditer(r"^\s*(\w+)\s*[?:]\s*\w+", body, re.MULTILINE):
         fields.add(m.group(1))
     return fields
 
@@ -306,31 +316,6 @@ def extract_fields_from_rust_struct(body: str) -> set[str]:
 # File collection
 # ---------------------------------------------------------------------------
 
-
-def collect_source_files(root: Path) -> list[Path]:
-    """Collect relevant source files, respecting exclude dirs."""
-    files: list[Path] = []
-
-    if root.is_file():
-        return [root]
-
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
-        for fn in filenames:
-            fp = Path(dirpath) / fn
-            ext = fp.suffix.lower()
-            if ext in {".ts", ".tsx", ".js", ".jsx", ".py", ".rs", ".mjs", ".cjs"}:
-                files.append(fp)
-
-    return sorted(files)
-
-
-# ---------------------------------------------------------------------------
-# Frontend scanning
-# ---------------------------------------------------------------------------
-
-FrontendCall = dict
-Issue = dict
 
 
 def scan_frontend_files(root: Path, api_prefix: str) -> list[FrontendCall]:
@@ -358,7 +343,7 @@ def scan_frontend_files(root: Path, api_prefix: str) -> list[FrontendCall]:
                 continue
 
             # Line number
-            line_no = content[:match.start()].count("\n") + 1
+            line_no = content[: match.start()].count("\n") + 1
 
             # Surrounding context for deeper analysis
             ctx_start = max(0, match.start() - 300)
@@ -374,7 +359,7 @@ def scan_frontend_files(root: Path, api_prefix: str) -> list[FrontendCall]:
             # Try to find the full call: method(url, {body: {...}})
             paren_depth = 0
             call_end = match.end()
-            for i, ch in enumerate(content[match.end():], start=match.end()):
+            for i, ch in enumerate(content[match.end() :], start=match.end()):
                 if ch == "(":
                     paren_depth += 1
                 elif ch == ")":
@@ -382,14 +367,14 @@ def scan_frontend_files(root: Path, api_prefix: str) -> list[FrontendCall]:
                         call_end = i + 1
                         break
                     paren_depth -= 1
-            call_snippet = content[match.start():call_end]
+            call_snippet = content[match.start() : call_end]
             for bm in FRONTEND_BODY_FIELDS_RE.finditer(call_snippet):
                 body_fields.update(extract_fields_from_body(bm.group(1)))
 
             # --- Response destructured fields ---
             response_fields: set[str] = set()
             for rm in FRONTEND_RESPONSE_FIELDS_RE.finditer(context):
-                for f in re.finditer(r'\b(\w+)\b', rm.group(1)):
+                for f in re.finditer(r"\b(\w+)\b", rm.group(1)):
                     fname = f.group(1)
                     if fname not in {"res", "response", "data", "result", "await"}:
                         response_fields.add(fname)
@@ -409,23 +394,25 @@ def scan_frontend_files(root: Path, api_prefix: str) -> list[FrontendCall]:
             expects_json = bool(FRONTEND_JSON_EXPECT_RE.search(context))
             expects_text = bool(FRONTEND_TEXT_EXPECT_RE.search(context))
 
-            calls.append({
-                "type": "frontend",
-                "file": rel_path,
-                "line": line_no,
-                "method": method,
-                "url": url,
-                "body_fields": sorted(body_fields),
-                "response_fields": sorted(response_fields),
-                "missing_error_handling": missing_error_handling,
-                "has_try_catch": has_try_catch,
-                "has_catch": has_catch,
-                "has_then_no_catch": has_then and not has_catch,
-                "has_loading": has_loading,
-                "missing_loading_state": not has_loading,
-                "expects_json": expects_json,
-                "expects_text": expects_text,
-            })
+            calls.append(
+                {
+                    "type": "frontend",
+                    "file": rel_path,
+                    "line": line_no,
+                    "method": method,
+                    "url": url,
+                    "body_fields": sorted(body_fields),
+                    "response_fields": sorted(response_fields),
+                    "missing_error_handling": missing_error_handling,
+                    "has_try_catch": has_try_catch,
+                    "has_catch": has_catch,
+                    "has_then_no_catch": has_then and not has_catch,
+                    "has_loading": has_loading,
+                    "missing_loading_state": not has_loading,
+                    "expects_json": expects_json,
+                    "expects_text": expects_text,
+                }
+            )
 
     return calls
 
@@ -474,11 +461,11 @@ def _scan_python_backend(routes: list, content: str, rel_path: str) -> None:
         method = match.group("method").upper()
         url = normalize_url(match.group(2))
 
-        line_no = content[:match.start()].count("\n") + 1
+        line_no = content[: match.start()].count("\n") + 1
 
         # Context for body/response analysis
         ctx_end = min(len(content), match.end() + 1000)
-        context = content[match.start():ctx_end]
+        context = content[match.start() : ctx_end]
 
         # Detect response type
         has_json_response = bool(BACKEND_PYTHON_JSON_RESPONSE_RE.search(context))
@@ -506,21 +493,21 @@ def _scan_python_backend(routes: list, content: str, rel_path: str) -> None:
             if model_body:
                 body_fields.update(extract_fields_from_python_model(model_body))
 
-        routes.append({
-            "type": "backend",
-            "file": rel_path,
-            "line": line_no,
-            "framework": "python",
-            "method": method,
-            "url": url,
-            "body_fields": sorted(body_fields),
-            "response_fields": sorted(response_fields),
-            "response_type": (
-                "json" if has_json_response
-                else "text" if has_text_response
-                else "unknown"
-            ),
-        })
+        routes.append(
+            {
+                "type": "backend",
+                "file": rel_path,
+                "line": line_no,
+                "framework": "python",
+                "method": method,
+                "url": url,
+                "body_fields": sorted(body_fields),
+                "response_fields": sorted(response_fields),
+                "response_type": (
+                    "json" if has_json_response else "text" if has_text_response else "unknown"
+                ),
+            }
+        )
 
 
 def _scan_rust_backend(routes: list, content: str, rel_path: str) -> None:
@@ -529,42 +516,46 @@ def _scan_rust_backend(routes: list, content: str, rel_path: str) -> None:
     for match in BACKEND_RUST_ATTR_RE.finditer(content):
         method = match.group("method").upper()
         url = normalize_url(match.group(2))
-        line_no = content[:match.start()].count("\n") + 1
+        line_no = content[: match.start()].count("\n") + 1
 
-        routes.append({
-            "type": "backend",
-            "file": rel_path,
-            "line": line_no,
-            "framework": "rust_actix",
-            "method": method,
-            "url": url,
-            "body_fields": [],
-            "response_fields": [],
-            "response_type": "unknown",
-        })
+        routes.append(
+            {
+                "type": "backend",
+                "file": rel_path,
+                "line": line_no,
+                "framework": "rust_actix",
+                "method": method,
+                "url": url,
+                "body_fields": [],
+                "response_fields": [],
+                "response_type": "unknown",
+            }
+        )
 
     # Chained .route() patterns (Axum)
     for match in BACKEND_RUST_ROUTE_RE.finditer(content):
         url = normalize_url(match.group(1))
         # Look for method_service before this .route call
-        pre_context = content[max(0, match.start() - 300):match.end()]
+        pre_context = content[max(0, match.start() - 300) : match.end()]
         method = "GET"
         for mm in BACKEND_RUST_METHOD_RE.finditer(pre_context):
             method = mm.group("method").upper()
 
-        line_no = content[:match.start()].count("\n") + 1
+        line_no = content[: match.start()].count("\n") + 1
 
-        routes.append({
-            "type": "backend",
-            "file": rel_path,
-            "line": line_no,
-            "framework": "rust_axum",
-            "method": method,
-            "url": url,
-            "body_fields": [],
-            "response_fields": [],
-            "response_type": "unknown",
-        })
+        routes.append(
+            {
+                "type": "backend",
+                "file": rel_path,
+                "line": line_no,
+                "framework": "rust_axum",
+                "method": method,
+                "url": url,
+                "body_fields": [],
+                "response_fields": [],
+                "response_type": "unknown",
+            }
+        )
 
 
 def _scan_ts_backend(routes: list, content: str, rel_path: str) -> None:
@@ -573,10 +564,10 @@ def _scan_ts_backend(routes: list, content: str, rel_path: str) -> None:
     for match in BACKEND_TS_ROUTE_RE.finditer(content):
         method = match.group("method").upper()
         url = normalize_url(match.group(2))
-        line_no = content[:match.start()].count("\n") + 1
+        line_no = content[: match.start()].count("\n") + 1
 
         ctx_end = min(len(content), match.end() + 500)
-        context = content[match.start():ctx_end]
+        context = content[match.start() : ctx_end]
 
         has_json = bool(BACKEND_TS_RESPONSE_TYPE_RE.search(context))
         has_text = bool(BACKEND_TS_TEXT_RESPONSE_RE.search(context))
@@ -585,35 +576,39 @@ def _scan_ts_backend(routes: list, content: str, rel_path: str) -> None:
         body_fields: set[str] = set()
         response_fields: set[str] = set()
 
-        routes.append({
-            "type": "backend",
-            "file": rel_path,
-            "line": line_no,
-            "framework": "express",
-            "method": method,
-            "url": url,
-            "body_fields": sorted(body_fields),
-            "response_fields": sorted(response_fields),
-            "response_type": "json" if has_json else "text" if has_text else "unknown",
-        })
+        routes.append(
+            {
+                "type": "backend",
+                "file": rel_path,
+                "line": line_no,
+                "framework": "express",
+                "method": method,
+                "url": url,
+                "body_fields": sorted(body_fields),
+                "response_fields": sorted(response_fields),
+                "response_type": "json" if has_json else "text" if has_text else "unknown",
+            }
+        )
 
     # NestJS decorators
     for match in BACKEND_NESTJS_DECORATOR_RE.finditer(content):
         method = match.group("method").upper()
         url = normalize_url(match.group(2))
-        line_no = content[:match.start()].count("\n") + 1
+        line_no = content[: match.start()].count("\n") + 1
 
-        routes.append({
-            "type": "backend",
-            "file": rel_path,
-            "line": line_no,
-            "framework": "nestjs",
-            "method": method,
-            "url": url,
-            "body_fields": [],
-            "response_fields": [],
-            "response_type": "unknown",
-        })
+        routes.append(
+            {
+                "type": "backend",
+                "file": rel_path,
+                "line": line_no,
+                "framework": "nestjs",
+                "method": method,
+                "url": url,
+                "body_fields": [],
+                "response_fields": [],
+                "response_type": "unknown",
+            }
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -647,28 +642,32 @@ def analyze_contracts(
     endpoint_mismatches: list[Issue] = []
     for url in sorted(orphaned_backend_urls):
         for br in backend_by_url[url]:
-            endpoint_mismatches.append({
-                "type": "endpoint_path_mismatch",
-                "severity": "warning",
-                "detail": f"Backend route [{br['method']}] {br['url']} has no frontend consumer",
-                "file": br["file"],
-                "line": br["line"],
-                "url": br["url"],
-                "method": br["method"],
-                "side": "backend",
-            })
+            endpoint_mismatches.append(
+                {
+                    "type": "endpoint_path_mismatch",
+                    "severity": "warning",
+                    "detail": f"Backend route [{br['method']}] {br['url']} has no frontend consumer",
+                    "file": br["file"],
+                    "line": br["line"],
+                    "url": br["url"],
+                    "method": br["method"],
+                    "side": "backend",
+                }
+            )
     for url in sorted(orphaned_frontend_urls):
         for fc in frontend_by_url[url]:
-            endpoint_mismatches.append({
-                "type": "endpoint_path_mismatch",
-                "severity": "warning",
-                "detail": f"Frontend call [{fc['method']}] {fc['url']} has no backend handler",
-                "file": fc["file"],
-                "line": fc["line"],
-                "url": fc["url"],
-                "method": fc["method"],
-                "side": "frontend",
-            })
+            endpoint_mismatches.append(
+                {
+                    "type": "endpoint_path_mismatch",
+                    "severity": "warning",
+                    "detail": f"Frontend call [{fc['method']}] {fc['url']} has no backend handler",
+                    "file": fc["file"],
+                    "line": fc["line"],
+                    "url": fc["url"],
+                    "method": fc["method"],
+                    "side": "frontend",
+                }
+            )
     issues.extend(endpoint_mismatches)
 
     # --- 2. HTTP method mismatches ---
@@ -681,19 +680,21 @@ def analyze_contracts(
         if br_methods != fc_methods:
             for fc in fcs:
                 if fc["method"] not in br_methods:
-                    method_mismatches.append({
-                        "type": "method_mismatch",
-                        "severity": "error",
-                        "detail": (
-                            f"Frontend calls {fc['url']} with {fc['method']} "
-                            f"but backend only supports {', '.join(sorted(br_methods))}"
-                        ),
-                        "file": fc["file"],
-                        "line": fc["line"],
-                        "url": fc["url"],
-                        "frontend_method": fc["method"],
-                        "backend_methods": sorted(br_methods),
-                    })
+                    method_mismatches.append(
+                        {
+                            "type": "method_mismatch",
+                            "severity": "error",
+                            "detail": (
+                                f"Frontend calls {fc['url']} with {fc['method']} "
+                                f"but backend only supports {', '.join(sorted(br_methods))}"
+                            ),
+                            "file": fc["file"],
+                            "line": fc["line"],
+                            "url": fc["url"],
+                            "frontend_method": fc["method"],
+                            "backend_methods": sorted(br_methods),
+                        }
+                    )
     issues.extend(method_mismatches)
 
     # --- 3. Request body field mismatches ---
@@ -712,19 +713,21 @@ def analyze_contracts(
                 missing_in_backend = frontend_fields - backend_fields
                 missing_in_frontend = backend_fields - frontend_fields
                 if missing_in_backend:
-                    body_field_issues.append({
-                        "type": "body_field_mismatch",
-                        "severity": "error",
-                        "detail": (
-                            f"Frontend sends fields {', '.join(sorted(missing_in_backend))} "
-                            f"in {fc['url']} body but backend model doesn't expect them"
-                        ),
-                        "file": fc["file"],
-                        "line": fc["line"],
-                        "url": url,
-                        "missing_in_backend": sorted(missing_in_backend),
-                        "missing_in_frontend": sorted(missing_in_frontend),
-                    })
+                    body_field_issues.append(
+                        {
+                            "type": "body_field_mismatch",
+                            "severity": "error",
+                            "detail": (
+                                f"Frontend sends fields {', '.join(sorted(missing_in_backend))} "
+                                f"in {fc['url']} body but backend model doesn't expect them"
+                            ),
+                            "file": fc["file"],
+                            "line": fc["line"],
+                            "url": url,
+                            "missing_in_backend": sorted(missing_in_backend),
+                            "missing_in_frontend": sorted(missing_in_frontend),
+                        }
+                    )
     issues.extend(body_field_issues)
 
     # --- 4. Response field mismatches ---
@@ -742,46 +745,52 @@ def analyze_contracts(
                 frontend_resp = set(fc["response_fields"])
                 missing = frontend_resp - backend_resp
                 if missing:
-                    response_field_issues.append({
-                        "type": "response_field_mismatch",
-                        "severity": "error",
-                        "detail": (
-                            f"Frontend expects fields {', '.join(sorted(missing))} "
-                            f"in response from {url} but backend never returns them"
-                        ),
-                        "file": fc["file"],
-                        "line": fc["line"],
-                        "url": url,
-                        "missing_fields": sorted(missing),
-                    })
+                    response_field_issues.append(
+                        {
+                            "type": "response_field_mismatch",
+                            "severity": "error",
+                            "detail": (
+                                f"Frontend expects fields {', '.join(sorted(missing))} "
+                                f"in response from {url} but backend never returns them"
+                            ),
+                            "file": fc["file"],
+                            "line": fc["line"],
+                            "url": url,
+                            "missing_fields": sorted(missing),
+                        }
+                    )
     issues.extend(response_field_issues)
 
     # --- 5. Missing error handling ---
     missing_error_issues: list[Issue] = []
     for fc in frontend_calls:
         if fc["missing_error_handling"]:
-            missing_error_issues.append({
-                "type": "missing_error_handling",
-                "severity": "warning",
-                "detail": f"No .catch() or try/catch found around API call to {fc['url']}",
-                "file": fc["file"],
-                "line": fc["line"],
-                "url": fc["url"],
-            })
+            missing_error_issues.append(
+                {
+                    "type": "missing_error_handling",
+                    "severity": "warning",
+                    "detail": f"No .catch() or try/catch found around API call to {fc['url']}",
+                    "file": fc["file"],
+                    "line": fc["line"],
+                    "url": fc["url"],
+                }
+            )
     issues.extend(missing_error_issues)
 
     # --- 6. Missing loading state ---
     missing_loading_issues: list[Issue] = []
     for fc in frontend_calls:
         if fc["missing_loading_state"]:
-            missing_loading_issues.append({
-                "type": "missing_loading_state",
-                "severity": "warning",
-                "detail": f"No loading state indicator near API call to {fc['url']}",
-                "file": fc["file"],
-                "line": fc["line"],
-                "url": fc["url"],
-            })
+            missing_loading_issues.append(
+                {
+                    "type": "missing_loading_state",
+                    "severity": "warning",
+                    "detail": f"No loading state indicator near API call to {fc['url']}",
+                    "file": fc["file"],
+                    "line": fc["line"],
+                    "url": fc["url"],
+                }
+            )
     issues.extend(missing_loading_issues)
 
     # --- 7. Frontend expects JSON but backend sends text ---
@@ -794,17 +803,19 @@ def analyze_contracts(
                 continue
             for br in brs:
                 if br["response_type"] == "text":
-                    content_type_issues.append({
-                        "type": "content_type_mismatch",
-                        "severity": "error",
-                        "detail": (
-                            f"Frontend expects .json() from {url} "
-                            f"but backend sends text response"
-                        ),
-                        "file": fc["file"],
-                        "line": fc["line"],
-                        "url": url,
-                    })
+                    content_type_issues.append(
+                        {
+                            "type": "content_type_mismatch",
+                            "severity": "error",
+                            "detail": (
+                                f"Frontend expects .json() from {url} "
+                                f"but backend sends text response"
+                            ),
+                            "file": fc["file"],
+                            "line": fc["line"],
+                            "url": url,
+                        }
+                    )
     issues.extend(content_type_issues)
 
     # Summary stats
@@ -844,9 +855,9 @@ def print_report(result: dict) -> None:
     s = style
 
     print()
-    print(f"{s('='*62, 'header', 'bold')}")
+    print(f"{s('=' * 62, 'header', 'bold')}")
     print(f" {s('✦ API CONTRACT CHECKER', 'header', 'bold')}")
-    print(f"{s('='*62, 'header', 'bold')}")
+    print(f"{s('=' * 62, 'header', 'bold')}")
 
     # Summary
     print(f"\n {s('📊 Summary', 'info', 'bold')}")
@@ -883,11 +894,15 @@ def print_report(result: dict) -> None:
     errors = stats["issues_by_severity"].get("error", 0)
     warnings = stats["issues_by_severity"].get("warning", 0)
     print(f" {s('── Summary ──', 'header', 'bold')}")
-    err_str = s(f"❌ Errors:   {errors}", "fail", "bold") if errors else (
-        s("  ✅ No errors", "pass", "bold")
+    err_str = (
+        s(f"❌ Errors:   {errors}", "fail", "bold")
+        if errors
+        else (s("  ✅ No errors", "pass", "bold"))
     )
-    warn_str = s(f"⚠️  Warnings: {warnings}", "warn", "bold") if warnings else (
-        s("  ✅ No warnings", "dim")
+    warn_str = (
+        s(f"⚠️  Warnings: {warnings}", "warn", "bold")
+        if warnings
+        else (s("  ✅ No warnings", "dim"))
     )
     print(f"   {err_str}")
     print(f"   {warn_str}")
@@ -902,8 +917,7 @@ def print_report(result: dict) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="api_contract_checker.py — Detect frontend-backend API contract mismatches",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -915,16 +929,15 @@ Examples:
   python api_contract_checker.py . --strict
         """,
     )
-    parser.add_argument("path", nargs="?", default=".",
-                        help="Project root path to scan")
-    parser.add_argument("--api-prefix", "-p", default="/api",
-                        help="API prefix for backend routes (default: /api)")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output results as JSON")
-    parser.add_argument("--strict", "-s", action="store_true",
-                        help="Exit with code 2 on warnings, 1 on errors")
-    parser.add_argument("--version", action="version",
-                        version="api_contract_checker.py v1.0.0")
+    parser.add_argument("path", nargs="?", default=".", help="Project root path to scan")
+    parser.add_argument(
+        "--api-prefix", "-p", default="/api", help="API prefix for backend routes (default: /api)"
+    )
+    parser.add_argument("--json", "-j", action="store_true", help="Output results as JSON")
+    parser.add_argument(
+        "--strict", "-s", action="store_true", help="Exit with code 2 on warnings, 1 on errors"
+    )
+    parser.add_argument("--version", action="version", version="api_contract_checker.py v1.0.0")
 
     args = parser.parse_args()
 

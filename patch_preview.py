@@ -18,6 +18,7 @@ Gebruik:
     python patch_preview.py <file> --json                  # JSON output
     python patch_preview.py --code "def foo(): pass"       # Preview code snippet
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -58,84 +59,98 @@ def generate_fixes(lines: list[str], max_line: int = MAX_LINE_LENGTH) -> list[st
         if modified != modified.rstrip():
             modified = modified.rstrip()
             if modified != original:
-                changes.append({
-                    "line": i + 1,
-                    "type": "trailing_whitespace",
-                    "original": repr(original),
-                    "fixed": repr(modified),
-                })
+                changes.append(
+                    {
+                        "line": i + 1,
+                        "type": "trailing_whitespace",
+                        "original": repr(original),
+                        "fixed": repr(modified),
+                    }
+                )
 
         # Fix long lines (add line continuation for Python)
         if len(modified) > max_line and i < len(lines) - 1:
             # Try to find a good break point
             if any(c in modified for c in [" and ", " or ", ", ", " + ", " | "]):
-                changes.append({
-                    "line": i + 1,
-                    "type": "long_line",
-                    "original": f"{len(modified)} chars: {modified[:80]}...",
-                    "fixed": f"(zou gebroken moeten worden in meerdere regels)",
-                })
+                changes.append(
+                    {
+                        "line": i + 1,
+                        "type": "long_line",
+                        "original": f"{len(modified)} chars: {modified[:80]}...",
+                        "fixed": f"(zou gebroken moeten worden in meerdere regels)",
+                    }
+                )
 
         fixed.append(modified)
 
     # Ensure trailing newline
     if fixed and fixed[-1] != "":
-        changes.append({
-            "line": len(fixed),
-            "type": "missing_newline",
-            "original": "Geen newline aan einde",
-            "fixed": "Newline toegevoegd",
-        })
+        changes.append(
+            {
+                "line": len(fixed),
+                "type": "missing_newline",
+                "original": "Geen newline aan einde",
+                "fixed": "Newline toegevoegd",
+            }
+        )
         fixed.append("")
 
     return fixed, changes
 
 
-def generate_all_fixes(lines: list[str], filepath: str,
-                       max_line: int = MAX_LINE_LENGTH) -> list[dict]:
+def generate_all_fixes(
+    lines: list[str], filepath: str, max_line: int = MAX_LINE_LENGTH
+) -> list[dict]:
     """Generate a comprehensive list of suggested fixes."""
     fixes = []
 
     # 1. Trailing whitespace
     for i, line in enumerate(lines, 1):
         if line != line.rstrip():
-            fixes.append({
-                "line": i,
-                "type": "trailing_whitespace",
-                "severity": "low",
-                "description": "Trailing whitespace detected",
-                "original": repr(line),
-                "fixed": repr(line.rstrip()),
-            })
+            fixes.append(
+                {
+                    "line": i,
+                    "type": "trailing_whitespace",
+                    "severity": "low",
+                    "description": "Trailing whitespace detected",
+                    "original": repr(line),
+                    "fixed": repr(line.rstrip()),
+                }
+            )
 
     # 2. Long lines
     for i, line in enumerate(lines, 1):
         if len(line) > max_line:
-            fixes.append({
-                "line": i,
-                "type": "long_line",
-                "severity": "medium",
-                "description": f"Line too long ({len(line)} > {max_line})",
-                "original": line[:100],
-                "fixed": "(overweeg op te splitsen)",
-            })
+            fixes.append(
+                {
+                    "line": i,
+                    "type": "long_line",
+                    "severity": "medium",
+                    "description": f"Line too long ({len(line)} > {max_line})",
+                    "original": line[:100],
+                    "fixed": "(overweeg op te splitsen)",
+                }
+            )
 
     # 3. Missing newline at EOF
     if lines and lines[-1] != "":
-        fixes.append({
-            "line": len(lines),
-            "type": "missing_newline",
-            "severity": "low",
-            "description": "No newline at end of file",
-            "original": "EOF zonder newline",
-            "fixed": "Newline toegevoegd",
-        })
+        fixes.append(
+            {
+                "line": len(lines),
+                "type": "missing_newline",
+                "severity": "low",
+                "description": "No newline at end of file",
+                "original": "EOF zonder newline",
+                "fixed": "Newline toegevoegd",
+            }
+        )
 
     # 4. Dead imports (Python)
     ext = Path(filepath).suffix.lower()
     if ext == ".py":
         try:
             import ast
+
             tree = ast.parse("\n".join(lines), filename=filepath)
             imported = {}
             used = set()
@@ -153,14 +168,16 @@ def generate_all_fixes(lines: list[str], filepath: str,
             for name, line in imported.items():
                 root_name = name.split(".")[0]
                 if root_name not in used:
-                    fixes.append({
-                        "line": line,
-                        "type": "unused_import",
-                        "severity": "medium",
-                        "description": f"Unused import: '{name}'",
-                        "original": f"import {name}",
-                        "fixed": "(verwijderen)",
-                    })
+                    fixes.append(
+                        {
+                            "line": line,
+                            "type": "unused_import",
+                            "severity": "medium",
+                            "description": f"Unused import: '{name}'",
+                            "original": f"import {name}",
+                            "fixed": "(verwijderen)",
+                        }
+                    )
         except SyntaxError:
             pass
 
@@ -169,8 +186,7 @@ def generate_all_fixes(lines: list[str], filepath: str,
     return fixes
 
 
-def generate_diff(lines_before: list[str], lines_after: list[str],
-                  filepath: str) -> str:
+def generate_diff(lines_before: list[str], lines_after: list[str], filepath: str) -> str:
     """Generate a unified diff string."""
     diff = difflib.unified_diff(
         lines_before,
@@ -187,9 +203,9 @@ def print_side_by_side(lines_before: list[str], lines_after: list[str]) -> None:
     max_lines = max(len(lines_before), len(lines_after))
     line_width = 50
 
-    print(f"\n{'='*120}")
+    print(f"\n{'=' * 120}")
     print(f" {'ORIGINEEL'.ljust(line_width)} | {'GEFIXED'.ljust(line_width)}")
-    print(f"{'='*120}")
+    print(f"{'=' * 120}")
 
     for i in range(max_lines):
         before = lines_before[i] if i < len(lines_before) else ""
@@ -201,8 +217,8 @@ def print_side_by_side(lines_before: list[str], lines_after: list[str]) -> None:
             prefix = "  "
 
         # Truncate long lines
-        before_display = before[:line_width - 3]
-        after_display = after[:line_width - 3]
+        before_display = before[: line_width - 3]
+        after_display = after[: line_width - 3]
         if len(before) > line_width - 3:
             before_display += "..."
         if len(after) > line_width - 3:
@@ -213,9 +229,14 @@ def print_side_by_side(lines_before: list[str], lines_after: list[str]) -> None:
     print()
 
 
-def print_report(fixes: list[dict], diff: str, filepath: str,
-                 side_by_side: bool = False, lines_before: list = None,
-                 lines_after: list = None) -> None:
+def print_report(
+    fixes: list[dict],
+    diff: str,
+    filepath: str,
+    side_by_side: bool = False,
+    lines_before: list = None,
+    lines_after: list = None,
+) -> None:
     """Print a formatted patch preview report."""
     total = len(fixes)
     severity_counts = {}
@@ -223,9 +244,9 @@ def print_report(fixes: list[dict], diff: str, filepath: str,
         sev = f.get("severity", "info")
         severity_counts[sev] = severity_counts.get(sev, 0) + 1
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🔍 PATCH PREVIEW — {filepath}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Totaal fixes: {total}")
     print(f"   🔴 High:   {severity_counts.get('high', 0)}")
     print(f"   🟡 Medium: {severity_counts.get('medium', 0)}")
@@ -265,8 +286,7 @@ def print_report(fixes: list[dict], diff: str, filepath: str,
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="patch_preview.py — Preview what a patch would do before applying",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -280,11 +300,17 @@ Examples:
     )
     parser.add_argument("target", nargs="?", help="Bestand om te previewen")
     parser.add_argument("--code", "-c", help="Code snippet direct previewen")
-    parser.add_argument("--side-by-side", "-s", action="store_true",
-                        help="Toon side-by-side vergelijking")
+    parser.add_argument(
+        "--side-by-side", "-s", action="store_true", help="Toon side-by-side vergelijking"
+    )
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--max-line", "-m", type=int, default=MAX_LINE_LENGTH,
-                        help=f"Max regel lengte (default: {MAX_LINE_LENGTH})")
+    parser.add_argument(
+        "--max-line",
+        "-m",
+        type=int,
+        default=MAX_LINE_LENGTH,
+        help=f"Max regel lengte (default: {MAX_LINE_LENGTH})",
+    )
     parser.add_argument("--version", action="version", version="patch_preview.py v1.0.0")
 
     args = parser.parse_args()

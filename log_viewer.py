@@ -42,36 +42,51 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", ".husky/_",
-    ".git2", ".svn", ".hg", ".idea", ".vscode",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        ".husky/_",
+        ".git2",
+        ".svn",
+        ".hg",
+        ".idea",
+        ".vscode",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 LOG_EXTENSIONS = {".log", ".out", ".err"}
 
-NAMED_LOG_FILES = frozenset({
-    "npm-debug.log",
-    "yarn-error.log",
-    "pnpm-debug.log",
-    "yarn-debug.log",
-    "lerna-debug.log",
-    "bootstrap.log",
-    "install.log",
-    "error.log",
-    "access.log",
-    "debug.log",
-    "crash.log",
-    "crashreport.log",
-    "crash-",  # prefix match
-})
+NAMED_LOG_FILES = frozenset(
+    {
+        "npm-debug.log",
+        "yarn-error.log",
+        "pnpm-debug.log",
+        "yarn-debug.log",
+        "lerna-debug.log",
+        "bootstrap.log",
+        "install.log",
+        "error.log",
+        "access.log",
+        "debug.log",
+        "crash.log",
+        "crashreport.log",
+        "crash-",  # prefix match
+    }
+)
 
 CRASH_FILE_PATTERNS = [
     re.compile(r"crash", re.IGNORECASE),
@@ -89,8 +104,9 @@ CRASH_FILE_PATTERNS = [
 class ErrorPattern:
     """Describes a type of error to detect in log files."""
 
-    def __init__(self, name: str, category: str, patterns: list[str],
-                 cause_template: str, fix_template: str):
+    def __init__(
+        self, name: str, category: str, patterns: list[str], cause_template: str, fix_template: str
+    ):
         self.name = name
         self.category = category
         self.compiled = [re.compile(p, re.MULTILINE | re.DOTALL) for p in patterns]
@@ -103,20 +119,22 @@ class ErrorPattern:
         for cp in self.compiled:
             for m in cp.finditer(text):
                 # Determine line number
-                line_num = text[:m.start()].count("\n") + 1
+                line_num = text[: m.start()].count("\n") + 1
                 # Extract context (the matched text, truncated)
                 matched = m.group(0).strip()
                 if len(matched) > 300:
                     matched = matched[:300] + "..."
-                results.append({
-                    "pattern": self.name,
-                    "category": self.category,
-                    "line": line_num,
-                    "match": matched,
-                    "file": str(file_path),
-                    "cause": self.cause_template,
-                    "fix": self.fix_template,
-                })
+                results.append(
+                    {
+                        "pattern": self.name,
+                        "category": self.category,
+                        "line": line_num,
+                        "match": matched,
+                        "file": str(file_path),
+                        "cause": self.cause_template,
+                        "fix": self.fix_template,
+                    }
+                )
         return results
 
 
@@ -133,12 +151,14 @@ ERROR_PATTERNS = [
             r"Traceback \(most recent call last\):\n(?:  File .+\n)*\w+(?:Error|Exception|Warning|Interrupt).+",
             r"Traceback \(most recent call last\):.*?(?=\n\n|\Z)",
         ],
-        cause_template=("Unhandled Python exception — missing try/except or unexpected runtime"
-               "condition"),
-        fix_template=("Add proper exception handling or fix the root cause at the line indicated in the"
-               "traceback"),
+        cause_template=(
+            "Unhandled Python exception — missing try/except or unexpected runtimecondition"
+        ),
+        fix_template=(
+            "Add proper exception handling or fix the root cause at the line indicated in the"
+            "traceback"
+        ),
     ),
-
     # 500 Internal Server Error
     ErrorPattern(
         name="HTTP 500 Error",
@@ -150,10 +170,11 @@ ERROR_PATTERNS = [
             r"GET|POST|PUT|DELETE|PATCH .*? 500",
         ],
         cause_template="Unhandled server-side exception during request processing",
-        fix_template=("Check server logs for the traceback preceding the 500; add error handling in the failing"
-               "route handler"),
+        fix_template=(
+            "Check server logs for the traceback preceding the 500; add error handling in the failing"
+            "route handler"
+        ),
     ),
-
     # 4xx Client Errors
     ErrorPattern(
         name="HTTP 4xx Error",
@@ -166,11 +187,11 @@ ERROR_PATTERNS = [
             r"400.*?(?:Bad Request|error|fail)",
             r"GET|POST|PUT|DELETE|PATCH .*? 4\d{2}",
         ],
-        cause_template=("Client error — invalid request, missing resource, or authentication"
-               "failure"),
+        cause_template=(
+            "Client error — invalid request, missing resource, or authenticationfailure"
+        ),
         fix_template="Check the requested URL, authentication headers, and request body format",
     ),
-
     # Backend unhandled exceptions (generic)
     ErrorPattern(
         name="Backend Exception",
@@ -185,10 +206,11 @@ ERROR_PATTERNS = [
             r"\[fatal\].*",
         ],
         cause_template="Unhandled exception crashing the backend process",
-        fix_template=("Wrap the failing code path in a try/catch or error boundary; check for null pointer /"
-               "undefined access"),
+        fix_template=(
+            "Wrap the failing code path in a try/catch or error boundary; check for null pointer /"
+            "undefined access"
+        ),
     ),
-
     # Node.js / npm errors
     ErrorPattern(
         name="npm/yarn/pnpm Error",
@@ -202,12 +224,14 @@ ERROR_PATTERNS = [
             r"resolution\s+failed",
             r"ETARGET|E404|EINTEGRITY|EACCES|EPERM|ENOENT|ENOTDIR",
         ],
-        cause_template=("Package manager error — missing module, version conflict, or permission"
-               "issue"),
-        fix_template=("Delete node_modules and reinstall (rm -rf node_modules && npm install), or fix the"
-               "package.json dependency versions"),
+        cause_template=(
+            "Package manager error — missing module, version conflict, or permissionissue"
+        ),
+        fix_template=(
+            "Delete node_modules and reinstall (rm -rf node_modules && npm install), or fix the"
+            "package.json dependency versions"
+        ),
     ),
-
     # Frontend console errors
     ErrorPattern(
         name="Frontend Console Error",
@@ -223,10 +247,10 @@ ERROR_PATTERNS = [
             r"ChunkLoadError",
         ],
         cause_template="Frontend runtime JavaScript/TypeScript error",
-        fix_template=("Check the source map reference in the error; verify API endpoint URLs and data"
-               "shapes"),
+        fix_template=(
+            "Check the source map reference in the error; verify API endpoint URLs and datashapes"
+        ),
     ),
-
     # Database errors
     ErrorPattern(
         name="Database Error",
@@ -243,10 +267,11 @@ ERROR_PATTERNS = [
             r"Base\s+table\s+or\s+view\s+not\s+found",
         ],
         cause_template="Database connection failure, query error, or constraint violation",
-        fix_template=("Verify database credentials, connection string, and that the database server is running;"
-               "check for schema mismatches"),
+        fix_template=(
+            "Verify database credentials, connection string, and that the database server is running;"
+            "check for schema mismatches"
+        ),
     ),
-
     # Docker / Container errors
     ErrorPattern(
         name="Container Error",
@@ -261,10 +286,11 @@ ERROR_PATTERNS = [
             r"port\s+is\s+already\s+allocated",
         ],
         cause_template="Docker container or image issue",
-        fix_template=("Check Docker daemon status, free up ports, prune unused images/containers, or increase"
-               "memory limits"),
+        fix_template=(
+            "Check Docker daemon status, free up ports, prune unused images/containers, or increase"
+            "memory limits"
+        ),
     ),
-
     # Crash reports
     ErrorPattern(
         name="Crash Report",
@@ -276,12 +302,14 @@ ERROR_PATTERNS = [
             r"Stack\s+Dump[!:].*(?:\n.*){0,20}",
             r"Thread\s+\d+\s+(?:Crashed|received\s+signal)",
         ],
-        cause_template=("Application crash — memory corruption, null pointer, or unrecoverable"
-               "error"),
-        fix_template=("Analyze the stack dump; check for buffer overflows, use-after-free, or null dereferences;"
-               "update to latest version"),
+        cause_template=(
+            "Application crash — memory corruption, null pointer, or unrecoverableerror"
+        ),
+        fix_template=(
+            "Analyze the stack dump; check for buffer overflows, use-after-free, or null dereferences;"
+            "update to latest version"
+        ),
     ),
-
     # Build / Compilation errors
     ErrorPattern(
         name="Build Error",
@@ -296,12 +324,13 @@ ERROR_PATTERNS = [
             r"Failed\s+to\s+compile",
             r"Build\s+failed\s+with\s+\d+\s+error",
         ],
-        cause_template=("Build/compilation error — syntax issue, type mismatch, or missing"
-               "dependency"),
-        fix_template=("Inspect the build output for specific file/line references and fix the reported"
-               "issue"),
+        cause_template=(
+            "Build/compilation error — syntax issue, type mismatch, or missingdependency"
+        ),
+        fix_template=(
+            "Inspect the build output for specific file/line references and fix the reportedissue"
+        ),
     ),
-
     # Authentication / Authorization errors
     ErrorPattern(
         name="Auth Error",
@@ -314,8 +343,10 @@ ERROR_PATTERNS = [
             r"Rate\s+limit\s+(?:exceeded|reached)",
         ],
         cause_template="Authentication or authorization failure",
-        fix_template=("Check API keys, tokens, and credentials; verify permissions and expiry dates; review rate"
-               "limit configuration"),
+        fix_template=(
+            "Check API keys, tokens, and credentials; verify permissions and expiry dates; review rate"
+            "limit configuration"
+        ),
     ),
 ]
 
@@ -541,9 +572,9 @@ def print_report(stats: dict, root: Path) -> None:
     """Print a formatted error summary report."""
     total = stats["total_errors"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 📄 LOG VIEWER — Error Summary")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"   Scanned path: {root}")
     print(f"   Total errors found: {total}")
     print()
@@ -590,7 +621,7 @@ def print_report(stats: dict, root: Path) -> None:
             # Most frequent
             mf = pat_data["most_frequent"]
             mf_msg = mf["message"][:120]
-            print(f"      Most frequent: \"{mf_msg}\" ({mf['occurrences']}x)")
+            print(f'      Most frequent: "{mf_msg}" ({mf["occurrences"]}x)')
 
             # Affected files
             files = pat_data["affected_files"]
@@ -608,7 +639,7 @@ def print_report(stats: dict, root: Path) -> None:
 
         print()
 
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print()
 
 
@@ -618,8 +649,7 @@ def print_report(stats: dict, root: Path) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="log_viewer.py — Scan and summarize errors in project log files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -632,17 +662,21 @@ Examples:
   python log_viewer.py . --type error,warn        # Filter by category
         """,
     )
-    parser.add_argument("path", nargs="?", default=".",
-                        help="Project root directory to scan for log files")
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output as JSON")
-    parser.add_argument("--since", type=str, default=None,
-                        help="Only show errors after this date (YYYY-MM-DD)")
-    parser.add_argument("--type", type=str, default=None,
-                        help="Comma-separated list of error categories to show "
-                             "(python,backend,frontend,node,database,infra,crash,build,security)")
-    parser.add_argument("--version", action="version",
-                        version="log_viewer.py v1.0.0")
+    parser.add_argument(
+        "path", nargs="?", default=".", help="Project root directory to scan for log files"
+    )
+    parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
+    parser.add_argument(
+        "--since", type=str, default=None, help="Only show errors after this date (YYYY-MM-DD)"
+    )
+    parser.add_argument(
+        "--type",
+        type=str,
+        default=None,
+        help="Comma-separated list of error categories to show "
+        "(python,backend,frontend,node,database,infra,crash,build,security)",
+    )
+    parser.add_argument("--version", action="version", version="log_viewer.py v1.0.0")
 
     args = parser.parse_args()
 
@@ -659,13 +693,19 @@ Examples:
     if not log_files:
         print(" ℹ️  No log files found.")
         if args.json:
-            print(json.dumps({
-                "target": str(target),
-                "log_files_found": 0,
-                "total_errors": 0,
-                "categories": {},
-                "summary": "No log files found.",
-            }, indent=2, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {
+                        "target": str(target),
+                        "log_files_found": 0,
+                        "total_errors": 0,
+                        "categories": {},
+                        "summary": "No log files found.",
+                    },
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
         sys.exit(0)
 
     print(f" 📁 Found {len(log_files)} log file(s)")
@@ -704,7 +744,10 @@ Examples:
                     filtered.append(err)  # Keep if we can't check
             all_errors = filtered
         except ValueError:
-            print(f" ⚠ Invalid date format for --since: '{args.since}'. Use YYYY-MM-DD.", file=sys.stderr)
+            print(
+                f" ⚠ Invalid date format for --since: '{args.since}'. Use YYYY-MM-DD.",
+                file=sys.stderr,
+            )
             sys.exit(2)
 
     # Categorize and summarize

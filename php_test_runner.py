@@ -13,18 +13,30 @@ Gebruik:
     python php_test_runner.py <path> --filter TestName
     python php_test_runner.py <path> --coverage
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import json
 import shutil
-import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-EXCLUDE_DIRS = {"node_modules", "vendor", ".git", "__pycache__", "tests/fixtures", ".venv", "venv", "dist", "build", ".cache"}
+EXCLUDE_DIRS = {
+    "node_modules",
+    "vendor",
+    ".git",
+    "__pycache__",
+    "tests/fixtures",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    ".cache",
+}
 
 PHP = shutil.which("php")
 PHPUNIT = shutil.which("phpunit")
@@ -106,9 +118,14 @@ def run_phpunit(
     cmd.append("--no-interaction")
 
     try:
-        result = subprocess.run(
-            cmd, cwd=str(root), capture_output=True, text=True,
-            timeout=300, encoding="utf-8", errors="replace",
+        result = safe_run(
+            cmd,
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=300,
+            encoding="utf-8",
+            errors="replace",
         )
         return {
             "framework": "phpunit",
@@ -116,10 +133,20 @@ def run_phpunit(
             "output": result.stdout[-3000:] if len(result.stdout) > 3000 else result.stdout,
             "stderr": result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr,
         }
-    except subprocess.TimeoutExpired:
-        return {"framework": "phpunit", "exit_code": -1, "output": "", "stderr": "Test run timed out"}
+    except TimeoutError:
+        return {
+            "framework": "phpunit",
+            "exit_code": -1,
+            "output": "",
+            "stderr": "Test run timed out",
+        }
     except FileNotFoundError:
-        return {"framework": "phpunit", "exit_code": -1, "output": "", "stderr": "PHPUnit not found. Run: composer require --dev phpunit/phpunit"}
+        return {
+            "framework": "phpunit",
+            "exit_code": -1,
+            "output": "",
+            "stderr": "PHPUnit not found. Run: composer require --dev phpunit/phpunit",
+        }
 
 
 def run_pest(root: Path, filter_test: str = None) -> dict:
@@ -130,9 +157,14 @@ def run_pest(root: Path, filter_test: str = None) -> dict:
     cmd.append("--no-interaction")
 
     try:
-        result = subprocess.run(
-            cmd, cwd=str(root), capture_output=True, text=True,
-            timeout=300, encoding="utf-8", errors="replace",
+        result = safe_run(
+            cmd,
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=300,
+            encoding="utf-8",
+            errors="replace",
         )
         return {
             "framework": "pest",
@@ -140,15 +172,19 @@ def run_pest(root: Path, filter_test: str = None) -> dict:
             "output": result.stdout[-3000:] if len(result.stdout) > 3000 else result.stdout,
             "stderr": result.stderr[-1000:] if len(result.stderr) > 1000 else result.stderr,
         }
-    except subprocess.TimeoutExpired:
+    except TimeoutError:
         return {"framework": "pest", "exit_code": -1, "output": "", "stderr": "Test run timed out"}
     except FileNotFoundError:
-        return {"framework": "pest", "exit_code": -1, "output": "", "stderr": "Pest not found. Run: composer require --dev pestphp/pest"}
+        return {
+            "framework": "pest",
+            "exit_code": -1,
+            "output": "",
+            "stderr": "Pest not found. Run: composer require --dev pestphp/pest",
+        }
 
 
 def main():
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="php_test_runner.py - PHP test discovery & runner")
     parser.add_argument("path", help="PHP project directory")
     parser.add_argument("--filter", metavar="TEST", help="Filter tests by name")
@@ -160,7 +196,8 @@ def main():
     args = parser.parse_args()
     root = Path(args.path)
     if not root.exists():
-        print(f"Not found", file=sys.stderr); sys.exit(1)
+        print(f"Not found", file=sys.stderr)
+        sys.exit(1)
 
     if not root.is_dir():
         root = root.parent
@@ -205,7 +242,13 @@ def main():
     if result["stderr"]:
         print(f"\n   [STDERR]\n{result['stderr']}")
 
-    status = "✅ PASSED" if result["exit_code"] == 0 else "❌ FAILED" if result["exit_code"] > 0 else "⚠ ERROR"
+    status = (
+        "✅ PASSED"
+        if result["exit_code"] == 0
+        else "❌ FAILED"
+        if result["exit_code"] > 0
+        else "⚠ ERROR"
+    )
     print(f"\n{'=' * 70}")
     print(f"   {status} (exit code: {result['exit_code']})")
 

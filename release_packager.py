@@ -39,12 +39,14 @@ import hashlib
 import json
 import re
 import shutil
-import subprocess
 import sys
 import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from safe_run import SafeRunResult, safe_run
+from safe_delete import safe_rmtree
 
 # ---------------------------------------------------------------------------
 # Constants & exit codes
@@ -52,35 +54,66 @@ from typing import Any
 
 EXIT_OK = 0
 EXIT_BLOCKED = 1  # A blocking condition was found
-EXIT_ERROR = 2    # Script-level error
+EXIT_ERROR = 2  # Script-level error
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    ".tox", ".eggs", "build", "dist", ".next", ".husky/_",
-    ".git2", ".svn", ".hg", ".idea", ".vscode", "coverage", ".nyc_output",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".tox",
+        ".eggs",
+        "build",
+        "dist",
+        ".next",
+        ".husky/_",
+        ".git2",
+        ".svn",
+        ".hg",
+        ".idea",
+        ".vscode",
+        "coverage",
+        ".nyc_output",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
-EXCLUDE_PATTERNS = frozenset({
-    "*.pyc", "*.pyo", "*.bak", "*.orig", "*.rej", "*.swp", "*.swo",
-    "*.log", "*.tmp", "*.temp", "Thumbs.db", ".DS_Store",
-})
+EXCLUDE_PATTERNS = frozenset(
+    {
+        "*.pyc",
+        "*.pyo",
+        "*.bak",
+        "*.orig",
+        "*.rej",
+        "*.swp",
+        "*.swo",
+        "*.log",
+        "*.tmp",
+        "*.temp",
+        "Thumbs.db",
+        ".DS_Store",
+    }
+)
 
 SUPPRESSION_MARKER = "toolcase: ignore-security"
 
 # API key / secret patterns (subset of security_scan.py patterns)
 API_KEY_PATTERNS: list[re.Pattern] = [
-    re.compile(r'(?i)(?:api[_-]?key|apikey|api[_-]?secret|api_secret)\s*[=:]\s*["\']([^"\'\\s]{8,})["\']'),
+    re.compile(
+        r'(?i)(?:api[_-]?key|apikey|api[_-]?secret|api_secret)\s*[=:]\s*["\']([^"\'\\s]{8,})["\']'
+    ),
     re.compile(r'(?i)(?:password|pwd|passwd|secret)\s*[=:]\s*["\']([^"\'\\s]{4,})["\']'),
-    re.compile(r'(?i)(?:token|bearer|jwt|auth_token|access_token|refresh_token)\s*[=:]\s*["\']([^"\'\\s]{8,})["\']'),
-    re.compile(r'(?i)AKIA[0-9A-Z]{16}'),
-    re.compile(r'-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'),
+    re.compile(
+        r'(?i)(?:token|bearer|jwt|auth_token|access_token|refresh_token)\s*[=:]\s*["\']([^"\'\\s]{8,})["\']'
+    ),
+    re.compile(r"(?i)AKIA[0-9A-Z]{16}"),
+    re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
     re.compile(r'(?i)(?:mongodb|postgresql|mysql|redis|amqp|rabbitmq)://[^"\'\\s]+:[^"\'\\s]+@'),
 ]
 
@@ -93,30 +126,19 @@ RELEASE_DIR_NAME = "release"
 # ---------------------------------------------------------------------------
 
 
-def _run(cmd: list[str], cwd: Path, timeout: int = 300,
-check: bool = False) -> subprocess.CompletedProcess:
-    """Run a subprocess and return the result."""
-    try:
-        return subprocess.run(
-            cmd,
-            cwd=str(cwd),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            check=check,
-        )
-    except FileNotFoundError:
-        return subprocess.CompletedProcess(
-            args=cmd, returncode=-1,
-            stdout="", stderr=f"Command not found: {cmd[0]}"
-        )
-    except subprocess.TimeoutExpired as e:
-        return subprocess.CompletedProcess(
-            args=cmd, returncode=-1,
-            stdout=e.stdout or "", stderr=(e.stderr or "") + "\n[TIMEOUT]"
-        )
-    except subprocess.CalledProcessError as e:
-        return e
+def _run(
+    cmd: list[str], cwd: Path, timeout: int = 300, check: bool = False
+) -> SafeRunResult:
+    """Run a subprocess via safe_run with workspace containment."""
+    return safe_run(
+        cmd,
+        workspace=cwd,
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        risk_level="medium",
+    )
 
 
 def _which(cmd: str) -> bool:
@@ -161,7 +183,9 @@ def _find_files(root: Path, pattern: str = "*") -> list[Path]:
 
 def _print_step(step: str, status: str = "") -> None:
     """Print a formatted step header."""
-    icon = "✅" if status == "ok" else "❌" if status == "fail" else "🔍" if status == "skip" else "→"
+    icon = (
+        "✅" if status == "ok" else "❌" if status == "fail" else "🔍" if status == "skip" else "→"
+    )
     print(f"  {icon}  {step}")
 
 
@@ -176,31 +200,64 @@ def run_preflight_checks(root: Path) -> list[dict]:
 
     # Check root exists
     if not root.exists():
-        issues.append({"severity": "ERROR", "type": "preflight", "message": f"Path does not exist: {root}"})
+        issues.append(
+            {"severity": "ERROR", "type": "preflight", "message": f"Path does not exist: {root}"}
+        )
         return issues
 
     if not root.is_dir():
-        issues.append({"severity": "ERROR", "type": "preflight", "message": f"Path is not a directory: {root}"})
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "preflight",
+                "message": f"Path is not a directory: {root}",
+            }
+        )
         return issues
 
     # Git check
     git_dir = root / ".git"
     if not git_dir.exists():
-        issues.append({"severity": "WARN", "type": "preflight", "message": "Not a git repository — changelog generation will be limited"})
+        issues.append(
+            {
+                "severity": "WARN",
+                "type": "preflight",
+                "message": "Not a git repository — changelog generation will be limited",
+            }
+        )
     else:
         result = _run(["git", "-C", str(root), "status", "--porcelain"], root)
         uncommitted = [l for l in result.stdout.split("\n") if l.strip()]
         if uncommitted:
-            issues.append({"severity": "WARN", "type": "preflight", "message": f"{len(uncommitted)} uncommitted change(s) — consider committing first", "detail": result.stdout.strip()[:500]})
+            issues.append(
+                {
+                    "severity": "WARN",
+                    "type": "preflight",
+                    "message": f"{len(uncommitted)} uncommitted change(s) — consider committing first",
+                    "detail": result.stdout.strip()[:500],
+                }
+            )
 
     # Basic file structure
     readme = root / "README.md"
     if not readme.exists():
-        issues.append({"severity": "WARN", "type": "preflight", "message": "README.md not found — release should include documentation"})
+        issues.append(
+            {
+                "severity": "WARN",
+                "type": "preflight",
+                "message": "README.md not found — release should include documentation",
+            }
+        )
 
     gitignore = root / ".gitignore"
     if not gitignore.exists():
-        issues.append({"severity": "INFO", "type": "preflight", "message": ".gitignore not found — consider adding one"})
+        issues.append(
+            {
+                "severity": "INFO",
+                "type": "preflight",
+                "message": ".gitignore not found — consider adding one",
+            }
+        )
 
     return issues
 
@@ -233,16 +290,35 @@ def check_env_and_secrets(root: Path) -> list[dict]:
                 rel_env_paths.append(str(rel))
 
     for env_file in env_files:
-        issues.append({
-            "severity": "ERROR",
-            "type": "secret",
-            "message": f".env file found in release staging: {rel_env_paths.pop(0)}",
-            "fix": "Remove .env files or add to .gitignore before releasing",
-            "blocking": True,
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "secret",
+                "message": f".env file found in release staging: {rel_env_paths.pop(0)}",
+                "fix": "Remove .env files or add to .gitignore before releasing",
+                "blocking": True,
+            }
+        )
 
     # Scan source files for hardcoded API keys/secrets
-    source_extensions = {".py", ".js", ".ts", ".jsx", ".tsx", ".rs", ".go", ".java", ".sh", ".yml", ".yaml", ".toml", ".cfg", ".conf", ".ini", ".env.example"}
+    source_extensions = {
+        ".py",
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".rs",
+        ".go",
+        ".java",
+        ".sh",
+        ".yml",
+        ".yaml",
+        ".toml",
+        ".cfg",
+        ".conf",
+        ".ini",
+        ".env.example",
+    }
     scanned = 0
     for p in _find_files(root):
         ext = p.suffix.lower()
@@ -269,7 +345,7 @@ def check_env_and_secrets(root: Path) -> list[dict]:
             matches = []
             for m in pattern.finditer(content):
                 # Check if this match is on a suppressed line
-                line_no = content[:m.start()].count('\n') + 1
+                line_no = content[: m.start()].count("\n") + 1
                 if line_no not in suppressed_lines:
                     matches.append(m.group())
             if matches:
@@ -280,13 +356,15 @@ def check_env_and_secrets(root: Path) -> list[dict]:
                 # Redact the actual secret for display
                 for m in matches:
                     displayed = m[:6] + "..." if len(m) > 8 else "(redacted)"
-                    issues.append({
-                        "severity": "ERROR",
-                        "type": "secret",
-                        "message": f"Potential secret found in {rel_path}: '{displayed}'",
-                        "pattern": pattern.pattern[:50] + "...",
-                        "blocking": True,
-                    })
+                    issues.append(
+                        {
+                            "severity": "ERROR",
+                            "type": "secret",
+                            "message": f"Potential secret found in {rel_path}: '{displayed}'",
+                            "pattern": pattern.pattern[:50] + "...",
+                            "blocking": True,
+                        }
+                    )
         scanned += 1
 
     if scanned > 0:
@@ -371,20 +449,24 @@ def check_metadata(root: Path) -> tuple[dict, list[dict]]:
             metadata["type"] = "python"
 
     if not metadata["name"]:
-        issues.append({
-            "severity": "ERROR",
-            "type": "metadata",
-            "message": "Could not determine package name — no pyproject.toml, setup.py, package.json, or Cargo.toml found",
-            "blocking": True,
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "metadata",
+                "message": "Could not determine package name — no pyproject.toml, setup.py, package.json, or Cargo.toml found",
+                "blocking": True,
+            }
+        )
 
     if not metadata["version"]:
-        issues.append({
-            "severity": "ERROR",
-            "type": "metadata",
-            "message": "Could not determine package version — no version found in any config file",
-            "blocking": True,
-        })
+        issues.append(
+            {
+                "severity": "ERROR",
+                "type": "metadata",
+                "message": "Could not determine package version — no version found in any config file",
+                "blocking": True,
+            }
+        )
 
     return metadata, issues
 
@@ -401,7 +483,11 @@ def run_tests(root: Path) -> list[dict]:
 
     # Python: pytest
     if _which("pytest") or (root / "pyproject.toml").exists() or (root / "setup.py").exists():
-        test_files = list(root.rglob("test_*.py")) + list(root.rglob("*_test.py")) + list(root.rglob("tests/*.py"))
+        test_files = (
+            list(root.rglob("test_*.py"))
+            + list(root.rglob("*_test.py"))
+            + list(root.rglob("tests/*.py"))
+        )
         if test_files:
             test_ran = True
             _print_step("Running Python tests (pytest)...")
@@ -414,17 +500,23 @@ def run_tests(root: Path) -> list[dict]:
                 _print_step("Python tests passed", "ok")
             else:
                 _print_step("Python tests failed", "fail")
-                issues.append({
-                    "severity": "ERROR",
-                    "type": "test",
-                    "message": f"Python tests failed (exit code {result.returncode})",
-                    "detail": (result.stdout + result.stderr)[:2000],
-                    "blocking": True,
-                })
+                issues.append(
+                    {
+                        "severity": "ERROR",
+                        "type": "test",
+                        "message": f"Python tests failed (exit code {result.returncode})",
+                        "detail": (result.stdout + result.stderr)[:2000],
+                        "blocking": True,
+                    }
+                )
 
     # Node: npm test
     if not test_ran and (root / "package.json").exists():
-        pkg = json.loads(_safe_read(root / "package.json")) if _safe_read(root / "package.json") else {}
+        pkg = (
+            json.loads(_safe_read(root / "package.json"))
+            if _safe_read(root / "package.json")
+            else {}
+        )
         if "scripts" in pkg and "test" in pkg["scripts"]:
             test_ran = True
             _print_step("Running npm test...")
@@ -433,13 +525,15 @@ def run_tests(root: Path) -> list[dict]:
                 _print_step("npm tests passed", "ok")
             else:
                 _print_step("npm tests failed", "fail")
-                issues.append({
-                    "severity": "ERROR",
-                    "type": "test",
-                    "message": f"npm test failed (exit code {result.returncode})",
-                    "detail": (result.stdout + result.stderr)[:2000],
-                    "blocking": True,
-                })
+                issues.append(
+                    {
+                        "severity": "ERROR",
+                        "type": "test",
+                        "message": f"npm test failed (exit code {result.returncode})",
+                        "detail": (result.stdout + result.stderr)[:2000],
+                        "blocking": True,
+                    }
+                )
 
     # Rust: cargo test
     if not test_ran and (root / "Cargo.toml").exists() and _which("cargo"):
@@ -450,21 +544,25 @@ def run_tests(root: Path) -> list[dict]:
             _print_step("Rust tests passed", "ok")
         else:
             _print_step("Rust tests failed", "fail")
-            issues.append({
-                "severity": "ERROR",
-                "type": "test",
-                "message": f"cargo test failed (exit code {result.returncode})",
-                "detail": (result.stdout + result.stderr)[:2000],
-                "blocking": True,
-            })
+            issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "test",
+                    "message": f"cargo test failed (exit code {result.returncode})",
+                    "detail": (result.stdout + result.stderr)[:2000],
+                    "blocking": True,
+                }
+            )
 
     if not test_ran:
         _print_step("No tests discovered — skipping", "skip")
-        issues.append({
-            "severity": "INFO",
-            "type": "test",
-            "message": "No test runner detected (pytest, npm test, cargo test)",
-        })
+        issues.append(
+            {
+                "severity": "INFO",
+                "type": "test",
+                "message": "No test runner detected (pytest, npm test, cargo test)",
+            }
+        )
 
     return issues
 
@@ -486,30 +584,42 @@ def run_build(root: Path, version_override: str | None = None) -> list[dict]:
             build_ran = True
             _print_step("Building Python package...")
             # Check if build module is installed
-            result = _run([sys.executable, "-m", "build", "--sdist", "--wheel", "."], root, timeout=300)
+            result = _run(
+                [sys.executable, "-m", "build", "--sdist", "--wheel", "."], root, timeout=300
+            )
             if result.returncode == 0:
                 _print_step("Python build succeeded", "ok")
-            elif "No module named build" in result.stderr or "No module named build" in result.stdout:
+            elif (
+                "No module named build" in result.stderr or "No module named build" in result.stdout
+            ):
                 _print_step("Python build skipped (pip install build first)", "skip")
-                issues.append({
-                    "severity": "WARN",
-                    "type": "build",
-                    "message": "Python build module not installed — run: pip install build",
-                })
+                issues.append(
+                    {
+                        "severity": "WARN",
+                        "type": "build",
+                        "message": "Python build module not installed — run: pip install build",
+                    }
+                )
                 build_ran = False
             else:
                 _print_step("Python build failed", "fail")
-                issues.append({
-                    "severity": "ERROR",
-                    "type": "build",
-                    "message": f"Python build failed (exit code {result.returncode})",
-                    "detail": (result.stdout + result.stderr)[:2000],
-                    "blocking": True,
-                })
+                issues.append(
+                    {
+                        "severity": "ERROR",
+                        "type": "build",
+                        "message": f"Python build failed (exit code {result.returncode})",
+                        "detail": (result.stdout + result.stderr)[:2000],
+                        "blocking": True,
+                    }
+                )
 
     # Node: npm run build
     if not build_ran and (root / "package.json").exists():
-        pkg = json.loads(_safe_read(root / "package.json")) if _safe_read(root / "package.json") else {}
+        pkg = (
+            json.loads(_safe_read(root / "package.json"))
+            if _safe_read(root / "package.json")
+            else {}
+        )
         if "scripts" in pkg and "build" in pkg["scripts"]:
             build_ran = True
             _print_step("Running npm run build...")
@@ -518,13 +628,15 @@ def run_build(root: Path, version_override: str | None = None) -> list[dict]:
                 _print_step("npm build succeeded", "ok")
             else:
                 _print_step("npm build failed", "fail")
-                issues.append({
-                    "severity": "ERROR",
-                    "type": "build",
-                    "message": f"npm run build failed (exit code {result.returncode})",
-                    "detail": (result.stdout + result.stderr)[:2000],
-                    "blocking": True,
-                })
+                issues.append(
+                    {
+                        "severity": "ERROR",
+                        "type": "build",
+                        "message": f"npm run build failed (exit code {result.returncode})",
+                        "detail": (result.stdout + result.stderr)[:2000],
+                        "blocking": True,
+                    }
+                )
 
     # Rust: cargo build
     if not build_ran and (root / "Cargo.toml").exists() and _which("cargo"):
@@ -535,13 +647,15 @@ def run_build(root: Path, version_override: str | None = None) -> list[dict]:
             _print_step("Rust build succeeded", "ok")
         else:
             _print_step("Rust build failed", "fail")
-            issues.append({
-                "severity": "ERROR",
-                "type": "build",
-                "message": f"cargo build --release failed (exit code {result.returncode})",
-                "detail": (result.stdout + result.stderr)[:2000],
-                "blocking": True,
-            })
+            issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "build",
+                    "message": f"cargo build --release failed (exit code {result.returncode})",
+                    "detail": (result.stdout + result.stderr)[:2000],
+                    "blocking": True,
+                }
+            )
 
     if not build_ran:
         _print_step("No build system detected — skipping build step", "skip")
@@ -575,7 +689,7 @@ def clean_temp_files(root: Path) -> int:
     for p in list(root.rglob("__pycache__")):
         if p.is_dir() and not _is_excluded(str(p.relative_to(root)) if p != root else ""):
             try:
-                shutil.rmtree(p)
+                safe_rmtree(p, workspace=root, force=True)
                 cleaned += 1
             except Exception:
                 pass
@@ -596,11 +710,8 @@ def clean_temp_files(root: Path) -> int:
     # Do NOT clean dist/ — it contains the built wheel and sdist.
     build_dir = root / "build"
     if build_dir.exists() and build_dir.is_dir():
-        try:
-            shutil.rmtree(build_dir)
-            cleaned += 1
-        except Exception:
-            pass
+        safe_rmtree(build_dir, workspace=root, force=True)
+        cleaned += 1
 
     return cleaned
 
@@ -610,14 +721,15 @@ def clean_temp_files(root: Path) -> int:
 # ---------------------------------------------------------------------------
 
 
-def create_release_folder(root: Path, metadata: dict,
-version_override: str | None = None) -> Path | None:
+def create_release_folder(
+    root: Path, metadata: dict, version_override: str | None = None
+) -> Path | None:
     """Create a timestamped release folder. Returns the path or None on failure."""
     name = metadata.get("name", "project")
     version = version_override or metadata.get("version", "0.0.0")
     timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
-    safe_name = re.sub(r'[^a-zA-Z0-9_.-]', '_', str(name))
-    safe_version = re.sub(r'[^a-zA-Z0-9_.-]', '_', str(version))
+    safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", str(name))
+    safe_version = re.sub(r"[^a-zA-Z0-9_.-]", "_", str(version))
 
     release_dir_name = f"{safe_name}-v{safe_version}-{timestamp}"
     release_path = root / RELEASE_DIR_NAME / release_dir_name
@@ -636,8 +748,9 @@ version_override: str | None = None) -> Path | None:
 # ---------------------------------------------------------------------------
 
 
-def create_changelog(root: Path, release_path: Path, metadata: dict,
-version_override: str | None = None) -> Path | None:
+def create_changelog(
+    root: Path, release_path: Path, metadata: dict, version_override: str | None = None
+) -> Path | None:
     """Generate a CHANGELOG.md from git history. Returns path or None."""
     version = version_override or metadata.get("version", "0.0.0")
     name = metadata.get("name", "Project")
@@ -655,7 +768,8 @@ version_override: str | None = None) -> Path | None:
     if git_dir.exists() and _which("git"):
         result = _run(
             ["git", "-C", str(root), "log", "--oneline", "--no-decorate", "-50"],
-            root, timeout=30,
+            root,
+            timeout=30,
         )
         if result.returncode == 0 and result.stdout.strip():
             commits = [l.strip() for l in result.stdout.split("\n") if l.strip()]
@@ -668,7 +782,8 @@ version_override: str | None = None) -> Path | None:
             # Also get latest tag
             tag_result = _run(
                 ["git", "-C", str(root), "describe", "--tags", "--abbrev=0"],
-                root, timeout=10,
+                root,
+                timeout=10,
             )
             if tag_result.returncode == 0 and tag_result.stdout.strip():
                 tag = tag_result.stdout.strip()
@@ -701,8 +816,9 @@ version_override: str | None = None) -> Path | None:
 # ---------------------------------------------------------------------------
 
 
-def create_install_instructions(release_path: Path, metadata: dict,
-version_override: str | None = None) -> Path | None:
+def create_install_instructions(
+    release_path: Path, metadata: dict, version_override: str | None = None
+) -> Path | None:
     """Generate INSTALL.md with setup instructions. Returns path or None."""
     version = version_override or metadata.get("version", "0.0.0")
     name = metadata.get("name", "Project")
@@ -717,87 +833,97 @@ version_override: str | None = None) -> Path | None:
     ]
 
     if pkg_type == "python":
-        lines.extend([
-            "- Python 3.11 or higher",
-            "- pip (Python package installer)",
-            "",
-            "## Quick Install",
-            "",
-            "```bash",
-            "# Install from the release archive",
-            f"cd {name}-v{version}",
-            "pip install .",
-            "",
-            "# Verify the installation",
-            "toolcase --version",
-            "toolcase --verify-install",
-            "```",
-            "",
-            "## Hermes Skill Installation",
-            "",
-            "For use as a Hermes Agent skill:",
-            "```bash",
-            "mkdir -p ~/.hermes/skills/toolcase-self-improve",
-            "cp SKILL.md manifest.json ~/.hermes/skills/toolcase-self-improve/",
-            "cp -r scripts/ references/ ~/.hermes/skills/toolcase-self-improve/",
-            "```",
-        ])
+        lines.extend(
+            [
+                "- Python 3.11 or higher",
+                "- pip (Python package installer)",
+                "",
+                "## Quick Install",
+                "",
+                "```bash",
+                "# Install from the release archive",
+                f"cd {name}-v{version}",
+                "pip install .",
+                "",
+                "# Verify the installation",
+                "toolcase --version",
+                "toolcase --verify-install",
+                "```",
+                "",
+                "## Hermes Skill Installation",
+                "",
+                "For use as a Hermes Agent skill:",
+                "```bash",
+                "mkdir -p ~/.hermes/skills/toolcase-self-improve",
+                "cp SKILL.md manifest.json ~/.hermes/skills/toolcase-self-improve/",
+                "cp -r scripts/ references/ ~/.hermes/skills/toolcase-self-improve/",
+                "```",
+            ]
+        )
     elif pkg_type == "node":
-        lines.extend([
-            "- Node.js 16 or higher",
-            "- npm or yarn",
-            "",
-            "## Quick Install",
-            "",
-            "```bash",
-            f"cd {name}-v{version}",
-            "npm install",
-            "",
-            "# Development",
-            "npm run dev",
-            "",
-            "# Production build",
-            "npm run build",
-            "npm start",
-            "```",
-        ])
+        lines.extend(
+            [
+                "- Node.js 16 or higher",
+                "- npm or yarn",
+                "",
+                "## Quick Install",
+                "",
+                "```bash",
+                f"cd {name}-v{version}",
+                "npm install",
+                "",
+                "# Development",
+                "npm run dev",
+                "",
+                "# Production build",
+                "npm run build",
+                "npm start",
+                "```",
+            ]
+        )
     elif pkg_type == "rust":
-        lines.extend([
-            "- Rust toolchain (rustc, cargo)",
-            "",
-            "## Quick Install",
-            "",
-            "```bash",
-            f"cd {name}-v{version}",
-            "cargo build --release",
-            f"./target/release/{name}",
-            "```",
-        ])
+        lines.extend(
+            [
+                "- Rust toolchain (rustc, cargo)",
+                "",
+                "## Quick Install",
+                "",
+                "```bash",
+                f"cd {name}-v{version}",
+                "cargo build --release",
+                f"./target/release/{name}",
+                "```",
+            ]
+        )
     else:
-        lines.extend([
-            "- Appropriate runtime for the project",
+        lines.extend(
+            [
+                "- Appropriate runtime for the project",
+                "",
+                "## Quick Install",
+                "",
+                "```bash",
+                f"cd {name}-v{version}",
+                "# See README.md for specific setup instructions",
+                "```",
+            ]
+        )
+
+    lines.extend(
+        [
             "",
-            "## Quick Install",
+            "## Verification",
             "",
             "```bash",
-            f"cd {name}-v{version}",
-            "# See README.md for specific setup instructions",
+            "# Check that everything is working",
+            "# (project-specific verification steps)",
             "```",
-        ])
-
-    lines.extend([
-        "",
-        "## Verification",
-        "",
-        "```bash",
-        "# Check that everything is working",
-        "# (project-specific verification steps)",
-        "```",
-        "",
-        "---",
-        f"*Generated by release_packager.py on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
-        "",
-    ])
+            "",
+            "---",
+            f"*Generated by release_packager.py on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
+            "",
+        ]
+    )
 
     try:
         install_path.write_text("\n".join(lines), encoding="utf-8")
@@ -813,13 +939,14 @@ version_override: str | None = None) -> Path | None:
 # ---------------------------------------------------------------------------
 
 
-def create_release_zip(root: Path, release_path: Path, metadata: dict,
-version_override: str | None = None) -> Path | None:
+def create_release_zip(
+    root: Path, release_path: Path, metadata: dict, version_override: str | None = None
+) -> Path | None:
     """Copy project files into release folder and create a zip archive."""
     version = version_override or metadata.get("version", "0.0.0")
     name = metadata.get("name", "project")
-    safe_name = re.sub(r'[^a-zA-Z0-9_.-]', '_', str(name))
-    safe_version = re.sub(r'[^a-zA-Z0-9_.-]', '_', str(version))
+    safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", str(name))
+    safe_version = re.sub(r"[^a-zA-Z0-9_.-]", "_", str(version))
 
     # Copy project files (excluding ignored dirs / patterns) into release folder
     _print_step("Copying project files to release folder...")
@@ -918,11 +1045,20 @@ def format_report(
             "type": metadata_info.get("type"),
         },
         "pipeline": {
-            "preflight": {"ok": len([i for i in preflight if i["severity"] == "ERROR"]) == 0, "issues": len(preflight)},
+            "preflight": {
+                "ok": len([i for i in preflight if i["severity"] == "ERROR"]) == 0,
+                "issues": len(preflight),
+            },
             "secrets": {"ok": len(secrets) == 0, "issues": len(secrets)},
             "metadata": {"ok": len(metadata_issues) == 0, "issues": len(metadata_issues)},
-            "tests": {"ok": len([i for i in tests if i["severity"] == "ERROR"]) == 0, "issues": len(tests)},
-            "build": {"ok": len([i for i in build if i["severity"] == "ERROR"]) == 0, "issues": len(build)},
+            "tests": {
+                "ok": len([i for i in tests if i["severity"] == "ERROR"]) == 0,
+                "issues": len(tests),
+            },
+            "build": {
+                "ok": len([i for i in build if i["severity"] == "ERROR"]) == 0,
+                "issues": len(build),
+            },
         },
         "cleaned_files": cleaned_count,
         "release_folder": str(release_dir) if release_dir else None,
@@ -948,20 +1084,32 @@ def print_report(report: dict) -> None:
     pipeline = report["pipeline"]
     issues = report["issues"]
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     status = "✅ RELEASE READY" if report["success"] else "❌ RELEASE BLOCKED"
     print(f" {status}")
-    print(f" Package: {meta.get('name', 'Unknown')} v{meta.get('version', '?')} ({meta.get('type', '?')})")
+    print(
+        f" Package: {meta.get('name', 'Unknown')} v{meta.get('version', '?')} ({meta.get('type', '?')})"
+    )
     if report["dry_run"]:
         print(f" 🏁 Dry-run mode — no files were actually packaged")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     print(f"\n 📋 Pipeline Summary:")
-    print(f"    🔍 Preflight:    {'✅' if pipeline['preflight']['ok'] else '⚠'}  ({pipeline['preflight']['issues']} issues)")
-    print(f"    🔒 Secrets:      {'✅' if pipeline['secrets']['ok'] else '❌'}  ({pipeline['secrets']['issues']} issues)")
-    print(f"    📦 Metadata:     {'✅' if pipeline['metadata']['ok'] else '❌'}  ({pipeline['metadata']['issues']} issues)")
-    print(f"    🧪 Tests:        {'✅' if pipeline['tests']['ok'] else '❌'}  ({pipeline['tests']['issues']} issues)")
-    print(f"    🏗  Build:        {'✅' if pipeline['build']['ok'] else '❌'}  ({pipeline['build']['issues']} issues)")
+    print(
+        f"    🔍 Preflight:    {'✅' if pipeline['preflight']['ok'] else '⚠'}  ({pipeline['preflight']['issues']} issues)"
+    )
+    print(
+        f"    🔒 Secrets:      {'✅' if pipeline['secrets']['ok'] else '❌'}  ({pipeline['secrets']['issues']} issues)"
+    )
+    print(
+        f"    📦 Metadata:     {'✅' if pipeline['metadata']['ok'] else '❌'}  ({pipeline['metadata']['issues']} issues)"
+    )
+    print(
+        f"    🧪 Tests:        {'✅' if pipeline['tests']['ok'] else '❌'}  ({pipeline['tests']['issues']} issues)"
+    )
+    print(
+        f"    🏗  Build:        {'✅' if pipeline['build']['ok'] else '❌'}  ({pipeline['build']['issues']} issues)"
+    )
 
     if report["cleaned_files"] > 0:
         print(f"    🧹 Cleaned:      {report['cleaned_files']} temp file(s) removed")
@@ -976,7 +1124,9 @@ def print_report(report: dict) -> None:
 
     if issues["total"] > 0:
         print(f"\n ⚠  Issues ({issues['total']} total):")
-        print(f"    🔴 Blocking: {issues['blocking']}  |  🟡 Errors: {issues['errors']}  |  🟠 Warnings: {issues['warnings']}  |  🔵 Info: {issues['infos']}")
+        print(
+            f"    🔴 Blocking: {issues['blocking']}  |  🟡 Errors: {issues['errors']}  |  🟠 Warnings: {issues['warnings']}  |  🔵 Info: {issues['infos']}"
+        )
 
         # Show blocking issues prominently
         blocking = [i for i in report["all_issues"] if i.get("blocking")]
@@ -988,7 +1138,9 @@ def print_report(report: dict) -> None:
                     print(f"      🔧 Fix: {issue['fix']}")
 
         # Show warnings
-        warnings_list = [i for i in report["all_issues"] if i["severity"] == "WARN" and not i.get("blocking")]
+        warnings_list = [
+            i for i in report["all_issues"] if i["severity"] == "WARN" and not i.get("blocking")
+        ]
         if warnings_list:
             print(f"\n ⚠  Warnings:")
             for issue in warnings_list:
@@ -1028,14 +1180,15 @@ Examples:
     parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
     parser.add_argument("--skip-tests", action="store_true", help="Skip test execution step")
     parser.add_argument("--skip-build", action="store_true", help="Skip build step")
-    parser.add_argument("--dry-run", action="store_true", help="Run all checks but do not package anything")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Run all checks but do not package anything"
+    )
     parser.add_argument("--no-clean", action="store_true", help="Skip cleaning temporary files")
     return parser
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = build_arg_parser()
     args = parser.parse_args()
 
@@ -1061,9 +1214,9 @@ def main() -> None:
     cleaned_count = 0
 
     # Print header
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 📦 RELEASE PACKAGER")
-    print(f" {'='*60}")
+    print(f" {'=' * 60}")
     print(f" Target:   {root}")
     print(f" Dry-run:  {'Yes' if dry_run else 'No'}")
     print(f" Tests:    {'Skipped' if skip_tests else 'Yes'}")
@@ -1078,12 +1231,25 @@ def main() -> None:
     if any(i["severity"] == "ERROR" for i in preflight):
         # Fatal preflight error (path doesn't exist etc.)
         if args.json:
-            print(json.dumps({
-                "success": False, "dry_run": dry_run,
-                "package": {"name": None, "version": None, "type": None},
-                "pipeline": {}, "issues": {"total": len(all_issues), "blocking": 0, "errors": 0, "warnings": 0, "infos": 0},
-                "all_issues": all_issues,
-            }, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "success": False,
+                        "dry_run": dry_run,
+                        "package": {"name": None, "version": None, "type": None},
+                        "pipeline": {},
+                        "issues": {
+                            "total": len(all_issues),
+                            "blocking": 0,
+                            "errors": 0,
+                            "warnings": 0,
+                            "infos": 0,
+                        },
+                        "all_issues": all_issues,
+                    },
+                    indent=2,
+                )
+            )
         else:
             print(f"\n ❌ Preflight checks failed — aborting")
         sys.exit(EXIT_BLOCKED)
@@ -1097,8 +1263,18 @@ def main() -> None:
         if args.json:
             # Build partial report
             report = format_report(
-                preflight, secrets, ({"name": None, "version": None, "type": None}, []),
-                [], [], 0, None, None, None, None, all_issues, dry_run,
+                preflight,
+                secrets,
+                ({"name": None, "version": None, "type": None}, []),
+                [],
+                [],
+                0,
+                None,
+                None,
+                None,
+                None,
+                all_issues,
+                dry_run,
             )
             print(json.dumps(report, indent=2, ensure_ascii=False))
         else:
@@ -1115,8 +1291,18 @@ def main() -> None:
     if blocking_meta:
         if args.json:
             report = format_report(
-                preflight, secrets, (metadata_info, metadata_issues),
-                [], [], 0, None, None, None, None, all_issues, dry_run,
+                preflight,
+                secrets,
+                (metadata_info, metadata_issues),
+                [],
+                [],
+                0,
+                None,
+                None,
+                None,
+                None,
+                all_issues,
+                dry_run,
             )
             print(json.dumps(report, indent=2, ensure_ascii=False))
         else:
@@ -1125,7 +1311,10 @@ def main() -> None:
                 print(f"   • {issue['message']}")
         sys.exit(EXIT_BLOCKED)
 
-    _print_step(f"Package: {metadata_info['name']} v{metadata_info['version']} ({metadata_info['type']})", "ok")
+    _print_step(
+        f"Package: {metadata_info['name']} v{metadata_info['version']} ({metadata_info['type']})",
+        "ok",
+    )
 
     # ── Steps 4-10: Tests, Build, Cleanup, Package (ALL skipped in dry-run) ──
     if dry_run:
@@ -1145,8 +1334,18 @@ def main() -> None:
             if blocking_tests:
                 if args.json:
                     report = format_report(
-                        preflight, secrets, (metadata_info, metadata_issues),
-                        test_issues, [], 0, None, None, None, None, all_issues, dry_run,
+                        preflight,
+                        secrets,
+                        (metadata_info, metadata_issues),
+                        test_issues,
+                        [],
+                        0,
+                        None,
+                        None,
+                        None,
+                        None,
+                        all_issues,
+                        dry_run,
                     )
                     print(json.dumps(report, indent=2, ensure_ascii=False))
                 else:
@@ -1168,9 +1367,18 @@ def main() -> None:
             if blocking_build:
                 if args.json:
                     report = format_report(
-                        preflight, secrets, (metadata_info, metadata_issues),
+                        preflight,
+                        secrets,
+                        (metadata_info, metadata_issues),
                         [] if skip_tests else test_issues,
-                        build_issues, 0, None, None, None, None, all_issues, dry_run,
+                        build_issues,
+                        0,
+                        None,
+                        None,
+                        None,
+                        None,
+                        all_issues,
+                        dry_run,
                     )
                     print(json.dumps(report, indent=2, ensure_ascii=False))
                 else:
@@ -1196,12 +1404,28 @@ def main() -> None:
         _print_step("Creating release folder...")
         release_dir = create_release_folder(root, metadata_info, version_override)
         if release_dir is None:
-            all_issues.append({"severity": "ERROR", "type": "packaging", "message": "Failed to create release folder"})
+            all_issues.append(
+                {
+                    "severity": "ERROR",
+                    "type": "packaging",
+                    "message": "Failed to create release folder",
+                }
+            )
             if args.json:
-                report = format_report(preflight, secrets, (metadata_info, metadata_issues),
-                                       [] if skip_tests else (test_issues if 'test_issues' in dir() else []),
-                                       [] if skip_build else (build_issues if 'build_issues' in dir() else []),
-                                       cleaned_count, None, None, None, None, all_issues, dry_run)
+                report = format_report(
+                    preflight,
+                    secrets,
+                    (metadata_info, metadata_issues),
+                    [] if skip_tests else (test_issues if "test_issues" in dir() else []),
+                    [] if skip_build else (build_issues if "build_issues" in dir() else []),
+                    cleaned_count,
+                    None,
+                    None,
+                    None,
+                    None,
+                    all_issues,
+                    dry_run,
+                )
                 print(json.dumps(report, indent=2, ensure_ascii=False))
             sys.exit(EXIT_ERROR)
 
@@ -1219,11 +1443,18 @@ def main() -> None:
 
     # ── Final report ───────────────────────────────────────────
     report = format_report(
-        preflight, secrets, (metadata_info, metadata_issues),
+        preflight,
+        secrets,
+        (metadata_info, metadata_issues),
         [] if skip_tests else (locals().get("test_issues", [])),
         [] if skip_build else (locals().get("build_issues", [])),
-        cleaned_count, release_dir, changelog_path, install_path, zip_path,
-        all_issues, dry_run,
+        cleaned_count,
+        release_dir,
+        changelog_path,
+        install_path,
+        zip_path,
+        all_issues,
+        dry_run,
     )
 
     if args.json:

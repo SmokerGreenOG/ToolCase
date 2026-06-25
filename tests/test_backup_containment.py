@@ -5,8 +5,10 @@ Verifies:
   - Destructive operations require --force
   - In-workspace operations succeed
 """
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
@@ -48,6 +50,7 @@ class TestBackupManagerWorkspaceContainment(unittest.TestCase):
     def tearDown(self) -> None:
         """Clean up."""
         import shutil
+
         shutil.rmtree(self.workspace, ignore_errors=True)
         shutil.rmtree(self.outside_dir, ignore_errors=True)
 
@@ -56,16 +59,15 @@ class TestBackupManagerWorkspaceContainment(unittest.TestCase):
     def test_snapshot_inside_workspace_succeeds(self) -> None:
         """Snapshot of file inside workspace → succeeds."""
         result = _run_backup("--json", "snapshot", "test.py", cwd=self.workspace)
-        self.assertEqual(result.returncode, 0,
-                         f"Expected exit 0, got {result.returncode}: {result.stderr}")
+        self.assertEqual(
+            result.returncode, 0, f"Expected exit 0, got {result.returncode}: {result.stderr}"
+        )
         self.assertIn('"status": "ok"', result.stdout)
 
     def test_snapshot_outside_workspace_rejected(self) -> None:
         """Snapshot of file outside workspace → rejected."""
-        result = _run_backup("--json", "snapshot", self.outside_file,
-                             cwd=self.workspace)
-        self.assertEqual(result.returncode, 2,
-                         f"Expected exit 2, got {result.returncode}")
+        result = _run_backup("--json", "snapshot", self.outside_file, cwd=self.workspace)
+        self.assertEqual(result.returncode, 2, f"Expected exit 2, got {result.returncode}")
         self.assertIn("outside workspace", result.stdout)
 
     # ── Workspace boundary: restore-file ───────────────────
@@ -73,54 +75,61 @@ class TestBackupManagerWorkspaceContainment(unittest.TestCase):
     def test_restore_file_outside_workspace_rejected(self) -> None:
         """Restore-file with external path → rejected."""
         result = _run_backup(
-            "--json", "restore-file", "2026-01-01-000000", self.outside_file,
-            "--force", cwd=self.workspace,
+            "--json",
+            "restore-file",
+            "2026-01-01-000000",
+            self.outside_file,
+            "--force",
+            cwd=self.workspace,
         )
-        self.assertEqual(result.returncode, 2,
-                         f"Expected exit 2, got {result.returncode}")
+        self.assertEqual(result.returncode, 2, f"Expected exit 2, got {result.returncode}")
         self.assertIn("outside workspace", result.stdout)
 
     # ── --force enforcement ────────────────────────────────
 
     def test_restore_without_force_rejected(self) -> None:
         """Restore without --force → rejected."""
-        result = _run_backup("--json", "restore", "2026-01-01-000000",
-                             cwd=self.workspace)
-        self.assertEqual(result.returncode, 2,
-                         f"Expected exit 2, got {result.returncode}")
+        result = _run_backup("--json", "restore", "2026-01-01-000000", cwd=self.workspace)
+        self.assertEqual(result.returncode, 2, f"Expected exit 2, got {result.returncode}")
         self.assertIn("requires --force", result.stdout)
 
     def test_restore_file_without_force_rejected(self) -> None:
         """Restore-file without --force → rejected."""
         result = _run_backup(
-            "--json", "restore-file", "2026-01-01-000000", "test.py",
+            "--json",
+            "restore-file",
+            "2026-01-01-000000",
+            "test.py",
             cwd=self.workspace,
         )
-        self.assertEqual(result.returncode, 2,
-                         f"Expected exit 2, got {result.returncode}")
+        self.assertEqual(result.returncode, 2, f"Expected exit 2, got {result.returncode}")
         self.assertIn("requires --force", result.stdout)
 
     def test_prune_without_force_rejected(self) -> None:
         """Prune without --force → rejected."""
         result = _run_backup("--json", "prune", cwd=self.workspace)
-        self.assertEqual(result.returncode, 2,
-                         f"Expected exit 2, got {result.returncode}")
+        self.assertEqual(result.returncode, 2, f"Expected exit 2, got {result.returncode}")
         self.assertIn("requires --force", result.stdout)
 
     # ── --force allows destructive operations ──────────────
 
     def test_restore_with_force_allowed(self) -> None:
         """Restore with --force → allowed (even if snapshot missing)."""
-        result = _run_backup("--json", "restore", "2026-01-01-000000",
-                             "--force", cwd=self.workspace)
+        result = _run_backup(
+            "--json", "restore", "2026-01-01-000000", "--force", cwd=self.workspace
+        )
         # Exit 2 because snapshot doesn't exist, not because force was rejected
         self.assertIn("snapshot not found", result.stdout)
 
     def test_restore_file_with_force_allowed(self) -> None:
         """Restore-file with --force → allowed."""
         result = _run_backup(
-            "--json", "restore-file", "2026-01-01-000000", "test.py",
-            "--force", cwd=self.workspace,
+            "--json",
+            "restore-file",
+            "2026-01-01-000000",
+            "test.py",
+            "--force",
+            cwd=self.workspace,
         )
         # Exit 2 because snapshot doesn't exist, not force rejection
         self.assertIn("snapshot not found", result.stdout)
@@ -129,10 +138,8 @@ class TestBackupManagerWorkspaceContainment(unittest.TestCase):
 
     def test_prune_with_force_allowed(self) -> None:
         """Prune with --force → allowed."""
-        result = _run_backup("--json", "prune", "--keep", "5", "--force",
-                             cwd=self.workspace)
-        self.assertEqual(result.returncode, 0,
-                         f"Expected exit 0, got {result.returncode}")
+        result = _run_backup("--json", "prune", "--keep", "5", "--force", cwd=self.workspace)
+        self.assertEqual(result.returncode, 0, f"Expected exit 0, got {result.returncode}")
 
 
 if __name__ == "__main__":

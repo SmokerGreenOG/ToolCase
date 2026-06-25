@@ -33,17 +33,25 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    "build", "dist", ".next", "coverage", ".svelte-kit",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        ".next",
+        "coverage",
+        ".svelte-kit",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 TARGET_EXTENSIONS = frozenset({".tsx", ".ts", ".jsx", ".js", ".vue", ".svelte", ".html"})
 
@@ -54,12 +62,16 @@ TARGET_EXTENSIONS = frozenset({".tsx", ".ts", ".jsx", ".js", ".vue", ".svelte", 
 # Attribute extraction (captures attribute="...", attribute='...', attribute={...}, attribute)
 # Uses a brace-matching branch for JSX expressions like onClick={() => { handler() }}
 # so nested {} are handled correctly.
-_ATTR_DQ = r'"([^"]*)"'           # double-quoted
-_ATTR_SQ = r"'([^']*)'"          # single-quoted
+_ATTR_DQ = r'"([^"]*)"'  # double-quoted
+_ATTR_SQ = r"'([^']*)'"  # single-quoted
 _ATTR_BRACE = r"\{((?:[^{}]|\{[^{}]*\})*)\}"  # JSX brace expression (one level deep)
 ATTR_RE = re.compile(
     r"(\w[\w.-]*)\s*=\s*(?:"
-    + _ATTR_DQ + "|" + _ATTR_SQ + "|" + _ATTR_BRACE
+    + _ATTR_DQ
+    + "|"
+    + _ATTR_SQ
+    + "|"
+    + _ATTR_BRACE
     + r")|(\b\w[\w.-]*)(?=\s|/?>|$)",
     re.DOTALL,
 )
@@ -69,18 +81,18 @@ ATTR_RE = re.compile(
 # ---------------------------------------------------------------------------
 
 EMPTY_HANDLER_BODIES = re.compile(
-    r'\{\s*(?:/\*[\s\S]*?\*/)?\s*\}',
+    r"\{\s*(?:/\*[\s\S]*?\*/)?\s*\}",
     re.DOTALL,
 )
 
 CONSOLE_LOG_ONLY = re.compile(
-    r'console\.(?:log|debug|info|warn|error)\s*\([^)]*\)',
+    r"console\.(?:log|debug|info|warn|error)\s*\([^)]*\)",
 )
 
 # Callback expressions that look like function/arrow stubs
 # Matches () => {}, () => { }, function() {}, function() { }
 PLACEHOLDER_STUB = re.compile(
-    r'(?:\([^)]*\)\s*=>\s*\{\s*\}|function\s*\([^)]*\)\s*\{\s*\})',
+    r"(?:\([^)]*\)\s*=>\s*\{\s*\}|function\s*\([^)]*\)\s*\{\s*\})",
 )
 
 # ---------------------------------------------------------------------------
@@ -118,7 +130,7 @@ def is_console_log_only(value: str) -> bool:
     if inner.startswith("{") and inner.endswith("}"):
         inner = inner[1:-1].strip()
     # Remove the function signature part
-    no_sig = re.sub(r'(?:\([^)]*\)\s*=>|function\s*\([^)]*\))', "", inner).strip()
+    no_sig = re.sub(r"(?:\([^)]*\)\s*=>|function\s*\([^)]*\))", "", inner).strip()
     # Check if only console statements remain, possibly with semicolons
     calls = CONSOLE_LOG_ONLY.findall(no_sig)
     remaining = CONSOLE_LOG_ONLY.sub("", no_sig).strip().strip(";").strip()
@@ -131,7 +143,7 @@ def is_placeholder_handler(value: str) -> bool:
     if inner.startswith("{") and inner.endswith("}"):
         inner = inner[1:-1].strip()
     # Remove outer function/arrow wrapper, then check for empty body
-    stripped = re.sub(r'(?:\([^)]*\)\s*=>|function\s*\([^)]*\)\s*)', "", inner).strip()
+    stripped = re.sub(r"(?:\([^)]*\)\s*=>|function\s*\([^)]*\)\s*)", "", inner).strip()
     if EMPTY_HANDLER_BODIES.fullmatch(stripped):
         return True
     # Also check if the whole value is just () => {} or similar
@@ -264,56 +276,66 @@ def scan_file(filepath: Path) -> list[dict]:
             is_disabled = "disabled" in attrs
 
             if has_onclick_attr and onclick.strip() in ("", "{}", "{ }"):
-                findings.append({
-                    "type": "button_empty_onclick",
-                    "severity": "warning",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> has an empty onClick handler",
-                    "snippet": _snippet(lines, line_no),
-                })
+                findings.append(
+                    {
+                        "type": "button_empty_onclick",
+                        "severity": "warning",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f"<{tag_name}> has an empty onClick handler",
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
             elif not has_onclick_attr and not is_disabled:
-                findings.append({
-                    "type": "button_no_onclick",
-                    "severity": "warning",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> has no onClick handler",
-                    "snippet": _snippet(lines, line_no),
-                })
+                findings.append(
+                    {
+                        "type": "button_no_onclick",
+                        "severity": "warning",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f"<{tag_name}> has no onClick handler",
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
             elif has_onclick_attr and is_placeholder_handler(onclick):
-                findings.append({
-                    "type": "button_placeholder_handler",
-                    "severity": "info",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> has a placeholder onClick handler (empty stub)",
-                    "snippet": _snippet(lines, line_no),
-                })
+                findings.append(
+                    {
+                        "type": "button_placeholder_handler",
+                        "severity": "info",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f"<{tag_name}> has a placeholder onClick handler (empty stub)",
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
             elif has_onclick_attr and is_console_log_only(onclick):
-                findings.append({
-                    "type": "button_console_log_handler",
-                    "severity": "info",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> onClick only calls console.log",
-                    "snippet": _snippet(lines, line_no),
-                })
+                findings.append(
+                    {
+                        "type": "button_console_log_handler",
+                        "severity": "info",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f"<{tag_name}> onClick only calls console.log",
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
 
             if is_disabled and "title" not in attrs and "aria-label" not in attrs:
-                findings.append({
-                    "type": "disabled_button_no_reason",
-                    "severity": "info",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> is disabled but has no title or aria-label explaining why",
-                    "snippet": _snippet(lines, line_no),
-                })
+                findings.append(
+                    {
+                        "type": "disabled_button_no_reason",
+                        "severity": "info",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f"<{tag_name}> is disabled but has no title or aria-label explaining why",
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
 
         # ---- Anchor / Link checks ----
         if tag_lower in ("a", "link", "linkbutton") or tag_name.endswith("Link"):
@@ -323,25 +345,34 @@ def scan_file(filepath: Path) -> list[dict]:
             onclick = attrs.get("onclick", attrs.get("on-click", ""))
 
             if has_href_attr and href.strip() == "#" and not has_onclick_attr:
-                findings.append({
-                    "type": "link_href_hash",
-                    "severity": "warning",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> has href=\"#\" with no onClick",
-                    "snippet": _snippet(lines, line_no),
-                })
-            elif has_href_attr and href.strip() == "#" and has_onclick_attr and is_placeholder_handler(onclick):
-                findings.append({
-                    "type": "link_placeholder",
-                    "severity": "info",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> has href=\"#\" with a placeholder onClick",
-                    "snippet": _snippet(lines, line_no),
-                })
+                findings.append(
+                    {
+                        "type": "link_href_hash",
+                        "severity": "warning",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f'<{tag_name}> has href="#" with no onClick',
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
+            elif (
+                has_href_attr
+                and href.strip() == "#"
+                and has_onclick_attr
+                and is_placeholder_handler(onclick)
+            ):
+                findings.append(
+                    {
+                        "type": "link_placeholder",
+                        "severity": "info",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f'<{tag_name}> has href="#" with a placeholder onClick',
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
 
         # ---- Form checks ----
         if tag_lower == "form" or tag_name.endswith("Form"):
@@ -350,29 +381,41 @@ def scan_file(filepath: Path) -> list[dict]:
             has_submit_attr = "onsubmit" in attrs or "on-submit" in attrs or "@submit" in attrs
             has_action_attr = "action" in attrs
             if not has_submit_attr and not has_action_attr:
-                findings.append({
-                    "type": "form_no_submit",
-                    "severity": "warning",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> has no onSubmit handler and no action attribute",
-                    "snippet": _snippet(lines, line_no),
-                })
+                findings.append(
+                    {
+                        "type": "form_no_submit",
+                        "severity": "warning",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f"<{tag_name}> has no onSubmit handler and no action attribute",
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
             elif has_submit_attr and is_placeholder_handler(onsubmit):
-                findings.append({
-                    "type": "form_placeholder_submit",
-                    "severity": "info",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> has a placeholder onSubmit handler",
-                    "snippet": _snippet(lines, line_no),
-                })
+                findings.append(
+                    {
+                        "type": "form_placeholder_submit",
+                        "severity": "info",
+                        "file": str(filepath),
+                        "line": line_no,
+                        "tag": tag_name,
+                        "message": f"<{tag_name}> has a placeholder onSubmit handler",
+                        "snippet": _snippet(lines, line_no),
+                    }
+                )
 
         # ---- Menu-item checks ----
-        if "menu" in tag_lower or "menuitem" in tag_lower or tag_lower in (
-            "menuitem", "menu-item", "listitem", "li",
+        if (
+            "menu" in tag_lower
+            or "menuitem" in tag_lower
+            or tag_lower
+            in (
+                "menuitem",
+                "menu-item",
+                "listitem",
+                "li",
+            )
         ):
             click_attrs = (
                 attrs.get("onclick", ""),
@@ -386,27 +429,31 @@ def scan_file(filepath: Path) -> list[dict]:
             has_href = attrs.get("href", "").strip() not in ("", "#")
 
             if not has_action and not has_href:
-                findings.append({
-                    "type": "menu_item_no_action",
-                    "severity": "warning",
-                    "file": str(filepath),
-                    "line": line_no,
-                    "tag": tag_name,
-                    "message": f"<{tag_name}> menu-item has no action handler",
-                    "snippet": _snippet(lines, line_no),
-                })
-            elif has_action:
-                action_val = next((a for a in click_attrs if a.strip()), "")
-                if is_placeholder_handler(action_val):
-                    findings.append({
-                        "type": "menu_item_placeholder",
-                        "severity": "info",
+                findings.append(
+                    {
+                        "type": "menu_item_no_action",
+                        "severity": "warning",
                         "file": str(filepath),
                         "line": line_no,
                         "tag": tag_name,
-                        "message": f"<{tag_name}> menu-item has a placeholder action",
+                        "message": f"<{tag_name}> menu-item has no action handler",
                         "snippet": _snippet(lines, line_no),
-                    })
+                    }
+                )
+            elif has_action:
+                action_val = next((a for a in click_attrs if a.strip()), "")
+                if is_placeholder_handler(action_val):
+                    findings.append(
+                        {
+                            "type": "menu_item_placeholder",
+                            "severity": "info",
+                            "file": str(filepath),
+                            "line": line_no,
+                            "tag": tag_name,
+                            "message": f"<{tag_name}> menu-item has a placeholder action",
+                            "snippet": _snippet(lines, line_no),
+                        }
+                    )
 
     return findings
 
@@ -463,12 +510,12 @@ def summarize(findings: list[dict]) -> dict:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse args.
 
-        Args:
-            argv: Description.
+    Args:
+        argv: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     parser = argparse.ArgumentParser(
         description="Scan frontend files for buttons, forms, and menu-items with no real action.",
         epilog="Exit codes: 0 = no issues, 1 = issues found, 2 = error",
@@ -503,12 +550,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     """main.
 
-        Args:
-            argv: Description.
+    Args:
+        argv: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     args = parse_args(argv)
 
     target = Path(args.path).resolve()
@@ -555,12 +602,12 @@ def main(argv: list[str] | None = None) -> int:
 
 def _print_human(result: dict) -> None:
     """Print a human-readable summary."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Button Action Scanner — Summary")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Total issues found:  {result['total']}")
     print(f"  Files affected:      {result['files_affected']}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     if result["by_type"]:
         print(f"\n  Breakdown by type:")
@@ -575,7 +622,7 @@ def _print_human(result: dict) -> None:
         by_file.setdefault(f["file"], []).append(f)
 
     if by_file:
-        print(f"{'─'*60}")
+        print(f"{'─' * 60}")
         for filepath, issues in sorted(by_file.items()):
             rel = Path(filepath).resolve()
             print(f"\n  📄  {rel}")
@@ -588,7 +635,7 @@ def _print_human(result: dict) -> None:
                 if issue.get("snippet"):
                     for snippet_line in issue["snippet"].split("\n"):
                         print(f"           {snippet_line}")
-        print(f"\n{'─'*60}")
+        print(f"\n{'─' * 60}")
         print()
 
 

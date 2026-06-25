@@ -7,6 +7,7 @@ Output:
   - Per-functie rapport
   - Trend over tijd (als --compare met vorige run)
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -17,12 +18,22 @@ import sys
 from pathlib import Path
 from collections import defaultdict
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", ".git", "__pycache__", ".venv", "venv",
-    ".backups", ".rsi_reports", ".rsi_backups", "release",
-    "build", "dist",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".backups",
+        ".rsi_reports",
+        ".rsi_backups",
+        "release",
+        "build",
+        "dist",
         ".self_improve_reports",
-        })
+    }
+)
 
 
 def analyze_file(filepath: Path) -> dict:
@@ -107,21 +118,23 @@ def print_report(results: list[dict]) -> None:
     # Sort by coverage ascending (worst first)
     sorted_results = sorted(
         [r for r in results if not r.get("syntax_error") and r["functions"] > 0],
-        key=lambda r: r["func_coverage"]
+        key=lambda r: r["func_coverage"],
     )
 
     print(f"   {'File':<40s} {'Func':>5s} {'Typed':>5s} {'Cover%':>7s}")
-    print(f"   {'-'*58}")
+    print(f"   {'-' * 58}")
 
     for r in sorted_results:
         fname = Path(r["file"]).name
         bar = "🔴" if r["func_coverage"] < 15 else "🟡" if r["func_coverage"] < 60 else "🟢"
-        print(f"   {bar} {fname:<37s} {r['functions']:4d}  {r['typed_functions']:4d}  "
-              f"{r['func_coverage']:6.1f}%")
+        print(
+            f"   {bar} {fname:<37s} {r['functions']:4d}  {r['typed_functions']:4d}  "
+            f"{r['func_coverage']:6.1f}%"
+        )
 
     # Untyped functions in worst files
     print()
-    print(f"   {'-'*58}")
+    print(f"   {'-' * 58}")
     print(f"   TOP 10 UNTYPED FILES:")
     untyped_files = [r for r in sorted_results if r["func_coverage"] < 50]
     for r in untyped_files[:10]:
@@ -146,13 +159,12 @@ def print_report(results: list[dict]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Type Coverage — Meet type hint coverage"
-    )
+    parser = argparse.ArgumentParser(description="Type Coverage — Meet type hint coverage")
     parser.add_argument("path", nargs="?", default=".", help="Workspace path")
     parser.add_argument("--json", "-j", action="store_true")
-    parser.add_argument("--min-funcs", type=int, default=1,
-                        help="Minimale functies om file mee te tellen")
+    parser.add_argument(
+        "--min-funcs", type=int, default=1, help="Minimale functies om file mee te tellen"
+    )
     parser.add_argument("--version", action="version", version="type_coverage v1.0.0")
 
     args = parser.parse_args()
@@ -168,16 +180,25 @@ def main() -> None:
     if args.json:
         total_funcs = sum(r["functions"] for r in results)
         total_typed = sum(r["typed_functions"] for r in results)
-        print(json.dumps({
-            "overall": round((total_typed / max(1, total_funcs)) * 100, 1),
-            "files": len(results),
-            "results": [{
-                "file": Path(r["file"]).name,
-                "functions": r["functions"],
-                "typed_functions": r["typed_functions"],
-                "func_coverage": r["func_coverage"],
-            } for r in results]
-        }, indent=2, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "overall": round((total_typed / max(1, total_funcs)) * 100, 1),
+                    "files": len(results),
+                    "results": [
+                        {
+                            "file": Path(r["file"]).name,
+                            "functions": r["functions"],
+                            "typed_functions": r["typed_functions"],
+                            "func_coverage": r["func_coverage"],
+                        }
+                        for r in results
+                    ],
+                },
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
     else:
         print_report(results)
 

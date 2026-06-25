@@ -14,13 +14,14 @@ Gebruik:
     python php_dep_audit.py <path>
     python php_dep_audit.py <path> --json
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import json
 import shutil
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -31,12 +32,12 @@ COMPOSER = shutil.which("composer") or shutil.which("composer.phar")
 def find_composer_files(root: Path) -> dict:
     """Find composer files.
 
-        Args:
-            root: Description.
+    Args:
+        root: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     result = {
         "composer_json": None,
         "composer_lock": None,
@@ -122,10 +123,14 @@ def run_composer_audit(root: Path) -> dict:
         return {"error": "Composer not installed", "vulnerabilities": []}
 
     try:
-        result = subprocess.run(
+        result = safe_run(
             [COMPOSER, "audit", "--format=json", "--no-interaction"],
-            cwd=str(root), capture_output=True, text=True, timeout=120,
-            encoding="utf-8", errors="replace",
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=120,
+            encoding="utf-8",
+            errors="replace",
         )
 
         if result.returncode == 0:
@@ -135,17 +140,19 @@ def run_composer_audit(root: Path) -> dict:
             data = json.loads(result.stdout)
             vulns = []
             for adv in data.get("advisories", []):
-                vulns.append({
-                    "package": adv.get("packageName", "unknown"),
-                    "cve": adv.get("cve", ""),
-                    "title": adv.get("title", ""),
-                    "link": adv.get("link", ""),
-                })
+                vulns.append(
+                    {
+                        "package": adv.get("packageName", "unknown"),
+                        "cve": adv.get("cve", ""),
+                        "title": adv.get("title", ""),
+                        "link": adv.get("link", ""),
+                    }
+                )
             return {"clean": False, "vulnerabilities": vulns}
         except (json.JSONDecodeError, KeyError, IndexError):
             return {"clean": None, "vulnerabilities": [], "raw": result.stdout[:1000]}
 
-    except subprocess.TimeoutExpired:
+    except TimeoutError:
         return {"error": "Audit timed out", "vulnerabilities": []}
     except FileNotFoundError:
         return {"error": "Composer not found", "vulnerabilities": []}
@@ -157,26 +164,32 @@ def run_composer_outdated(root: Path) -> dict:
         return {"error": "Composer not installed", "outdated": []}
 
     try:
-        result = subprocess.run(
+        result = safe_run(
             [COMPOSER, "outdated", "--format=json", "--no-interaction", "--direct"],
-            cwd=str(root), capture_output=True, text=True, timeout=120,
-            encoding="utf-8", errors="replace",
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=120,
+            encoding="utf-8",
+            errors="replace",
         )
         try:
             data = json.loads(result.stdout)
             outdated_list = []
             if data.get("installed"):
                 for pkg in data["installed"]:
-                    outdated_list.append({
-                        "name": pkg["name"],
-                        "current": pkg["version"],
-                        "latest": pkg.get("latest", "?"),
-                        "status": pkg.get("latest-status", "unknown"),
-                    })
+                    outdated_list.append(
+                        {
+                            "name": pkg["name"],
+                            "current": pkg["version"],
+                            "latest": pkg.get("latest", "?"),
+                            "status": pkg.get("latest-status", "unknown"),
+                        }
+                    )
             return {"outdated": outdated_list, "count": len(outdated_list)}
         except (json.JSONDecodeError, KeyError, IndexError):
             return {"outdated": [], "count": 0, "raw": result.stdout[:500]}
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, OSError):
         return {"outdated": [], "count": 0}
 
 
@@ -191,13 +204,17 @@ def print_report(json_info: dict, lock_info: dict, audit: dict, outdated: dict) 
         print(f"\n   Project: {json_info['name']}")
         print(f"   PHP: {json_info.get('php_version', 'unknown')}")
         print(f"   License: {', '.join(json_info.get('license', []))}")
-        print(f"   Dependencies: {json_info['dependencies'].get('require', 0)} prod, "
-              f"{json_info['dependencies'].get('require-dev', 0)} dev")
+        print(
+            f"   Dependencies: {json_info['dependencies'].get('require', 0)} prod, "
+            f"{json_info['dependencies'].get('require-dev', 0)} dev"
+        )
 
     # Lock info
     if lock_info:
-        print(f"\n   Installed: {lock_info['total_packages']} packages "
-              f"({lock_info['packages_prod']} prod, {lock_info['packages_dev']} dev)")
+        print(
+            f"\n   Installed: {lock_info['total_packages']} packages "
+            f"({lock_info['packages_prod']} prod, {lock_info['packages_dev']} dev)"
+        )
 
         if lock_info.get("by_type"):
             print(f"   By type:")
@@ -223,7 +240,13 @@ def print_report(json_info: dict, lock_info: dict, audit: dict, outdated: dict) 
     if outdated.get("outdated"):
         print(f"\n   Outdated ({outdated['count']}):")
         for pkg in sorted(outdated["outdated"], key=lambda p: p["status"])[:10]:
-            status_icon = "🔴" if "major" in pkg.get("status", "") else "🟡" if "minor" in pkg.get("status", "") else "🔵"
+            status_icon = (
+                "🔴"
+                if "major" in pkg.get("status", "")
+                else "🟡"
+                if "minor" in pkg.get("status", "")
+                else "🔵"
+            )
             print(f"     {status_icon} {pkg['name']}: {pkg['current']} → {pkg['latest']}")
     elif not outdated.get("error"):
         print(f"   Outdated: ✅ All up to date")
@@ -243,8 +266,7 @@ def print_json_output(json_info: dict, lock_info: dict, audit: dict, outdated: d
 
 
 def main():
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(description="php_dep_audit.py - Composer dependency auditor")
     parser.add_argument("path", help="PHP project directory with composer.json")
     parser.add_argument("--json", "-j", action="store_true", help="JSON output")
@@ -255,7 +277,8 @@ def main():
     args = parser.parse_args()
     root = Path(args.path)
     if not root.exists():
-        print(f"Not found", file=sys.stderr); sys.exit(1)
+        print(f"Not found", file=sys.stderr)
+        sys.exit(1)
     if not root.is_dir():
         root = root.parent
 

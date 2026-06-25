@@ -18,6 +18,7 @@ Gebruik:
     python ui_consistency.py <path> --tailwind            # Tailwind CSS mode
     python ui_consistency.py <path> --strict              # Strict mode
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -34,40 +35,46 @@ from pathlib import Path
 # Constants
 # ---------------------------------------------------------------------------
 
-EXCLUDE_DIRS = frozenset({
-    "node_modules", "target", ".git", "__pycache__", ".venv", "venv",
-    "build", "dist", ".next",
+EXCLUDE_DIRS = frozenset(
+    {
+        "node_modules",
+        "target",
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+        ".next",
         ".backups",
-
         ".rsi_backups",
-
         ".rsi_reports",
-
         ".self_improve_reports",
-        })
+    }
+)
 
 # CSS/Tailwind color pattern
 COLOR_PATTERN = re.compile(
-    r'(?:color|background|background-color|border-color|outline-color|'
-    r'accent-color|caret-color|fill|stroke)\s*:\s*'
-    r'([#(:\w][^;{]+)',
+    r"(?:color|background|background-color|border-color|outline-color|"
+    r"accent-color|caret-color|fill|stroke)\s*:\s*"
+    r"([#(:\w][^;{]+)",
     re.IGNORECASE,
 )
 
-HEX_COLOR = re.compile(r'#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b')
-RGB_COLOR = re.compile(r'rgb(?:a)?\s*\([^)]+\)', re.IGNORECASE)
-CSS_VAR = re.compile(r'var\(--[\w-]+\)')
-TAILWIND_COLOR = re.compile(r'\b(bg|text|border|outline|ring|from|via|to)-[\w-]+')
+HEX_COLOR = re.compile(r"#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b")
+RGB_COLOR = re.compile(r"rgb(?:a)?\s*\([^)]+\)", re.IGNORECASE)
+CSS_VAR = re.compile(r"var\(--[\w-]+\)")
+TAILWIND_COLOR = re.compile(r"\b(bg|text|border|outline|ring|from|via|to)-[\w-]+")
 
 # Spacing patterns
 SPACING_PATTERN = re.compile(
-    r'(?:margin|padding|gap|row-gap|column-gap|inset|top|right|bottom|left)\s*:\s*[^;]+',
+    r"(?:margin|padding|gap|row-gap|column-gap|inset|top|right|bottom|left)\s*:\s*[^;]+",
     re.IGNORECASE,
 )
 
 # Font patterns
 FONT_PATTERN = re.compile(
-    r'(?:font-family|font-size|font-weight|font-style|font|typography)\s*:\s*[^;]+',
+    r"(?:font-family|font-size|font-weight|font-style|font|typography)\s*:\s*[^;]+",
     re.IGNORECASE,
 )
 
@@ -89,9 +96,21 @@ def collect_ui_files(root: Path) -> list[Path]:
 
         # Only look in UI-related directories
         dir_name = path.name.lower()
-        if any(x in str(path).lower() for x in
-               ["components", "pages", "layouts", "styles", "ui", "theme",
-                "app", "src/components", "src/pages", "src/styles"]):
+        if any(
+            x in str(path).lower()
+            for x in [
+                "components",
+                "pages",
+                "layouts",
+                "styles",
+                "ui",
+                "theme",
+                "app",
+                "src/components",
+                "src/pages",
+                "src/styles",
+            ]
+        ):
             for fn in filenames:
                 ext = Path(fn).suffix.lower()
                 if ext in ui_exts:
@@ -131,14 +150,16 @@ def analyze_color_consistency(files: list[Path]) -> dict:
 
             # Track hardcoded colors (not in a --var context)
             line_start = max(0, m.start() - 100)
-            context = content[line_start:line_start + 150]
+            context = content[line_start : line_start + 150]
             if "var(" not in context:
-                colors["hardcoded_colors"].append({
-                    "file": str(fp),
-                    "color": hex_color,
-                    "line": content[:m.start()].count("\n") + 1,
-                    "context": context[:80].strip(),
-                })
+                colors["hardcoded_colors"].append(
+                    {
+                        "file": str(fp),
+                        "color": hex_color,
+                        "line": content[: m.start()].count("\n") + 1,
+                        "context": context[:80].strip(),
+                    }
+                )
 
         # RGB colors
         for m in RGB_COLOR.finditer(content):
@@ -187,11 +208,13 @@ def analyze_styling_patterns(files: list[Path]) -> dict:
         results["css_classes"] += class_count
 
         if inline_count > 0:
-            results["files_with_inline"].append({
-                "file": str(fp),
-                "inline_count": inline_count,
-                "class_count": class_count,
-            })
+            results["files_with_inline"].append(
+                {
+                    "file": str(fp),
+                    "inline_count": inline_count,
+                    "class_count": class_count,
+                }
+            )
 
     return results
 
@@ -206,10 +229,10 @@ def analyze_component_naming(files: list[Path]) -> dict:
         "naming_examples": [],
     }
 
-    pascal = re.compile(r'^[A-Z][a-zA-Z0-9]*\.(tsx|jsx)$')
-    kebab = re.compile(r'^[a-z][a-z0-9-]*\.(tsx|jsx|ts|js)$')
-    snake = re.compile(r'^[a-z][a-z0-9_]*\.(tsx|jsx|ts|js)$')
-    camel = re.compile(r'^[a-z][a-zA-Z0-9]*\.(tsx|jsx|ts|js)$')
+    pascal = re.compile(r"^[A-Z][a-zA-Z0-9]*\.(tsx|jsx)$")
+    kebab = re.compile(r"^[a-z][a-z0-9-]*\.(tsx|jsx|ts|js)$")
+    snake = re.compile(r"^[a-z][a-z0-9_]*\.(tsx|jsx|ts|js)$")
+    camel = re.compile(r"^[a-z][a-zA-Z0-9]*\.(tsx|jsx|ts|js)$")
 
     for fp in files:
         name = fp.name
@@ -227,9 +250,9 @@ def analyze_component_naming(files: list[Path]) -> dict:
 
 def print_report(colors: dict, styling: dict, naming: dict) -> None:
     """Print a formatted UI consistency report."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🎨 UI CONSISTENCY CHECK")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Color Analysis
     total_colors = colors["total_colors"]
@@ -239,7 +262,7 @@ def print_report(colors: dict, styling: dict, naming: dict) -> None:
 
     print(f"\n ── Colors ──")
     print(f"   Total colors found:  {total_colors}")
-    print(f"   ✅ CSS vars used:     {css_var_count}x ({colors['css_var_ratio']*100:.0f}%)")
+    print(f"   ✅ CSS vars used:     {css_var_count}x ({colors['css_var_ratio'] * 100:.0f}%)")
     print(f"   🟥 Hardcoded hex:     {hex_count}x")
     print(f"   ⚠  Hardcoded (no var): {hardcoded}x")
     print()
@@ -277,8 +300,9 @@ def print_report(colors: dict, styling: dict, naming: dict) -> None:
             print(f"     .{cls}: {count}x")
 
     # Component Naming
-    total_components = (naming["pascal_case"] + naming["kebab_case"]
-                        + naming["snake_case"] + naming["camel_case"])
+    total_components = (
+        naming["pascal_case"] + naming["kebab_case"] + naming["snake_case"] + naming["camel_case"]
+    )
     print(f"\n ── File Naming Conventions ──")
     print(f"   PascalCase (React):  {naming['pascal_case']}  ✅")
     print(f"   kebab-case (utils):  {naming['kebab_case']}  ✅")
@@ -333,10 +357,12 @@ Examples:
     )
     parser.add_argument("path", nargs="?", default=".", help="Project root")
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--tailwind", "-t", action="store_true",
-                        help="Tailwind CSS mode (extra checks)")
-    parser.add_argument("--strict", "-s", action="store_true",
-                        help="Strict mode (lagere tolerantie)")
+    parser.add_argument(
+        "--tailwind", "-t", action="store_true", help="Tailwind CSS mode (extra checks)"
+    )
+    parser.add_argument(
+        "--strict", "-s", action="store_true", help="Strict mode (lagere tolerantie)"
+    )
     parser.add_argument("--version", action="version", version="ui_consistency.py v1.0.0")
 
     args = parser.parse_args()

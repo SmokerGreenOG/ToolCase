@@ -28,12 +28,12 @@ Gebruik:
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import json
 import os
 import re
 import struct
-import subprocess
 import sys
 import zipfile
 from collections import defaultdict
@@ -92,11 +92,11 @@ def find_jadx() -> Path | None:
 
 def _run(cmd: list[str], timeout: int = 60) -> tuple[str, str, int]:
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        r = safe_run(cmd, capture_output=True, text=True, timeout=timeout)
         return r.stdout, r.stderr, r.returncode
     except FileNotFoundError:
         return "", f"Not found: {cmd[0]}", -1
-    except subprocess.TimeoutExpired:
+    except TimeoutError:
         return "", "Timeout", -1
 
 
@@ -124,10 +124,12 @@ def analyze_apk_structure(apk_path: Path) -> dict[str, Any]:
                 ext = Path(name).suffix.lower()
                 info["all_extensions"][ext] += 1
                 if name.endswith(".dex"):
-                    info["dex_files"].append({
-                        "name": name,
-                        "size_kb": round(entry.file_size / 1024, 1),
-                    })
+                    info["dex_files"].append(
+                        {
+                            "name": name,
+                            "size_kb": round(entry.file_size / 1024, 1),
+                        }
+                    )
                 elif name.startswith("lib/"):
                     arch = name.split("/")[1]
                     info["native_libs"].setdefault(arch, []).append(name)
@@ -166,10 +168,10 @@ def find_apkanalyzer() -> Path | None:
                 return exe
     # Also try just 'apkanalyzer' on PATH
     try:
-        r = subprocess.run(["where", "apkanalyzer"], capture_output=True, text=True, timeout=5)
+        r = safe_run(["where", "apkanalyzer"], capture_output=True, text=True, timeout=5)
         if r.returncode == 0 and r.stdout.strip():
             return Path(r.stdout.strip().splitlines()[0])
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, OSError):
         pass
     return None
 
@@ -200,38 +202,46 @@ def analyze_executable(apk_path: Path) -> list[dict[str, Any]]:
                 if dexdump:
                     # Primary: use dexdump (official Android SDK tool)
                     import tempfile
+
                     with tempfile.NamedTemporaryFile(suffix=".dex", delete=False) as tmp:
                         tmp.write(dex_bytes)
                         tmp_path = tmp.name
                     stdout, _, _ = _run([str(dexdump), "-f", tmp_path], timeout=30)
                     os.unlink(tmp_path)
 
-                    entry.update({
-                        "classes": _parse_int(stdout, r"class_defs_size\s*:\s*(\d+)"),
-                        "methods": _parse_int(stdout, r"method_ids_size\s*:\s*(\d+)"),
-                        "fields": _parse_int(stdout, r"field_ids_size\s*:\s*(\d+)"),
-                        "strings": _parse_int(stdout, r"string_ids_size\s*:\s*(\d+)"),
-                        "types": _parse_int(stdout, r"type_ids_size\s*:\s*(\d+)"),
-                        "prototypes": _parse_int(stdout, r"proto_ids_size\s*:\s*(\d+)"),
-                        "data_size_kb": round(
-                            _parse_int(stdout, r"data_size\\s*:\\s*(\\d+)") / 1024, 1),
-                        "dex_version": _parse_str(stdout, r"DEX version '(\d+)'") or "?",
-                        "method": "dexdump",
-                    })
+                    entry.update(
+                        {
+                            "classes": _parse_int(stdout, r"class_defs_size\s*:\s*(\d+)"),
+                            "methods": _parse_int(stdout, r"method_ids_size\s*:\s*(\d+)"),
+                            "fields": _parse_int(stdout, r"field_ids_size\s*:\s*(\d+)"),
+                            "strings": _parse_int(stdout, r"string_ids_size\s*:\s*(\d+)"),
+                            "types": _parse_int(stdout, r"type_ids_size\s*:\s*(\d+)"),
+                            "prototypes": _parse_int(stdout, r"proto_ids_size\s*:\s*(\d+)"),
+                            "data_size_kb": round(
+                                _parse_int(stdout, r"data_size\\s*:\\s*(\\d+)") / 1024, 1
+                            ),
+                            "dex_version": _parse_str(stdout, r"DEX version '(\d+)'") or "?",
+                            "method": "dexdump",
+                        }
+                    )
                 else:
                     # Fallback: pure Python binary header parser
                     if len(dex_bytes) >= 112:
-                        entry.update({
-                            "classes": struct.unpack_from("<I", dex_bytes, 96)[0],
-                            "methods": struct.unpack_from("<I", dex_bytes, 88)[0],
-                            "fields": struct.unpack_from("<I", dex_bytes, 80)[0],
-                            "strings": struct.unpack_from("<I", dex_bytes, 56)[0],
-                            "types": struct.unpack_from("<I", dex_bytes, 64)[0],
-                            "prototypes": struct.unpack_from("<I", dex_bytes, 72)[0],
-                            "data_size_kb": round(struct.unpack_from("<I", dex_bytes, 104)[0] / 1024, 1),
-                            "dex_version": dex_bytes[4:7].decode("ascii", errors="replace"),
-                            "method": "binary",
-                        })
+                        entry.update(
+                            {
+                                "classes": struct.unpack_from("<I", dex_bytes, 96)[0],
+                                "methods": struct.unpack_from("<I", dex_bytes, 88)[0],
+                                "fields": struct.unpack_from("<I", dex_bytes, 80)[0],
+                                "strings": struct.unpack_from("<I", dex_bytes, 56)[0],
+                                "types": struct.unpack_from("<I", dex_bytes, 64)[0],
+                                "prototypes": struct.unpack_from("<I", dex_bytes, 72)[0],
+                                "data_size_kb": round(
+                                    struct.unpack_from("<I", dex_bytes, 104)[0] / 1024, 1
+                                ),
+                                "dex_version": dex_bytes[4:7].decode("ascii", errors="replace"),
+                                "method": "binary",
+                            }
+                        )
 
                 results.append(entry)
     except Exception:
@@ -289,7 +299,7 @@ def _extract_dex_strings(apk_path: Path) -> list[str]:
                     while pos < len(dex_bytes) and shift < 35:
                         byte = dex_bytes[pos]
                         pos += 1
-                        length |= (byte & 0x7f) << shift
+                        length |= (byte & 0x7F) << shift
                         shift += 7
                         if byte & 0x80 == 0:
                             break
@@ -297,7 +307,7 @@ def _extract_dex_strings(apk_path: Path) -> list[str]:
                         continue
 
                     try:
-                        raw = dex_bytes[pos: pos + length]
+                        raw = dex_bytes[pos : pos + length]
                         raw = raw.replace(b"\xc0\x80", b"\x00")
                         s = raw.decode("utf-8", errors="replace")
                         if s.strip():
@@ -361,7 +371,9 @@ def scan_urls(strings: list[str], manifest_xml: str = "") -> dict[str, Any]:
                     urls["ip_addresses"].append(ip)
 
     if manifest_xml:
-        schemes = re.findall(r"""android:scheme\s*=\s*['"]([^'"]+)['"]""", manifest_xml, re.IGNORECASE)
+        schemes = re.findall(
+            r"""android:scheme\s*=\s*['"]([^'"]+)['"]""", manifest_xml, re.IGNORECASE
+        )
         hosts = re.findall(r"""android:host\s*=\s*['"]([^'"]+)['"]""", manifest_xml, re.IGNORECASE)
         for i, host in enumerate(hosts):
             scheme = schemes[i] if i < len(schemes) else "https"
@@ -390,12 +402,16 @@ def verify_signing(apk_path: Path, apksigner: Path) -> dict[str, Any]:
     m_dn = re.search(r"certificate DN:\s*(.+)", stdout)
     m_sha = re.search(r"certificate SHA-256 digest:\s*(\S+)", stdout)
     if m_dn:
-        result["certificates"].append({"dn": m_dn.group(1).strip(), "sha256": m_sha.group(1) if m_sha else None})
+        result["certificates"].append(
+            {"dn": m_dn.group(1).strip(), "sha256": m_sha.group(1) if m_sha else None}
+        )
     for block in re.split(r"Signer #\d+", stdout)[1:]:
         m_dn = re.search(r"certificate DN:\s*(.+)", block)
         m_sha = re.search(r"certificate SHA-256 digest:\s*(\S+)", block)
         if m_dn and not any(c.get("dn") == m_dn.group(1).strip() for c in result["certificates"]):
-            result["certificates"].append({"dn": m_dn.group(1).strip(), "sha256": m_sha.group(1) if m_sha else None})
+            result["certificates"].append(
+                {"dn": m_dn.group(1).strip(), "sha256": m_sha.group(1) if m_sha else None}
+            )
 
     if re.search(r"v3(?:\.\d)? scheme[^:]*:\s*true", stdout):
         result["scheme"] = "v3"
@@ -416,11 +432,20 @@ def verify_signing(apk_path: Path, apksigner: Path) -> dict[str, Any]:
 def parse_aapt_badging(output: str) -> dict[str, Any]:
     """Parse aapt dump badging output."""
     data: dict[str, Any] = {
-        "package": None, "version_code": None, "version_name": None,
-        "sdk_version": None, "target_sdk": None, "compile_sdk": None,
-        "label": None, "permissions_used": [], "permissions_declared": [],
-        "features": [], "densities": [], "locales": [],
-        "native_code": [], "supports_screens": [],
+        "package": None,
+        "version_code": None,
+        "version_name": None,
+        "sdk_version": None,
+        "target_sdk": None,
+        "compile_sdk": None,
+        "label": None,
+        "permissions_used": [],
+        "permissions_declared": [],
+        "features": [],
+        "densities": [],
+        "locales": [],
+        "native_code": [],
+        "supports_screens": [],
     }
     for line in output.splitlines():
         line = line.strip()
@@ -428,40 +453,50 @@ def parse_aapt_badging(output: str) -> dict[str, Any]:
             continue
         if line.startswith("package:"):
             for key, pattern in [
-                ("package", r"name='([^']+)'"), ("version_code", r"versionCode='([^']+)'"),
-                ("version_name", r"versionName='([^']+)'"), ("compile_sdk", r"compileSdkVersion='([^']+)'"),
+                ("package", r"name='([^']+)'"),
+                ("version_code", r"versionCode='([^']+)'"),
+                ("version_name", r"versionName='([^']+)'"),
+                ("compile_sdk", r"compileSdkVersion='([^']+)'"),
             ]:
                 m = re.search(pattern, line)
-                if m: data[key] = m.group(1)
+                if m:
+                    data[key] = m.group(1)
         elif line.startswith("sdkVersion:"):
             data["sdk_version"] = line.split("'")[1] if "'" in line else line.split(":")[1].strip()
         elif line.startswith("targetSdkVersion:"):
             data["target_sdk"] = line.split("'")[1] if "'" in line else line.split(":")[1].strip()
         elif line.startswith("uses-permission:"):
             m = re.search(r"name='([^']+)'", line)
-            if m: data["permissions_used"].append(m.group(1))
+            if m:
+                data["permissions_used"].append(m.group(1))
         elif line.startswith("permission:"):
             m = re.search(r"name='([^']+)'", line)
-            if m: data["permissions_declared"].append(m.group(1))
+            if m:
+                data["permissions_declared"].append(m.group(1))
         elif line.startswith("uses-feature"):
             feat = {}
             m = re.search(r"name='([^']+)'", line)
-            if m: feat["name"] = m.group(1)
+            if m:
+                feat["name"] = m.group(1)
             m = re.search(r"required='([^']+)'", line)
-            if m: feat["required"] = m.group(1) == "true"
+            if m:
+                feat["required"] = m.group(1) == "true"
             data["features"].append(feat)
         elif line.startswith("application-label:"):
             if data["label"] is None:
                 data["label"] = line.split("'")[1] if "'" in line else line.split(":")[1].strip()
         elif line.startswith("application:"):
             m = re.search(r"label='([^']+)'", line)
-            if m: data["label"] = m.group(1)
+            if m:
+                data["label"] = m.group(1)
         elif line.startswith("densities:"):
             data["densities"] = [d.strip() for d in line.split(":")[1].strip().split(",")]
         elif line.startswith("locales:"):
             data["locales"] = [l.strip() for l in line.split(":")[1].strip().split(",")]
         elif line.startswith("native-code:"):
-            data["native_code"] = [a.strip() for a in line.split(":")[1].strip().split(",") if a.strip()]
+            data["native_code"] = [
+                a.strip() for a in line.split(":")[1].strip().split(",") if a.strip()
+            ]
         elif line.startswith("supports-screens:"):
             data["supports_screens"] = line.split(":")[1].strip()
     return data
@@ -470,13 +505,20 @@ def parse_aapt_badging(output: str) -> dict[str, Any]:
 def parse_aapt_xmltree(output: str) -> dict[str, Any]:
     """Parse aapt dump xmltree for components."""
     data: dict[str, Any] = {
-        "activities": [], "services": [], "receivers": [], "providers": [],
-        "meta_data": [], "intent_filters": defaultdict(list),
+        "activities": [],
+        "services": [],
+        "receivers": [],
+        "providers": [],
+        "meta_data": [],
+        "intent_filters": defaultdict(list),
     }
     COMPONENT_TAGS = {"activity", "activity-alias", "service", "receiver", "provider"}
     TYPE_MAP = {
-        "activity": "activities", "activity-alias": "activities",
-        "service": "services", "receiver": "receivers", "provider": "providers",
+        "activity": "activities",
+        "activity-alias": "activities",
+        "service": "services",
+        "receiver": "receivers",
+        "provider": "providers",
     }
     current: dict[str, Any] | None = None
     current_type: str | None = None
@@ -502,7 +544,8 @@ def parse_aapt_xmltree(output: str) -> dict[str, Any]:
             if current and indent <= current_depth and tag in COMPONENT_TAGS:
                 if in_filter and pending_filter_actions and current.get("name"):
                     data["intent_filters"][current["name"]].extend(
-                        {"action": a} for a in pending_filter_actions)
+                        {"action": a} for a in pending_filter_actions
+                    )
                 in_filter = False
                 pending_filter_actions = None
                 if current.get("name"):
@@ -520,28 +563,39 @@ def parse_aapt_xmltree(output: str) -> dict[str, Any]:
         if current:
             if "android:name" in stripped and '="' in stripped and not current.get("name"):
                 m = re.search(r'="([^"]*)"', stripped)
-                if m: current["name"] = m.group(1)
+                if m:
+                    current["name"] = m.group(1)
             if "android:exported" in stripped:
                 m = re.search(r'="([^"]*)"', stripped)
-                if m: current["exported"] = m.group(1)
-                elif "0xffffffff" in stripped: current["exported"] = "true"
-                elif "0x0" in stripped and "(type 0x12)" in stripped: current["exported"] = "false"
+                if m:
+                    current["exported"] = m.group(1)
+                elif "0xffffffff" in stripped:
+                    current["exported"] = "true"
+                elif "0x0" in stripped and "(type 0x12)" in stripped:
+                    current["exported"] = "false"
             elif "android:permission" in stripped and '="' in stripped:
                 m = re.search(r'="([^"]*)"', stripped)
                 current["permission"] = m.group(1) if m else None
             elif current_type == "provider" and "android:authorities" in stripped:
                 m = re.search(r'="([^"]*)"', stripped)
-                if m: current["authority"] = m.group(1)
+                if m:
+                    current["authority"] = m.group(1)
         if "E: meta-data" in stripped and current:
             m_name = re.search(r'android:name(?:\([^)]+\))?="([^"]+)"', stripped)
             m_value = re.search(r'android:value(?:\([^)]+\))?="([^"]+)"', stripped)
             if m_name:
-                data["meta_data"].append({
-                    "name": m_name.group(1), "value": m_value.group(1) if m_value else None,
-                    "component": current.get("name"), "type": current_type,
-                })
+                data["meta_data"].append(
+                    {
+                        "name": m_name.group(1),
+                        "value": m_value.group(1) if m_value else None,
+                        "component": current.get("name"),
+                        "type": current_type,
+                    }
+                )
     if in_filter and pending_filter_actions and current and current.get("name"):
-        data["intent_filters"][current["name"]].extend({"action": a} for a in pending_filter_actions)
+        data["intent_filters"][current["name"]].extend(
+            {"action": a} for a in pending_filter_actions
+        )
     if current and current.get("name"):
         data[TYPE_MAP.get(current_type, "activities")].append(current)
     return data
@@ -562,8 +616,10 @@ def run_jadx(apk_path: Path, output_dir: Path, threads: int = 4) -> dict[str, An
     stdout, stderr, rc = _run(cmd, timeout=600)
     java_files = list(output_dir.rglob("*.java"))
     return {
-        "success": len(java_files) > 0, "exit_code": rc,
-        "output_dir": str(output_dir), "java_files_count": len(java_files),
+        "success": len(java_files) > 0,
+        "exit_code": rc,
+        "output_dir": str(output_dir),
+        "java_files_count": len(java_files),
         "total_files_count": len(list(output_dir.rglob("*"))),
         "errors": [l for l in stderr.splitlines() if "ERROR" in l][:10] if stderr else [],
     }
@@ -587,14 +643,28 @@ def compare_apks(path1: Path, path2: Path) -> dict[str, Any]:
         m1 = parse_aapt_badging(b1) if b1 else {}
         m2 = parse_aapt_badging(b2) if b2 else {}
     return {
-        "apk1": {"path": str(path1), "size_mb": round(size1 / (1024 * 1024), 2), "files": s1["files_total"], "dex_count": len(s1["dex_files"])},
-        "apk2": {"path": str(path2), "size_mb": round(size2 / (1024 * 1024), 2), "files": s2["files_total"], "dex_count": len(s2["dex_files"])},
+        "apk1": {
+            "path": str(path1),
+            "size_mb": round(size1 / (1024 * 1024), 2),
+            "files": s1["files_total"],
+            "dex_count": len(s1["dex_files"]),
+        },
+        "apk2": {
+            "path": str(path2),
+            "size_mb": round(size2 / (1024 * 1024), 2),
+            "files": s2["files_total"],
+            "dex_count": len(s2["dex_files"]),
+        },
         "size_diff_mb": round((size2 - size1) / (1024 * 1024), 2),
         "size_diff_pct": round((size2 - size1) / size1 * 100, 1) if size1 > 0 else 0,
         "package_match": m1.get("package") == m2.get("package"),
         "version_change": f"{m1.get('version_name')} → {m2.get('version_name')}",
-        "perms_added": [p for p in m2.get("permissions_used", []) if p not in m1.get("permissions_used", [])],
-        "perms_removed": [p for p in m1.get("permissions_used", []) if p not in m2.get("permissions_used", [])],
+        "perms_added": [
+            p for p in m2.get("permissions_used", []) if p not in m1.get("permissions_used", [])
+        ],
+        "perms_removed": [
+            p for p in m1.get("permissions_used", []) if p not in m2.get("permissions_used", [])
+        ],
     }
 
 
@@ -606,32 +676,91 @@ def compare_apks(path1: Path, path2: Path) -> dict[str, Any]:
 def analyze_security(manifest: dict[str, Any], structure: dict[str, Any]) -> list[dict[str, Any]]:
     """Scan for common Android security misconfigurations."""
     findings: list[dict[str, Any]] = []
-    for a in [c for c in manifest.get("activities", []) if c.get("exported") in ("true", "0xffffffff")]:
+    for a in [
+        c for c in manifest.get("activities", []) if c.get("exported") in ("true", "0xffffffff")
+    ]:
         if not a.get("permission"):
-            findings.append({"severity": "medium", "title": "Exported activity without permission protection",
-                             "detail": f"Activity '{a.get('name','?')}' is exported without android:permission.", "component": a.get("name")})
-    for s in [c for c in manifest.get("services", []) if c.get("exported") in ("true", "0xffffffff")]:
+            findings.append(
+                {
+                    "severity": "medium",
+                    "title": "Exported activity without permission protection",
+                    "detail": f"Activity '{a.get('name', '?')}' is exported without android:permission.",
+                    "component": a.get("name"),
+                }
+            )
+    for s in [
+        c for c in manifest.get("services", []) if c.get("exported") in ("true", "0xffffffff")
+    ]:
         if not s.get("permission"):
-            findings.append({"severity": "high", "title": "Exported service without permission protection",
-                             "detail": f"Service '{s.get('name','?')}' is exported without android:permission.", "component": s.get("name")})
-    for r in [c for c in manifest.get("receivers", []) if c.get("exported") in ("true", "0xffffffff")]:
+            findings.append(
+                {
+                    "severity": "high",
+                    "title": "Exported service without permission protection",
+                    "detail": f"Service '{s.get('name', '?')}' is exported without android:permission.",
+                    "component": s.get("name"),
+                }
+            )
+    for r in [
+        c for c in manifest.get("receivers", []) if c.get("exported") in ("true", "0xffffffff")
+    ]:
         if not r.get("permission"):
-            findings.append({"severity": "medium", "title": "Exported receiver without permission protection",
-                             "detail": f"Receiver '{r.get('name','?')}' is exported without android:permission.", "component": r.get("name")})
-    for p in [c for c in manifest.get("providers", []) if c.get("exported") in ("true", "0xffffffff")]:
+            findings.append(
+                {
+                    "severity": "medium",
+                    "title": "Exported receiver without permission protection",
+                    "detail": f"Receiver '{r.get('name', '?')}' is exported without android:permission.",
+                    "component": r.get("name"),
+                }
+            )
+    for p in [
+        c for c in manifest.get("providers", []) if c.get("exported") in ("true", "0xffffffff")
+    ]:
         if not p.get("authority"):
-            findings.append({"severity": "high", "title": "Exported content provider without permission",
-                             "detail": f"Provider '{p.get('name','?')}' is exported without permission.", "component": p.get("name")})
-    dangerous = [p for p in manifest.get("permissions_used", []) if any(
-        d in p for d in ["CAMERA", "RECORD_AUDIO", "LOCATION", "CONTACTS", "SMS",
-                         "CALL_LOG", "BODY_SENSORS", "READ_EXTERNAL_STORAGE", "ACCESS_FINE_LOCATION",
-                         "ACCESS_BACKGROUND_LOCATION", "READ_CONTACTS", "READ_PHONE_STATE"])]
+            findings.append(
+                {
+                    "severity": "high",
+                    "title": "Exported content provider without permission",
+                    "detail": f"Provider '{p.get('name', '?')}' is exported without permission.",
+                    "component": p.get("name"),
+                }
+            )
+    dangerous = [
+        p
+        for p in manifest.get("permissions_used", [])
+        if any(
+            d in p
+            for d in [
+                "CAMERA",
+                "RECORD_AUDIO",
+                "LOCATION",
+                "CONTACTS",
+                "SMS",
+                "CALL_LOG",
+                "BODY_SENSORS",
+                "READ_EXTERNAL_STORAGE",
+                "ACCESS_FINE_LOCATION",
+                "ACCESS_BACKGROUND_LOCATION",
+                "READ_CONTACTS",
+                "READ_PHONE_STATE",
+            ]
+        )
+    ]
     if dangerous:
-        findings.append({"severity": "info", "title": f"Dangerous permissions: {len(dangerous)}",
-                         "detail": ", ".join(p.split(".")[-1] for p in dangerous[:10])})
+        findings.append(
+            {
+                "severity": "info",
+                "title": f"Dangerous permissions: {len(dangerous)}",
+                "detail": ", ".join(p.split(".")[-1] for p in dangerous[:10]),
+            }
+        )
     if manifest.get("permissions_declared"):
-        findings.append({"severity": "info", "title": f"Custom permissions declared: {len(manifest['permissions_declared'])}",
-                         "detail": "Verify protectionLevel is set correctly."})
+        findings.append(
+            {
+                "severity": "info",
+                "title": f"Custom permissions declared: {len(manifest['permissions_declared'])}",
+                "detail": "Verify protectionLevel is set correctly.",
+            }
+        )
     return findings
 
 
@@ -642,7 +771,12 @@ def analyze_security(manifest: dict[str, Any], structure: dict[str, Any]) -> lis
 
 def decode_resources(apk_path: Path) -> dict[str, Any]:
     """Decode resources.arsc — extract app strings and locale info."""
-    result: dict[str, Any] = {"total_resources": 0, "string_count": 0, "locales": [], "top_strings": []}
+    result: dict[str, Any] = {
+        "total_resources": 0,
+        "string_count": 0,
+        "locales": [],
+        "top_strings": [],
+    }
     try:
         with zipfile.ZipFile(apk_path, "r") as zf:
             if "resources.arsc" not in zf.namelist():
@@ -658,7 +792,9 @@ def decode_resources(apk_path: Path) -> dict[str, Any]:
                 byte1, byte2 = arsc_data[pos], arsc_data[pos + 1] if pos + 1 < len(arsc_data) else 0
                 if 4 <= byte1 <= 120 and byte2 >= 0x20:
                     try:
-                        candidate = arsc_data[pos + 1: pos + 1 + byte1].decode("utf-8", errors="ignore")
+                        candidate = arsc_data[pos + 1 : pos + 1 + byte1].decode(
+                            "utf-8", errors="ignore"
+                        )
                         if candidate.isprintable() and len(candidate) >= 2:
                             if candidate not in {s["value"] for s in strings}:
                                 strings.append({"value": candidate, "locale": "default"})
@@ -666,7 +802,7 @@ def decode_resources(apk_path: Path) -> dict[str, Any]:
                         pass
                 if byte1 >= 2 and byte2 == 0:
                     try:
-                        raw16 = arsc_data[pos + 2: pos + 2 + byte1 * 2]
+                        raw16 = arsc_data[pos + 2 : pos + 2 + byte1 * 2]
                         candidate = raw16.decode("utf-16-le", errors="ignore")
                         if candidate.isprintable() and len(candidate) >= 2:
                             if candidate not in {s["value"] for s in strings}:
@@ -678,7 +814,8 @@ def decode_resources(apk_path: Path) -> dict[str, Any]:
             unique = []
             for s in strings:
                 if s["value"] not in seen:
-                    seen.add(s["value"]); unique.append(s)
+                    seen.add(s["value"])
+                    unique.append(s)
             result["total_resources"] = len(unique)
             result["string_count"] = len(unique)
             result["top_strings"] = unique[:30]
@@ -700,25 +837,37 @@ def decode_resources(apk_path: Path) -> dict[str, Any]:
 
 def sizeof_fmt(num: float, suffix: str = "B") -> str:
     for unit in ("", "K", "M", "G"):
-        if abs(num) < 1024: return f"{num:3.1f} {unit}{suffix}"
+        if abs(num) < 1024:
+            return f"{num:3.1f} {unit}{suffix}"
         num /= 1024
     return f"{num:.1f} T{suffix}"
 
 
 def analyze_size(apk_path: Path, structure: dict[str, Any]) -> dict[str, Any]:
     """Analyze APK size — compression, largest files, recommendations."""
-    info: dict[str, Any] = {"total_size_mb": structure.get("file_size_mb", 0),
-                             "largest_files": [], "compression_ratio": 0, "recommendations": []}
+    info: dict[str, Any] = {
+        "total_size_mb": structure.get("file_size_mb", 0),
+        "largest_files": [],
+        "compression_ratio": 0,
+        "recommendations": [],
+    }
     try:
         with zipfile.ZipFile(apk_path, "r") as zf:
             entries = []
             total_c, total_u = 0, 0
             for entry in zf.infolist():
                 c, u = entry.compress_size, entry.file_size
-                total_c += c; total_u += u
+                total_c += c
+                total_u += u
                 ratio = round((1 - c / u) * 100, 1) if u > 0 else 0
-                entries.append({"name": entry.filename, "size_kb": round(u / 1024, 1),
-                                "compressed_kb": round(c / 1024, 1), "ratio": ratio})
+                entries.append(
+                    {
+                        "name": entry.filename,
+                        "size_kb": round(u / 1024, 1),
+                        "compressed_kb": round(c / 1024, 1),
+                        "ratio": ratio,
+                    }
+                )
             entries.sort(key=lambda x: -x["size_kb"])
             info["largest_files"] = entries[:15]
             if total_u > 0:
@@ -726,19 +875,27 @@ def analyze_size(apk_path: Path, structure: dict[str, Any]) -> dict[str, Any]:
             recs = info["recommendations"]
             large = [e for e in entries if e["size_kb"] > 500 and e["ratio"] < 5]
             if large:
-                recs.append(f"Large uncompressed assets: {len(large)} files ({sizeof_fmt(sum(e['size_kb'] for e in large) * 1024)}). Consider WebP/AVIF.")
+                recs.append(
+                    f"Large uncompressed assets: {len(large)} files ({sizeof_fmt(sum(e['size_kb'] for e in large) * 1024)}). Consider WebP/AVIF."
+                )
             ext_counts: dict[str, int] = defaultdict(int)
             for e in entries:
                 ext_counts[Path(e["name"]).suffix.lower()] += 1
             for ext, count in ext_counts.items():
                 if count > 50:
-                    recs.append(f"{count} files with extension '{ext}' — check for duplicates/unused resources")
+                    recs.append(
+                        f"{count} files with extension '{ext}' — check for duplicates/unused resources"
+                    )
             native = structure.get("native_libs", {})
             if len(native) > 2:
-                recs.append(f"Native libs for {len(native)} ABIs ({', '.join(sorted(native.keys()))}). Consider AAB to split per device.")
+                recs.append(
+                    f"Native libs for {len(native)} ABIs ({', '.join(sorted(native.keys()))}). Consider AAB to split per device."
+                )
             dex_kb = sum(e["size_kb"] for e in entries if e["name"].endswith(".dex"))
             if info["total_size_mb"] > 0 and dex_kb / (info["total_size_mb"] * 1024) * 100 < 30:
-                recs.append(f"DEX is only {dex_kb / (info['total_size_mb'] * 1024) * 100:.0f}% of APK — review asset sizes.")
+                recs.append(
+                    f"DEX is only {dex_kb / (info['total_size_mb'] * 1024) * 100:.0f}% of APK — review asset sizes."
+                )
     except Exception as e:
         info["error"] = str(e)[:200]
     return info
@@ -750,15 +907,25 @@ def analyze_size(apk_path: Path, structure: dict[str, Any]) -> dict[str, Any]:
 
 
 def generate_report(
-    apk_path: Path, aapt_path: Path,
-    output_dir: Path | None = None, no_decompile: bool = False, threads: int = 4,
+    apk_path: Path,
+    aapt_path: Path,
+    output_dir: Path | None = None,
+    no_decompile: bool = False,
+    threads: int = 4,
 ) -> dict[str, Any]:
     """Generate full reverse engineering report."""
     report: dict[str, Any] = {
-        "file": str(apk_path), "analyzed_at": datetime.now().isoformat(),
-        "structure": analyze_apk_structure(apk_path), "manifest": {},
-        "executable": [], "strings": [], "urls": {}, "signing": {},
-        "security": [], "resources": {}, "size_optimization": {},
+        "file": str(apk_path),
+        "analyzed_at": datetime.now().isoformat(),
+        "structure": analyze_apk_structure(apk_path),
+        "manifest": {},
+        "executable": [],
+        "strings": [],
+        "urls": {},
+        "signing": {},
+        "security": [],
+        "resources": {},
+        "size_optimization": {},
         "decompilation": None,
     }
     if "error" in report["structure"]:
@@ -768,7 +935,9 @@ def generate_report(
     if badging_stdout:
         report["manifest"] = parse_aapt_badging(badging_stdout)
 
-    xmltree_stdout, _, _ = _run([str(aapt_path), "dump", "xmltree", str(apk_path), "AndroidManifest.xml"], timeout=30)
+    xmltree_stdout, _, _ = _run(
+        [str(aapt_path), "dump", "xmltree", str(apk_path), "AndroidManifest.xml"], timeout=30
+    )
     if xmltree_stdout:
         report["manifest"].update(parse_aapt_xmltree(xmltree_stdout))
 
@@ -805,29 +974,36 @@ def print_report(report: dict[str, Any], json_mode: bool = False) -> None:
     sig = report.get("signing", {})
     d = report.get("decompilation")
 
-    def _exp(c): return " [EXPORTED]" if c.get("exported") in ("true", "0xffffffff") else ""
+    def _exp(c):
+        return " [EXPORTED]" if c.get("exported") in ("true", "0xffffffff") else ""
 
-    print(f"\n{'='*70}\n  🔍 APK REVERSE ENGINEERING REPORT\n{'='*70}")
+    print(f"\n{'=' * 70}\n  🔍 APK REVERSE ENGINEERING REPORT\n{'=' * 70}")
     print(f"  File        : {report.get('file')}")
     print(f"  Analyzed    : {report.get('analyzed_at', 'N/A')}")
-    if s.get("error"): print(f"\n  ❌ ERROR: {s['error']}"); return
+    if s.get("error"):
+        print(f"\n  ❌ ERROR: {s['error']}")
+        return
 
     # Structure
-    print(f"\n{'─'*70}\n  📦 APK STRUCTURE\n{'─'*70}")
+    print(f"\n{'─' * 70}\n  📦 APK STRUCTURE\n{'─' * 70}")
     print(f"  Size        : {s['file_size_mb']} MB\n  Total files : {s['files_total']}")
-    for dex in s.get("dex_files", []): print(f"    • {dex['name']} ({dex['size_kb']} KB)")
+    for dex in s.get("dex_files", []):
+        print(f"    • {dex['name']} ({dex['size_kb']} KB)")
     native = s.get("native_libs", {})
     if native:
-        print(f"  Native libs : {sum(len(v) for v in native.values())} across {len(native)} architectures")
-        for arch, libs in sorted(native.items()): print(f"    • {arch}: {len(libs)} .so files")
+        print(
+            f"  Native libs : {sum(len(v) for v in native.values())} across {len(native)} architectures"
+        )
+        for arch, libs in sorted(native.items()):
+            print(f"    • {arch}: {len(libs)} .so files")
 
     # Executable Analysis (SDK dexdump primary, binary fallback)
     dx = report.get("executable", [])
     if dx:
-        print(f"\n{'─'*70}\n  📊 EXECUTABLE ANALYSIS\n{'─'*70}")
+        print(f"\n{'─' * 70}\n  📊 EXECUTABLE ANALYSIS\n{'─' * 70}")
         for d in dx:
-            print(f"  Method        : {d.get('method','?')}")
-            print(f"  DEX version   : {d.get('dex_version','?')}")
+            print(f"  Method        : {d.get('method', '?')}")
+            print(f"  DEX version   : {d.get('dex_version', '?')}")
             print(f"  Classes       : {d['classes']:,}")
             print(f"  Methods       : {d['methods']:,}")
             print(f"  Fields        : {d['fields']:,}")
@@ -838,118 +1014,175 @@ def print_report(report: dict[str, Any], json_mode: bool = False) -> None:
 
     # URL Scan
     if urls:
-        print(f"\n{'─'*70}\n  🌐 URL & STRING SCAN\n{'─'*70}")
+        print(f"\n{'─' * 70}\n  🌐 URL & STRING SCAN\n{'─' * 70}")
         print(f"  Strings extracted: {urls.get('strings_count', 0)}")
-        print(f"  HTTP URLs : {len(urls.get('http_urls',[]))}  HTTPS: {len(urls.get('https_urls',[]))}")
-        print(f"  API endpoints: {len(urls.get('api_endpoints',[]))}  Domains: {len(urls.get('domains',[]))}")
+        print(
+            f"  HTTP URLs : {len(urls.get('http_urls', []))}  HTTPS: {len(urls.get('https_urls', []))}"
+        )
+        print(
+            f"  API endpoints: {len(urls.get('api_endpoints', []))}  Domains: {len(urls.get('domains', []))}"
+        )
         if urls.get("domains"):
-            print(f"  🌍 Domains:"); [print(f"    • {d}") for d in urls["domains"][:10]]
+            print(f"  🌍 Domains:")
+            [print(f"    • {d}") for d in urls["domains"][:10]]
         if urls.get("api_endpoints"):
-            print(f"  ⚡ API Endpoints:"); [print(f"    • {ep}") for ep in urls["api_endpoints"][:5]]
+            print(f"  ⚡ API Endpoints:")
+            [print(f"    • {ep}") for ep in urls["api_endpoints"][:5]]
 
     # Signing
     if sig:
-        print(f"\n{'─'*70}\n  🔏 SIGNING VERIFICATION\n{'─'*70}")
-        print(f"  Verified : {'✅ Yes' if sig.get('verified') else '❌ No'}  Scheme: {sig.get('scheme','?')}")
+        print(f"\n{'─' * 70}\n  🔏 SIGNING VERIFICATION\n{'─' * 70}")
+        print(
+            f"  Verified : {'✅ Yes' if sig.get('verified') else '❌ No'}  Scheme: {sig.get('scheme', '?')}"
+        )
         for i, cert in enumerate(sig.get("certificates", [])):
-            print(f"\n  Certificate #{i+1}:")
+            print(f"\n  Certificate #{i + 1}:")
             if cert.get("dn"):
-                for part in cert["dn"].split(", "): print(f"    {part}")
-            if cert.get("sha256"): print(f"    SHA-256: {cert['sha256']}")
+                for part in cert["dn"].split(", "):
+                    print(f"    {part}")
+            if cert.get("sha256"):
+                print(f"    SHA-256: {cert['sha256']}")
 
     # Manifest
-    print(f"\n{'─'*70}\n  📋 MANIFEST\n{'─'*70}")
+    print(f"\n{'─' * 70}\n  📋 MANIFEST\n{'─' * 70}")
     for k in ["package", "label", "sdk_version", "target_sdk", "compile_sdk"]:
-        if m.get(k): print(f"  {k.replace('_',' ').title():12}: {m[k]}")
-    if m.get("version_name"): print(f"  Version     : {m['version_name']} (code {m.get('version_code','?')})")
-    for label, key in [("Used Permissions", "permissions_used"), ("Declared Permissions", "permissions_declared")]:
+        if m.get(k):
+            print(f"  {k.replace('_', ' ').title():12}: {m[k]}")
+    if m.get("version_name"):
+        print(f"  Version     : {m['version_name']} (code {m.get('version_code', '?')})")
+    for label, key in [
+        ("Used Permissions", "permissions_used"),
+        ("Declared Permissions", "permissions_declared"),
+    ]:
         items = m.get(key, [])
         if items:
             print(f"\n  🔐 {label} ({len(items)}):")
-            for p in items: print(f"    • {p.split('.')[-1]}  ({p})")
-    for label, key in [("Activities", "activities"), ("Services", "services"), ("Receivers", "receivers")]:
+            for p in items:
+                print(f"    • {p.split('.')[-1]}  ({p})")
+    for label, key in [
+        ("Activities", "activities"),
+        ("Services", "services"),
+        ("Receivers", "receivers"),
+    ]:
         items = m.get(key, [])
         if items:
-            print(f"\n  {'🖥' if 'Act' in label else '⚙' if 'Serv' in label else '📡'} {label} ({len(items)}):")
-            for c in items: print(f"    • {(c.get('name') or '?').split('.')[-1]}{_exp(c)}")
+            print(
+                f"\n  {'🖥' if 'Act' in label else '⚙' if 'Serv' in label else '📡'} {label} ({len(items)}):"
+            )
+            for c in items:
+                print(f"    • {(c.get('name') or '?').split('.')[-1]}{_exp(c)}")
     provs = m.get("providers", [])
     if provs:
         print(f"\n  🗄  Providers ({len(provs)}):")
         for p in provs:
             print(f"    • {(p.get('name') or '?').split('.')[-1]}{_exp(p)}")
-            if p.get("authority"): print(f"      authority: {p['authority']}")
-    if m.get("features"): print(f"\n  🔧 Features ({len(m['features'])}):")
-    if m.get("native_code"): print(f"\n  🏗 Native arches: {', '.join(m['native_code'])}")
+            if p.get("authority"):
+                print(f"      authority: {p['authority']}")
+    if m.get("features"):
+        print(f"\n  🔧 Features ({len(m['features'])}):")
+    if m.get("native_code"):
+        print(f"\n  🏗 Native arches: {', '.join(m['native_code'])}")
 
     # Security
     sec = report.get("security", [])
     if sec:
-        print(f"\n{'─'*70}\n  🔒 SECURITY SCAN\n{'─'*70}")
+        print(f"\n{'─' * 70}\n  🔒 SECURITY SCAN\n{'─' * 70}")
         counts = {"high": 0, "medium": 0, "low": 0, "info": 0}
-        for f in sec: counts[f.get("severity", "low")] = counts.get(f.get("severity", "low"), 0) + 1
-        if sum(counts.values()) == 0: print("  ✅ No issues")
+        for f in sec:
+            counts[f.get("severity", "low")] = counts.get(f.get("severity", "low"), 0) + 1
+        if sum(counts.values()) == 0:
+            print("  ✅ No issues")
         else:
-            print(f"  Findings: {' | '.join(f'{k.upper()}={v}' for k,v in counts.items() if v)}")
+            print(f"  Findings: {' | '.join(f'{k.upper()}={v}' for k, v in counts.items() if v)}")
             for f in sec:
-                icon = {"high":"🟠","medium":"🟡","low":"🟢","info":"💡"}.get(f["severity"],"⚪")
+                icon = {"high": "🟠", "medium": "🟡", "low": "🟢", "info": "💡"}.get(
+                    f["severity"], "⚪"
+                )
                 print(f"\n  {icon} [{f['severity'].upper()}] {f['title']}")
-                if f.get("component"): print(f"      {f['component'].split('.')[-1]}")
-                if f.get("detail"): print(f"      {f['detail']}")
+                if f.get("component"):
+                    print(f"      {f['component'].split('.')[-1]}")
+                if f.get("detail"):
+                    print(f"      {f['detail']}")
 
     # Resources
     res = report.get("resources", {})
     if res and not res.get("note"):
-        print(f"\n{'─'*70}\n  📱 RESOURCE DECODING\n{'─'*70}")
-        if res.get("error"): print(f"  ❌ {res['error']}")
+        print(f"\n{'─' * 70}\n  📱 RESOURCE DECODING\n{'─' * 70}")
+        if res.get("error"):
+            print(f"  ❌ {res['error']}")
         else:
-            print(f"  Strings found: {res.get('string_count', 0)}  Locales: {', '.join(res.get('locales', [])[:10])}")
-            top = [s for s in res.get("top_strings", []) if s["value"].isascii() and len(s["value"]) >= 3][:8]
+            print(
+                f"  Strings found: {res.get('string_count', 0)}  Locales: {', '.join(res.get('locales', [])[:10])}"
+            )
+            top = [
+                s
+                for s in res.get("top_strings", [])
+                if s["value"].isascii() and len(s["value"]) >= 3
+            ][:8]
             if top:
                 print(f"\n  📝 App Strings:")
-                for s in top: print(f'    • "{s["value"][:70]}"')
+                for s in top:
+                    print(f'    • "{s["value"][:70]}"')
 
     # Size
     sz = report.get("size_optimization", {})
     if sz and not sz.get("error"):
-        print(f"\n{'─'*70}\n  🧹 SIZE OPTIMIZATION\n{'─'*70}")
-        print(f"  Size: {sz.get('total_size_mb',0)} MB  Compression: {sz.get('compression_ratio',0)}%")
+        print(f"\n{'─' * 70}\n  🧹 SIZE OPTIMIZATION\n{'─' * 70}")
+        print(
+            f"  Size: {sz.get('total_size_mb', 0)} MB  Compression: {sz.get('compression_ratio', 0)}%"
+        )
         recs = sz.get("recommendations", [])
         if recs:
             print(f"\n  💡 Recommendations:")
-            for r in recs: print(f"    • {r}")
+            for r in recs:
+                print(f"    • {r}")
         largest = sz.get("largest_files", [])[:5]
         if largest:
             print(f"\n  📦 Largest Files:")
-            for f in largest: print(f"    • {f['size_kb']:>8.0f} KB  ({f['ratio']}%)  {f['name'][:55]}")
+            for f in largest:
+                print(f"    • {f['size_kb']:>8.0f} KB  ({f['ratio']}%)  {f['name'][:55]}")
 
     # Decompilation
     if d:
-        print(f"\n{'─'*70}\n  ☕ DECOMPILATION (jadx)\n{'─'*70}")
-        if d.get("error"): print(f"  ❌ {d['error']}")
+        print(f"\n{'─' * 70}\n  ☕ DECOMPILATION (jadx)\n{'─' * 70}")
+        if d.get("error"):
+            print(f"  ❌ {d['error']}")
         elif d.get("success"):
-            print(f"  Status: ✅ Success  Java: {d['java_files_count']}  Files: {d['total_files_count']}")
-            if d.get("errors"): print(f"  ⚠ Non-fatal errors: {len(d['errors'])}")
-        else: print(f"  ❌ Failed (no Java, exit {d['exit_code']})")
+            print(
+                f"  Status: ✅ Success  Java: {d['java_files_count']}  Files: {d['total_files_count']}"
+            )
+            if d.get("errors"):
+                print(f"  ⚠ Non-fatal errors: {len(d['errors'])}")
+        else:
+            print(f"  ❌ Failed (no Java, exit {d['exit_code']})")
 
-    print(f"\n{'='*70}\n")
+    print(f"\n{'=' * 70}\n")
 
 
 def print_comparison(comp: dict[str, Any], json_mode: bool = False) -> None:
     """Print APK comparison report."""
-    if json_mode: print(json.dumps(comp, indent=2, ensure_ascii=False)); return
+    if json_mode:
+        print(json.dumps(comp, indent=2, ensure_ascii=False))
+        return
     a1, a2 = comp["apk1"], comp["apk2"]
-    print(f"\n{'='*70}\n  🔄 APK COMPARISON\n{'='*70}")
-    print(f"  APK 1: {a1['path']}\n         {a1['size_mb']} MB | {a1['files']} files | {a1['dex_count']} DEX")
-    print(f"  APK 2: {a2['path']}\n         {a2['size_mb']} MB | {a2['files']} files | {a2['dex_count']} DEX")
+    print(f"\n{'=' * 70}\n  🔄 APK COMPARISON\n{'=' * 70}")
+    print(
+        f"  APK 1: {a1['path']}\n         {a1['size_mb']} MB | {a1['files']} files | {a1['dex_count']} DEX"
+    )
+    print(
+        f"  APK 2: {a2['path']}\n         {a2['size_mb']} MB | {a2['files']} files | {a2['dex_count']} DEX"
+    )
     print(f"\n  Size diff : {comp['size_diff_mb']:+.2f} MB ({comp['size_diff_pct']:+.1f}%)")
     print(f"  Package   : {'✅ Same' if comp.get('package_match') else '❌ Different'}")
-    if comp.get("version_change"): print(f"  Version   : {comp['version_change']}")
+    if comp.get("version_change"):
+        print(f"  Version   : {comp['version_change']}")
     for label, key in [("added", "perms_added"), ("removed", "perms_removed")]:
         items = comp.get(key, [])
         if items:
             print(f"\n  🔐 Permissions {label} ({len(items)}):")
-            for p in items: print(f"    {'+' if 'add' in label else '-'} {p}")
-    print(f"\n{'='*70}\n")
+            for p in items:
+                print(f"    {'+' if 'add' in label else '-'} {p}")
+    print(f"\n{'=' * 70}\n")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -975,17 +1208,21 @@ def main() -> None:
     if args.compare:
         p1, p2 = Path(args.compare[0]), Path(args.compare[1])
         if not p1.exists() or not p2.exists():
-            print("Error: APK not found", file=sys.stderr); sys.exit(1)
+            print("Error: APK not found", file=sys.stderr)
+            sys.exit(1)
         print_comparison(compare_apks(p1, p2), args.json)
         return
     if not args.apk:
-        parser.print_help(); sys.exit(1)
+        parser.print_help()
+        sys.exit(1)
     apk_path = Path(args.apk)
     if not apk_path.exists():
-        print(f"Error: APK not found: {args.apk}", file=sys.stderr); sys.exit(1)
+        print(f"Error: APK not found: {args.apk}", file=sys.stderr)
+        sys.exit(1)
     aapt = find_aapt()
     if not aapt:
-        print("Error: aapt not found. Install Android SDK build-tools.", file=sys.stderr); sys.exit(1)
+        print("Error: aapt not found. Install Android SDK build-tools.", file=sys.stderr)
+        sys.exit(1)
     if not args.json:
         print(f"🔍 Analyzing {apk_path.name}...")
     output_dir = Path(args.output_dir) if args.output_dir else None

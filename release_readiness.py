@@ -20,6 +20,7 @@ Usage:
     python release_readiness.py --json             # JSON output
     python release_readiness.py --ci               # CI mode (no git checks)
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -28,10 +29,11 @@ import argparse
 import ast
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+
+from safe_run import SafeRunResult, safe_run
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -47,39 +49,44 @@ _SUBPROCESS_ENV = {
 }
 
 
-def _run(cmd: list[str], timeout: int = 60, cwd: Path | None = None) -> subprocess.CompletedProcess:
-    """Run a subprocess with UTF-8 encoding forced."""
-    return subprocess.run(
+def _run(cmd: list[str], timeout: int = 60, cwd: Path | None = None) -> SafeRunResult:
+    """Run a subprocess with UTF-8 encoding forced, via safe_run."""
+    return safe_run(
         cmd,
-        capture_output=True, text=True, timeout=timeout,
-        encoding="utf-8", errors="replace",
-        env=_SUBPROCESS_ENV,
+        workspace=PROJECT_ROOT,
+        timeout=timeout,
         cwd=str(cwd) if cwd else str(PROJECT_ROOT),
+        capture_output=True,
+        text=True,
+        risk_level="medium",
+        env=_SUBPROCESS_ENV,
+        encoding="utf-8",
+        errors="replace",
     )
 
 
 def _load_json(path: Path) -> dict[str, Any]:
-    """ load json.
+    """load json.
 
-        Args:
-            path: Description.
+    Args:
+        path: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
-    """ load toml.
+    """load toml.
 
-        Args:
-            path: Description.
+    Args:
+        path: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     try:
         import tomllib
     except ImportError:
@@ -88,17 +95,17 @@ def _load_toml(path: Path) -> dict[str, Any]:
         return tomllib.load(f)
 
 
-def _git(*args: str) -> subprocess.CompletedProcess:
-    """ git.
-        """
+def _git(*args: str) -> SafeRunResult:
+    """git."""
     return _run(["git"] + list(args), timeout=15)
 
 
 def _count_tools_in_readme(readme_text: str) -> int:
     """Count tool mentions in README.md tool reference section."""
     import re
+
     # Count unique tool names in the tool reference tables
-    matches = re.findall(r'\|\s*`(\w+\.py)`\s*\|', readme_text)
+    matches = re.findall(r"\|\s*`(\w+\.py)`\s*\|", readme_text)
     return len(set(matches))
 
 
@@ -118,12 +125,12 @@ class CheckResult:
     def pass_(self, detail: str = "") -> "CheckResult":
         """pass .
 
-            Args:
-                detail: Description.
+        Args:
+            detail: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         self.passed = True
         self.detail = detail
         return self
@@ -131,12 +138,12 @@ class CheckResult:
     def fail(self, detail: str) -> "CheckResult":
         """fail.
 
-            Args:
-                detail: Description.
+        Args:
+            detail: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         self.passed = False
         self.detail = detail
         return self
@@ -144,20 +151,19 @@ class CheckResult:
     def skip(self, detail: str = "") -> "CheckResult":
         """skip.
 
-            Args:
-                detail: Description.
+        Args:
+            detail: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         self.skipped = True
         self.detail = detail
         return self
 
     @property
     def icon(self) -> str:
-        """icon.
-            """
+        """icon."""
         if self.skipped:
             return "⊘"
         return "✅" if self.passed else "❌"
@@ -226,9 +232,17 @@ def check_syntax() -> CheckResult:
     r = CheckResult("Syntax check").pass_()
     errors = 0
     scanned = 0
-    skip_dirs = {"__pycache__", ".rsi_backups", ".rsi_reports",
-                 ".self_improve_reports", ".backups", ".venv", "venv",
-                 "build", "dist"}
+    skip_dirs = {
+        "__pycache__",
+        ".rsi_backups",
+        ".rsi_reports",
+        ".self_improve_reports",
+        ".backups",
+        ".venv",
+        "venv",
+        "build",
+        "dist",
+    }
 
     for fp in PROJECT_ROOT.rglob("*.py"):
         if set(fp.parts) & skip_dirs:
@@ -261,12 +275,14 @@ def check_unit_tests() -> CheckResult:
         if proc.returncode == 0:
             # Count passed tests
             import re
+
             match = re.search(r"Ran (\d+) tests", proc.stdout + proc.stderr)
             count = int(match.group(1)) if match else 0
             return r.pass_(f"{count} tests passed")
         else:
             # Extract failure count
             import re
+
             fail_match = re.search(r"FAILED.*?(\d+)", proc.stderr)
             err_match = re.search(r"errors=(\d+)", proc.stderr)
             details = []
@@ -350,11 +366,14 @@ def check_generated_in_git() -> CheckResult:
             "toolcase_analysis_report.html",
             "dexcore_analysis_report.html",
         ]
-        found_gen = [f for f in tracked
-                     if any(p in f.lower() for p in generated_patterns)
-                     or "_audit_report." in f.lower()
-                     or ".rsi_reports/" in f
-                     or ".self_improve_reports/" in f]
+        found_gen = [
+            f
+            for f in tracked
+            if any(p in f.lower() for p in generated_patterns)
+            or "_audit_report." in f.lower()
+            or ".rsi_reports/" in f
+            or ".self_improve_reports/" in f
+        ]
 
         if found_gen:
             return r.fail(f"{len(found_gen)} generated file(s) tracked: {', '.join(found_gen[:3])}")
@@ -423,7 +442,12 @@ def check_wheel_builds() -> CheckResult:
         if not wheels or not sdists:
             return r.fail("No wheel or sdist found in dist/")
         # twine check
-        proc2 = _run([sys.executable, "-m", "twine", "check"] + [str(w) for w in wheels] + [str(s) for s in sdists], timeout=30)
+        proc2 = _run(
+            [sys.executable, "-m", "twine", "check"]
+            + [str(w) for w in wheels]
+            + [str(s) for s in sdists],
+            timeout=30,
+        )
         if proc2.returncode != 0:
             return r.fail(f"twine check failed: {proc2.stderr[:200]}")
         return r.pass_(f"wheel={wheels[0].name}, sdist={sdists[0].name}, twine OK")
@@ -431,6 +455,7 @@ def check_wheel_builds() -> CheckResult:
         return r.skip("Build timed out")
     except Exception as e:
         return r.skip(f"Cannot build: {e}")
+
 
 def check_pre_tag_readiness() -> CheckResult:
     """Verify everything except tag existence (for pre-tag validation)."""
@@ -447,6 +472,7 @@ def check_pre_tag_readiness() -> CheckResult:
     except Exception as e:
         return r.skip(str(e))
 
+
 def check_readme_match() -> CheckResult:
     """Check README tool count matches manifest."""
     r = CheckResult("README vs manifest")
@@ -457,7 +483,8 @@ def check_readme_match() -> CheckResult:
         readme = (PROJECT_ROOT / "README.md").read_text(encoding="utf-8")
         # Check the metrics table
         import re
-        metrics_match = re.search(r'\|\s*Tools\s*\|\s*(\d+)\s*\|', readme)
+
+        metrics_match = re.search(r"\|\s*Tools\s*\|\s*(\d+)\s*\|", readme)
         if metrics_match:
             readme_count = int(metrics_match.group(1))
             if readme_count == mc:
@@ -471,7 +498,6 @@ def check_readme_match() -> CheckResult:
 # ---------------------------------------------------------------------------
 # Orchestrator
 # ---------------------------------------------------------------------------
-
 
 
 def check_clean_working_tree() -> CheckResult:
@@ -490,9 +516,10 @@ def check_clean_working_tree() -> CheckResult:
     except Exception as e:
         return r.skip(str(e))
 
+
 def run_all_checks(ci_mode: bool = False, root: Path | None = None) -> dict[str, Any]:
     """Run all release readiness checks and return report.
-    
+
     If root is given, use it instead of the default PROJECT_ROOT.
     """
     global PROJECT_ROOT
@@ -511,23 +538,23 @@ def run_all_checks(ci_mode: bool = False, root: Path | None = None) -> dict[str,
     ]
 
     if not ci_mode:
-        checks.extend([
-            check_clean_working_tree(),
-            check_generated_in_git(),
-            check_changelog(),
-            check_git_tag(),
-            check_wheel_builds(),
-        ])
+        checks.extend(
+            [
+                check_clean_working_tree(),
+                check_generated_in_git(),
+                check_changelog(),
+                check_git_tag(),
+                check_wheel_builds(),
+            ]
+        )
 
     passed_required = all(
-        c.passed for c in checks
+        c.passed
+        for c in checks
         if c.severity == "required"
         # Skipped/timeout required checks count as FAILED
     )
-    passed_all = all(
-        c.passed for c in checks
-        if not c.skipped
-    )
+    passed_all = all(c.passed for c in checks if not c.skipped)
     # Correct verdict logic: required failures → NO-GO, optional failures → WARNINGS
     if not passed_required:
         verdict = "NO-GO ❌"
@@ -575,21 +602,24 @@ def print_report(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="release_readiness.py — Pre-release GO/NO-GO checklist",
     )
-    parser.add_argument("--json", "-j", action="store_true",
-                        help="Output as JSON")
-    parser.add_argument("--ci", action="store_true",
-                        help="CI mode (skip git checks)")
-    parser.add_argument("--pre-tag", action="store_true",
-                        help="Pre-tag mode: skip git tag check (tag not yet created)")
-    parser.add_argument("target", nargs="?", default=None,
-                        help="Optional target path (default: ToolCase project root)")
-    parser.add_argument("--version", action="version",
-                        version="release_readiness.py v1.0.0")
+    parser.add_argument("--json", "-j", action="store_true", help="Output as JSON")
+    parser.add_argument("--ci", action="store_true", help="CI mode (skip git checks)")
+    parser.add_argument(
+        "--pre-tag",
+        action="store_true",
+        help="Pre-tag mode: skip git tag check (tag not yet created)",
+    )
+    parser.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="Optional target path (default: ToolCase project root)",
+    )
+    parser.add_argument("--version", action="version", version="release_readiness.py v1.0.0")
 
     args = parser.parse_args()
 
@@ -597,6 +627,7 @@ def main() -> None:
     # In pre-tag mode, skip git tag check (tag not yet created)
     if args.pre_tag:
         import importlib
+
         # Temporarily make check_git_tag skip itself
         report = run_all_checks(ci_mode=True, root=root)  # CI mode skips git checks
         # Then run the full non-CI checks minus tag

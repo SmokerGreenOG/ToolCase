@@ -1,6 +1,8 @@
 """Tests for dead_code_finder.py and todo_tracker.py."""
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import unittest
 import tempfile
@@ -14,15 +16,17 @@ class TestDeadCode(unittest.TestCase):
 
     def tearDown(self) -> None:
         """Clean up temporary directory."""
-        import shutil; shutil.rmtree(self.tmp, ignore_errors=True)
+        import shutil
+
+        shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_cli_help(self) -> None:
         """CLI --help flag outputs usage information."""
         import subprocess
         from pathlib import Path as P
+
         tool = P(__file__).parent.parent / "dead_code_finder.py"
-        r = subprocess.run([sys.executable, str(tool), "--help"],
-                           capture_output=True, text=True)
+        r = subprocess.run([sys.executable, str(tool), "--help"], capture_output=True, text=True)
         self.assertIn("usage", r.stdout.lower() + r.stderr.lower())
 
 
@@ -33,11 +37,14 @@ class TestTodoTracker(unittest.TestCase):
 
     def tearDown(self) -> None:
         """Clean up temporary directory."""
-        import shutil; shutil.rmtree(self.tmp, ignore_errors=True)
+        import shutil
+
+        shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_finds_todo_marker(self) -> None:
         """TODO markers in comments should be detected."""
         from todo_tracker import scan_file
+
         p = self.tmp / "test.py"
         p.write_text("# TODO: fix this\nprint('hi')\n", encoding="utf-8")
         results = list(scan_file(p, self.tmp))
@@ -47,6 +54,7 @@ class TestTodoTracker(unittest.TestCase):
     def test_finds_fixme(self) -> None:
         """FIXME markers in comments should be detected."""
         from todo_tracker import scan_file
+
         p = self.tmp / "test.py"
         p.write_text("# FIXME: broken\n", encoding="utf-8")
         results = list(scan_file(p, self.tmp))
@@ -55,6 +63,7 @@ class TestTodoTracker(unittest.TestCase):
     def test_finds_hack(self) -> None:
         """HACK markers in comments should be detected."""
         from todo_tracker import scan_file
+
         p = self.tmp / "test.py"
         p.write_text("# HACK: workaround\n", encoding="utf-8")
         results = list(scan_file(p, self.tmp))
@@ -63,6 +72,7 @@ class TestTodoTracker(unittest.TestCase):
     def test_clean_file_no_markers(self) -> None:
         """Clean file without markers returns no results."""
         from todo_tracker import scan_file
+
         p = self.tmp / "test.py"
         p.write_text("print('hi')\n", encoding="utf-8")
         results = list(scan_file(p, self.tmp))
@@ -71,6 +81,7 @@ class TestTodoTracker(unittest.TestCase):
     def test_marker_words_inside_code_are_ignored(self) -> None:
         """Words such as template/debug are not TODO markers."""
         from todo_tracker import scan_file
+
         p = self.tmp / "clean.py"
         p.write_text(
             'template = "value"\n# one debug marker per line\n',

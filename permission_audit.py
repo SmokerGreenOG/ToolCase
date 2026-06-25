@@ -101,23 +101,23 @@ PERMISSIONS = [
 # ── Output helpers ────────────────────────────────────────────────────────────
 
 _STATUS_COLORS = {
-    "Allowed": "\033[92m",       # green
+    "Allowed": "\033[92m",  # green
     "Requires Approval": "\033[93m",  # yellow
-    "Dangerous": "\033[91m",     # red
-    "Blocked": "\033[90m",       # grey
+    "Dangerous": "\033[91m",  # red
+    "Blocked": "\033[90m",  # grey
 }
 _RESET = "\033[0m"
 
 
 def _colorize(status: str) -> str:
-    """ colorize.
+    """colorize.
 
-        Args:
-            status: Description.
+    Args:
+        status: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     color = _STATUS_COLORS.get(status, "")
     if color and sys.stdout.isatty():
         return f"{color}{status}{_RESET}"
@@ -125,14 +125,14 @@ def _colorize(status: str) -> str:
 
 
 def _icon(status: str) -> str:
-    """ icon.
+    """icon.
 
-        Args:
-            status: Description.
+    Args:
+        status: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     icons = {
         "Allowed": "✓",
         "Requires Approval": "⚠",
@@ -164,8 +164,7 @@ def print_table(report: list[dict]) -> None:
     label_w = max(len(e["label"]) for e in report) + 2
     status_w = max(len(e["status"]) for e in report) + 2
 
-    header = (f"  {'Permission':<{label_w}}  {'Status':<{status_w}}  "
-              f"Description")
+    header = f"  {'Permission':<{label_w}}  {'Status':<{status_w}}  Description"
     sep = "  " + "-" * (label_w + status_w + 50)
 
     print("Permission Audit Report")
@@ -179,8 +178,7 @@ def print_table(report: list[dict]) -> None:
         status = _colorize(entry["status"])
         icon = _icon(entry["status"])
         desc = entry["description"]
-        line = (f"  {icon} {label:<{label_w - 2}}  {status:<{status_w}}  "
-                f"{desc}")
+        line = f"  {icon} {label:<{label_w - 2}}  {status:<{status_w}}  {desc}"
         print(line)
 
     print()
@@ -203,12 +201,12 @@ def print_table(report: list[dict]) -> None:
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     """Parse args.
 
-        Args:
-            argv: Description.
+    Args:
+        argv: Description.
 
-        Returns:
-            Description.
-        """
+    Returns:
+        Description.
+    """
     parser = argparse.ArgumentParser(
         description="Agent Permission Auditor — simulate-check what the agent can do.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -228,8 +226,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     args = parse_args()
     report = build_report(PERMISSIONS, include_reason=args.json)
 

@@ -59,12 +59,12 @@ om zijn eigen code te verbeteren via de toolcase-self-improve skill.
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_run import safe_run
 import argparse
 import ast
 import json
 import os
 import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -73,10 +73,10 @@ from typing import Optional
 from i18n import t, add_lang_arg, get_lang
 
 # Ensure UTF-8 output on all platforms (Windows cp1252 can't handle emoji/unicode)
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 
 # ─────────────────────────────────────────────
@@ -115,8 +115,10 @@ def _show_tool_list(lang: str = "en") -> None:
             risk_map = {"Low": "\U0001f7e2", "Medium": "\U0001f7e1", "High": "\U0001f534"}
             risk_icon = risk_map.get(tool["risk"], "\u26aa")
             tags_str = ", ".join(tool["tags"])
-            print(f"     {tool['id']:2d}. {risk_icon} "
-                  f"{tool['name']:<28s} {tool['type']:<9s} {tags_str}")
+            print(
+                f"     {tool['id']:2d}. {risk_icon} "
+                f"{tool['name']:<28s} {tool['type']:<9s} {tags_str}"
+            )
         print()
 
     print(f" {t('safety_rules_label', lang=lang)}: {len(config['safety_rules'])}")
@@ -131,6 +133,7 @@ def _data_path(filename: str) -> Path:
         return local
     # Check installed wheel data directory
     import sys
+
     for base in (sys.prefix, sys.base_prefix):
         candidate = Path(base) / "share" / "toolcase" / filename
         if candidate.exists():
@@ -185,9 +188,7 @@ def _verify_install() -> bool:
         )
 
     category_scripts = {
-        script
-        for category in config.get("categories", [])
-        for script in category.get("tools", [])
+        script for category in config.get("categories", []) for script in category.get("tools", [])
     }
     uncategorized = sorted(config_scripts - category_scripts)
     if uncategorized:
@@ -212,7 +213,9 @@ def _verify_install() -> bool:
                 script_path = root / part
                 if not script_path.exists():
                     command_issues += 1
-                    errors.append(f"Command '{tool.get('name','?')}' references missing script: {part}")
+                    errors.append(
+                        f"Command '{tool.get('name', '?')}' references missing script: {part}"
+                    )
                 break  # Only check first .py reference
 
     if command_issues:
@@ -258,8 +261,7 @@ def lint_check(filepath: str) -> list[str]:
 
             # Te lange regels
             if len(stripped) > 100:
-                issues.append(
-                    f"  {i:4d} | E501: Line too long ({len(stripped)} > 100)")
+                issues.append(f"  {i:4d} | E501: Line too long ({len(stripped)} > 100)")
 
             # Trailing whitespace
             if stripped != stripped.rstrip():
@@ -272,7 +274,7 @@ def lint_check(filepath: str) -> list[str]:
                 or stripped.lstrip().startswith("# Zoek naar")
             )
             if not is_lint_self:
-                cmt = re.search(r'#.*(TODO|FIXME|HACK)', stripped)
+                cmt = re.search(r"#.*(TODO|FIXME|HACK)", stripped)
                 if not cmt:
                     cmt = re.search(r'""".*?(TODO|FIXME|HACK)', stripped)
                 if cmt:
@@ -363,23 +365,23 @@ def analyze_file(filepath: str) -> dict:
 def print_report(report: dict, verbose: bool = False, lang: str = "en") -> None:
     """Print a formatted report in the requested language."""
     file = report["file"]
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(t("file_report", lang=lang, file=file))
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     if report.get("error"):
         print(f" ❌ {report['error']}")
         return
 
-    print(t("lines_count", lang=lang, n=report['lines']))
+    print(t("lines_count", lang=lang, n=report["lines"]))
     print(f" {'✅' if report['syntax_ok'] else '❌'} ", end="")
-    if report['syntax_ok']:
+    if report["syntax_ok"]:
         print(t("syntax_ok", lang=lang))
     else:
-        print(t("syntax_fail", lang=lang, msg=report['syntax_msg']))
+        print(t("syntax_fail", lang=lang, msg=report["syntax_msg"]))
 
     if report["issues"]:
-        print(t("issues_found", lang=lang, n=len(report['issues'])))
+        print(t("issues_found", lang=lang, n=len(report["issues"])))
         for issue in report["issues"]:
             print(issue)
 
@@ -399,20 +401,32 @@ def find_python_files(directory: str, recursive: bool = False) -> list[str]:
         return []
 
     ignored_dirs = {
-        "node_modules", ".git", "dist", "build", ".next", "out",
-        "coverage", ".venv", "venv", "__pycache__", ".pytest_cache",
-        ".cache", ".backups", ".self_improve_reports", "release",
+        "node_modules",
+        ".git",
+        "dist",
+        "build",
+        ".next",
+        "out",
+        "coverage",
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".pytest_cache",
+        ".cache",
+        ".backups",
+        ".self_improve_reports",
+        "release",
     }
 
     def is_in_ignored_dir(candidate: Path) -> bool:
         """Check if in ignored dir.
 
-            Args:
-                candidate: Description.
+        Args:
+            candidate: Description.
 
-            Returns:
-                Description.
-            """
+        Returns:
+            Description.
+        """
         try:
             rel_parts = candidate.relative_to(path).parts
         except ValueError:
@@ -427,9 +441,7 @@ def find_python_files(directory: str, recursive: bool = False) -> list[str]:
 
 def process_snippet(snippet: str) -> dict:
     """Analyseer een code snippet (schrijf tijdelijk weg)."""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".py", delete=False, encoding="utf-8"
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as f:
         f.write(snippet)
         tmp_path = f.name
 
@@ -440,14 +452,13 @@ def process_snippet(snippet: str) -> dict:
 
 
 # ── Exit codes (machine-readable contract) ────────────
-EXIT_OK = 0       # Success, no issues found
+EXIT_OK = 0  # Success, no issues found
 EXIT_FINDINGS = 1  # Issues/findings detected
-EXIT_ERROR = 2     # Invalid input, syntax error, or internal error
+EXIT_ERROR = 2  # Invalid input, syntax error, or internal error
 
 
 def main() -> int:
-    """main — returns exit code: 0=clean, 1=findings, 2=error.
-        """
+    """main — returns exit code: 0=clean, 1=findings, 2=error."""
     parser = argparse.ArgumentParser(
         description="Code Improvement Tool — Analyseer en verbeter code",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -464,136 +475,200 @@ Voorbeelden:
     )
     parser.add_argument("target", nargs="?", help="Bestand of directory om te analyseren")
     parser.add_argument("--code", "-c", help="Code snippet direct analyseren")
-    parser.add_argument("--recursive", "-r", action="store_true",
-                        help="Recursief door directories")
+    parser.add_argument("--recursive", "-r", action="store_true", help="Recursief door directories")
     parser.add_argument("--verbose", "-v", action="store_true", help="Uitgebreide uitvoer")
     parser.add_argument("--version", action="version", version="improve.py v5.4.2")
-    parser.add_argument("--list-tools", action="store_true",
-                        help="Toon alle beschikbare tools in de ToolCase")
-    parser.add_argument("--json-config", action="store_true",
-                        help="Output tool configuratie als JSON")
-    parser.add_argument("--verify-install", action="store_true",
-                        help="Controleer of ToolCase correct is geinstalleerd")
+    parser.add_argument(
+        "--list-tools", action="store_true", help="Toon alle beschikbare tools in de ToolCase"
+    )
+    parser.add_argument(
+        "--json-config", action="store_true", help="Output tool configuratie als JSON"
+    )
+    parser.add_argument(
+        "--verify-install",
+        action="store_true",
+        help="Controleer of ToolCase correct is geinstalleerd",
+    )
 
     # Legacy tools
-    parser.add_argument("--multiscan", "-m", metavar="PATH",
-                        help="Multi-taal scan: detecteer issues in .py/.ts/.tsx/.rs bestanden")
-    parser.add_argument("--complexity", "-x", metavar="PATH",
-                        help="Cyclomatische complexiteitsanalyse van functies")
-    parser.add_argument("--depgraph", "-d", metavar="PATH",
-                        help="Import/export dependency graph van de codebase")
-    parser.add_argument("--core-scan", "-a", metavar="PATH",
-                        help="Draai core read-only tools (10 tools)")
+    parser.add_argument(
+        "--multiscan",
+        "-m",
+        metavar="PATH",
+        help="Multi-taal scan: detecteer issues in .py/.ts/.tsx/.rs bestanden",
+    )
+    parser.add_argument(
+        "--complexity", "-x", metavar="PATH", help="Cyclomatische complexiteitsanalyse van functies"
+    )
+    parser.add_argument(
+        "--depgraph", "-d", metavar="PATH", help="Import/export dependency graph van de codebase"
+    )
+    parser.add_argument(
+        "--core-scan", "-a", metavar="PATH", help="Draai core read-only tools (10 tools)"
+    )
 
     # Bestaande v2 tools
-    parser.add_argument("--security-scan", metavar="PATH",
-                        help="Security scan: detecteer hardcoded secrets en risico's")
-    parser.add_argument("--env-check", metavar="PATH",
-                        help="Environment check: controleer env variabelen en config")
-    parser.add_argument("--project-doctor", metavar="PATH",
-                        help="Project doctor: diagnoseer project gezondheid")
-    parser.add_argument("--route-scanner", metavar="PATH",
-                        help="Route scanner: vind frontend routes en navigatie")
-    parser.add_argument("--fe-be-link", metavar="PATH",
-                        help="Frontend-backend linker: cross-ref API endpoints")
-    parser.add_argument("--dead-code", metavar="PATH",
-                        help="Dead code finder: vind ongebruikte imports/functies")
-    parser.add_argument("--todo-tracker", metavar="PATH",
-                        help="TODO tracker: scan voor TODO/FIXME/HACK markers")
-    parser.add_argument("--test-runner", metavar="PATH",
-                        help="Test runner: discover en run tests")
-    parser.add_argument("--patch-preview", metavar="FILE",
-                        help="Patch preview: toon diff voor wijzigingen")
-    parser.add_argument("--rollback", nargs=2, metavar=("ACTION", "TARGET"),
-                        help="Rollback: herstel .bak backups")
-    parser.add_argument("--dep-audit", metavar="PATH",
-                        help="Dependency audit: check dependency status")
-    parser.add_argument("--workspace-index", metavar="PATH",
-                        help="Workspace index: indexeer en analyseer workspace")
-    parser.add_argument("--agent-memory", metavar="PATH",
-                        help="Agent memory: toon Hermes agent state")
-    parser.add_argument("--ui-consistency", metavar="PATH",
-                        help="UI consistency: check UI patroon consistentie")
-    parser.add_argument("--feature-gap", metavar="PATH",
-                        help="Feature gap analyzer: vind frontend/backend gaten")
+    parser.add_argument(
+        "--security-scan",
+        metavar="PATH",
+        help="Security scan: detecteer hardcoded secrets en risico's",
+    )
+    parser.add_argument(
+        "--env-check", metavar="PATH", help="Environment check: controleer env variabelen en config"
+    )
+    parser.add_argument(
+        "--project-doctor", metavar="PATH", help="Project doctor: diagnoseer project gezondheid"
+    )
+    parser.add_argument(
+        "--route-scanner", metavar="PATH", help="Route scanner: vind frontend routes en navigatie"
+    )
+    parser.add_argument(
+        "--fe-be-link", metavar="PATH", help="Frontend-backend linker: cross-ref API endpoints"
+    )
+    parser.add_argument(
+        "--dead-code", metavar="PATH", help="Dead code finder: vind ongebruikte imports/functies"
+    )
+    parser.add_argument(
+        "--todo-tracker", metavar="PATH", help="TODO tracker: scan voor TODO/FIXME/HACK markers"
+    )
+    parser.add_argument("--test-runner", metavar="PATH", help="Test runner: discover en run tests")
+    parser.add_argument(
+        "--patch-preview", metavar="FILE", help="Patch preview: toon diff voor wijzigingen"
+    )
+    parser.add_argument(
+        "--rollback", nargs=2, metavar=("ACTION", "TARGET"), help="Rollback: herstel .bak backups"
+    )
+    parser.add_argument(
+        "--dep-audit", metavar="PATH", help="Dependency audit: check dependency status"
+    )
+    parser.add_argument(
+        "--workspace-index", metavar="PATH", help="Workspace index: indexeer en analyseer workspace"
+    )
+    parser.add_argument(
+        "--agent-memory", metavar="PATH", help="Agent memory: toon Hermes agent state"
+    )
+    parser.add_argument(
+        "--ui-consistency", metavar="PATH", help="UI consistency: check UI patroon consistentie"
+    )
+    parser.add_argument(
+        "--feature-gap", metavar="PATH", help="Feature gap analyzer: vind frontend/backend gaten"
+    )
 
     # ToolCase v5.4.1 tools
-    parser.add_argument("--command-guard", metavar="CMD",
-                        help="Guard: controleer terminal commands op veiligheid")
-    parser.add_argument("--safe-run", nargs="+", metavar=("CMD", "ARGS"),
-                        help="Guard: veilige subprocess executor met workspace containment")
-    parser.add_argument("--file-guard", metavar="FILE",
-                        help="Guard: bescherm belangrijke bestanden tegen overschrijven")
-    parser.add_argument("--permission-audit", action="store_true",
-                        help="Audit: controleer agent permissies")
-    parser.add_argument("--api-contract", metavar="PATH",
-                        help="Analyze: controleer frontend-backend API contracten")
-    parser.add_argument("--fake-ui", metavar="PATH",
-                        help="Analyze: detecteer fake/demo UI in projecten")
-    parser.add_argument("--button-scan", metavar="PATH",
-                        help="Scan: zoek buttons/forms zonder echte actie")
-    parser.add_argument("--state-inspect", metavar="PATH",
-                        help="Analyze: inspecteer React/Vue/Svelte state usage")
-    parser.add_argument("--build-doctor", metavar="PATH",
-                        help="Execute: diagnosticeer build problemen")
-    parser.add_argument("--log-viewer", metavar="PATH",
-                        help="Analyze: vind logs en vat errors samen")
-    parser.add_argument("--error-explain", metavar="ERROR",
-                        help="Analyze: vertaal error/traceback naar uitleg + fix")
-    parser.add_argument("--release-package", metavar="PATH",
-                        help="Release: maak release package met checks")
-    parser.add_argument("--changelog", metavar="PATH",
-                        help="Analyze: genereer changelog uit git/patch history")
-    parser.add_argument("--backup-mgr", nargs=2, metavar=("ACTION", "TARGET"),
-                        help="Backup: beheer snapshots en backups (snapshot|restore|list|diff)")
-    parser.add_argument("--docs-sync", metavar="PATH",
-                        help="Analyze: check of README/docs kloppen met code")
-    parser.add_argument("--skill-install", metavar="SKILL",
-                        help="Skill: installeer en valideer Hermes/Sabine skill")
-    parser.add_argument("--php-check", metavar="PATH",
-                        help="Scan: PHP code quality & security checker")
+    parser.add_argument(
+        "--command-guard", metavar="CMD", help="Guard: controleer terminal commands op veiligheid"
+    )
+    parser.add_argument(
+        "--safe-run",
+        nargs="+",
+        metavar=("CMD", "ARGS"),
+        help="Guard: veilige subprocess executor met workspace containment",
+    )
+    parser.add_argument(
+        "--file-guard",
+        metavar="FILE",
+        help="Guard: bescherm belangrijke bestanden tegen overschrijven",
+    )
+    parser.add_argument(
+        "--permission-audit", action="store_true", help="Audit: controleer agent permissies"
+    )
+    parser.add_argument(
+        "--api-contract", metavar="PATH", help="Analyze: controleer frontend-backend API contracten"
+    )
+    parser.add_argument(
+        "--fake-ui", metavar="PATH", help="Analyze: detecteer fake/demo UI in projecten"
+    )
+    parser.add_argument(
+        "--button-scan", metavar="PATH", help="Scan: zoek buttons/forms zonder echte actie"
+    )
+    parser.add_argument(
+        "--state-inspect", metavar="PATH", help="Analyze: inspecteer React/Vue/Svelte state usage"
+    )
+    parser.add_argument(
+        "--build-doctor", metavar="PATH", help="Execute: diagnosticeer build problemen"
+    )
+    parser.add_argument(
+        "--log-viewer", metavar="PATH", help="Analyze: vind logs en vat errors samen"
+    )
+    parser.add_argument(
+        "--error-explain",
+        metavar="ERROR",
+        help="Analyze: vertaal error/traceback naar uitleg + fix",
+    )
+    parser.add_argument(
+        "--release-package", metavar="PATH", help="Release: maak release package met checks"
+    )
+    parser.add_argument(
+        "--changelog", metavar="PATH", help="Analyze: genereer changelog uit git/patch history"
+    )
+    parser.add_argument(
+        "--backup-mgr",
+        nargs=2,
+        metavar=("ACTION", "TARGET"),
+        help="Backup: beheer snapshots en backups (snapshot|restore|list|diff)",
+    )
+    parser.add_argument(
+        "--docs-sync", metavar="PATH", help="Analyze: check of README/docs kloppen met code"
+    )
+    parser.add_argument(
+        "--skill-install", metavar="SKILL", help="Skill: installeer en valideer Hermes/Sabine skill"
+    )
+    parser.add_argument(
+        "--php-check", metavar="PATH", help="Scan: PHP code quality & security checker"
+    )
 
-    parser.add_argument("--php-complexity", metavar="PATH",
-                        help="Analyze: PHP cyclomatic complexity")
-    parser.add_argument("--php-depgraph", metavar="PATH",
-                        help="Analyze: PHP dependency graph")
-    parser.add_argument("--php-dead-code", metavar="PATH",
-                        help="Analyze: PHP dead code finder")
-    parser.add_argument("--php-config-audit", metavar="PATH",
-                        help="Security: PHP config audit (php.ini, .env, .htaccess)")
-    parser.add_argument("--php-version-audit", metavar="PATH",
-                        help="Compat: PHP version compatibility check")
-    parser.add_argument("--php-test-runner", metavar="PATH",
-                        help="Execute: PHP test runner (PHPUnit/Pest)")
-    parser.add_argument("--php-dep-audit", metavar="PATH",
-                        help="Security: Composer dependency auditor")
-    parser.add_argument("--apk-reverse", metavar="APK",
-                        help="Reverse: Android APK reverse engineering & decompilation")
+    parser.add_argument(
+        "--php-complexity", metavar="PATH", help="Analyze: PHP cyclomatic complexity"
+    )
+    parser.add_argument("--php-depgraph", metavar="PATH", help="Analyze: PHP dependency graph")
+    parser.add_argument("--php-dead-code", metavar="PATH", help="Analyze: PHP dead code finder")
+    parser.add_argument(
+        "--php-config-audit",
+        metavar="PATH",
+        help="Security: PHP config audit (php.ini, .env, .htaccess)",
+    )
+    parser.add_argument(
+        "--php-version-audit", metavar="PATH", help="Compat: PHP version compatibility check"
+    )
+    parser.add_argument(
+        "--php-test-runner", metavar="PATH", help="Execute: PHP test runner (PHPUnit/Pest)"
+    )
+    parser.add_argument(
+        "--php-dep-audit", metavar="PATH", help="Security: Composer dependency auditor"
+    )
+    parser.add_argument(
+        "--apk-reverse",
+        metavar="APK",
+        help="Reverse: Android APK reverse engineering & decompilation",
+    )
 
     # Self-improvement workflow
-    parser.add_argument("--self-improve", action="store_true",
-                        help="♻️  Self-improve: 13-step autonome verbeteringsloop")
-    parser.add_argument("--target", dest="self_target",
-                        help="Workspace path voor --self-improve")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Self-improve analyse only; wijzig geen bestanden")
-    parser.add_argument("--apply", action="store_true",
-                        help="Self-improve apply mode met backup/test/rollback")
-    parser.add_argument("--safe-only", action="store_true",
-                        help="Self-improve safe-only mode")
-    parser.add_argument("--cycles", type=int,
-                        help="Aantal self-improve cycli")
-    parser.add_argument("--focus",
-                        choices=["all", "docs", "security", "code-quality", "tests"],
-                        help="Focus voor self-improve")
-    parser.add_argument("--json", action="store_true",
-                        help="Self-improve output als JSON")
+    parser.add_argument(
+        "--self-improve",
+        action="store_true",
+        help="♻️  Self-improve: 13-step autonome verbeteringsloop",
+    )
+    parser.add_argument("--target", dest="self_target", help="Workspace path voor --self-improve")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Self-improve analyse only; wijzig geen bestanden"
+    )
+    parser.add_argument(
+        "--apply", action="store_true", help="Self-improve apply mode met backup/test/rollback"
+    )
+    parser.add_argument("--safe-only", action="store_true", help="Self-improve safe-only mode")
+    parser.add_argument("--cycles", type=int, help="Aantal self-improve cycli")
+    parser.add_argument(
+        "--focus",
+        choices=["all", "docs", "security", "code-quality", "tests"],
+        help="Focus voor self-improve",
+    )
+    parser.add_argument("--json", action="store_true", help="Self-improve output als JSON")
 
     # ── Language flag ──────────────────────────────────────
     add_lang_arg(parser)
 
     args = parser.parse_args()
-    lang = args.lang if hasattr(args, 'lang') else get_lang()
+    lang = args.lang if hasattr(args, "lang") else get_lang()
 
     # ── Speciale opties ───────────────────────────────────
     if args.list_tools:
@@ -614,22 +689,49 @@ Voorbeelden:
 
     # ── CHEATSHEET ────────────────────────────────────────
     tool_flags = [
-        args.multiscan, args.complexity, args.depgraph, args.core_scan,
-        args.security_scan, args.env_check, args.project_doctor,
-        args.route_scanner, args.fe_be_link, args.dead_code,
-        args.todo_tracker, args.test_runner, args.patch_preview,
-        args.rollback, args.dep_audit, args.workspace_index,
-        args.agent_memory, args.ui_consistency, args.feature_gap,
-        args.command_guard, args.file_guard, args.permission_audit,
+        args.multiscan,
+        args.complexity,
+        args.depgraph,
+        args.core_scan,
+        args.security_scan,
+        args.env_check,
+        args.project_doctor,
+        args.route_scanner,
+        args.fe_be_link,
+        args.dead_code,
+        args.todo_tracker,
+        args.test_runner,
+        args.patch_preview,
+        args.rollback,
+        args.dep_audit,
+        args.workspace_index,
+        args.agent_memory,
+        args.ui_consistency,
+        args.feature_gap,
+        args.command_guard,
+        args.file_guard,
+        args.permission_audit,
         args.safe_run,
-        args.api_contract, args.fake_ui, args.button_scan,
-        args.state_inspect, args.build_doctor, args.log_viewer,
-        args.error_explain, args.release_package, args.changelog,
-        args.backup_mgr, args.docs_sync, args.skill_install,
+        args.api_contract,
+        args.fake_ui,
+        args.button_scan,
+        args.state_inspect,
+        args.build_doctor,
+        args.log_viewer,
+        args.error_explain,
+        args.release_package,
+        args.changelog,
+        args.backup_mgr,
+        args.docs_sync,
+        args.skill_install,
         args.php_check,
-        args.php_complexity, args.php_depgraph, args.php_dead_code,
-        args.php_config_audit, args.php_version_audit,
-        args.php_test_runner, args.php_dep_audit,
+        args.php_complexity,
+        args.php_depgraph,
+        args.php_dead_code,
+        args.php_config_audit,
+        args.php_version_audit,
+        args.php_test_runner,
+        args.php_dep_audit,
         args.apk_reverse,
         args.self_improve,
     ]
@@ -655,7 +757,7 @@ Voorbeelden:
         """Run a tool script and return its exit code."""
         nonlocal _last_exit_code
         cmd = [sys.executable, str(tool_path / script_name)] + list(extra_args)
-        result = subprocess.run(
+        result = safe_run(
             cmd,
             capture_output=True,
             text=True,
@@ -664,8 +766,10 @@ Voorbeelden:
         )
         print(result.stdout)
         if result.returncode != 0 and result.stderr.strip():
-            print(f" {t('exit_code', lang=lang, code=result.returncode)} | {result.stderr[:300]}",
-                  file=sys.stderr)
+            print(
+                f" {t('exit_code', lang=lang, code=result.returncode)} | {result.stderr[:300]}",
+                file=sys.stderr,
+            )
         if result.returncode != 0:
             _last_exit_code = result.returncode
         return result.returncode
@@ -673,22 +777,25 @@ Voorbeelden:
     # Legacy tools
     if args.multiscan:
         if not Path(args.multiscan).exists():
-            print(t("file_not_found", lang=lang, target=args.multiscan)); sys.exit(2)
-        print(f"\n{'='*60}\n 🛠  MULTISCAN — {args.multiscan}\n{'='*60}")
+            print(t("file_not_found", lang=lang, target=args.multiscan))
+            sys.exit(2)
+        print(f"\n{'=' * 60}\n 🛠  MULTISCAN — {args.multiscan}\n{'=' * 60}")
         _run_script("multiscan.py", args.multiscan)
         sys.exit(_last_exit_code)
 
     if args.complexity:
         if not Path(args.complexity).exists():
-            print(t("file_not_found", lang=lang, target=args.complexity)); sys.exit(2)
-        print(f"\n{'='*60}\n 📏 COMPLEXITEIT — {args.complexity}\n{'='*60}")
+            print(t("file_not_found", lang=lang, target=args.complexity))
+            sys.exit(2)
+        print(f"\n{'=' * 60}\n 📏 COMPLEXITEIT — {args.complexity}\n{'=' * 60}")
         _run_script("complexity.py", args.complexity)
         sys.exit(_last_exit_code)
 
     if args.depgraph:
         if not Path(args.depgraph).exists():
-            print(t("file_not_found", lang=lang, target=args.depgraph)); sys.exit(2)
-        print(f"\n{'='*60}\n 🔗 DEPGRAPH — {args.depgraph}\n{'='*60}")
+            print(t("file_not_found", lang=lang, target=args.depgraph))
+            sys.exit(2)
+        print(f"\n{'=' * 60}\n 🔗 DEPGRAPH — {args.depgraph}\n{'=' * 60}")
         _run_script("depgraph.py", args.depgraph)
         sys.exit(_last_exit_code)
 
@@ -717,13 +824,13 @@ Voorbeelden:
             if not Path(target).exists():
                 print(t("file_not_found", lang=lang, target=target))
                 sys.exit(2)  # Input error, not findings
-            print(f"\n{'='*60}\n 🛠  {script.replace('.py','').upper()} — {target}\n{'='*60}")
+            print(f"\n{'=' * 60}\n 🛠  {script.replace('.py', '').upper()} — {target}\n{'=' * 60}")
             _run_script(script, target)
             sys.exit(_last_exit_code)
 
     if args.rollback:
         action, target = args.rollback
-        print(f"\n{'='*60}\n 🔄 ROLLBACK {action} — {target}\n{'='*60}")
+        print(f"\n{'=' * 60}\n 🔄 ROLLBACK {action} — {target}\n{'=' * 60}")
         _run_script("rollback.py", action, target)
         sys.exit(_last_exit_code)
 
@@ -785,8 +892,8 @@ Voorbeelden:
                 "php_dep_audit": "📦 PHP DEP AUDIT",
                 "apk_reverse": "🔍 APK REVERSE",
             }
-            title = icon_map.get(arg_name, script_name.replace('.py', '').upper())
-            print(f"\n{'='*60}\n {title}\n{'='*60}")
+            title = icon_map.get(arg_name, script_name.replace(".py", "").upper())
+            print(f"\n{'=' * 60}\n {title}\n{'=' * 60}")
 
             if arg_name == "backup_mgr":
                 _run_script(script_name, val[0], val[1])
@@ -801,7 +908,9 @@ Voorbeelden:
     # Dispatch self_improve_loop.py (standalone workflow)
     if args.self_improve:
         script = Path(__file__).parent / "self_improve_loop.py"
-        print(f"\n{'='*60}\n ♻️  SELF-IMPROVE LOOP — 13-step autonome verbeteringsloop\n{'='*60}")
+        print(
+            f"\n{'=' * 60}\n ♻️  SELF-IMPROVE LOOP — 13-step autonome verbeteringsloop\n{'=' * 60}"
+        )
         sys.stdout.flush()
         target = args.self_target or args.target or "."
         cmd = [sys.executable, str(script), target]
@@ -817,7 +926,7 @@ Voorbeelden:
             cmd.extend(["--focus", args.focus])
         if args.json:
             cmd.append("--json")
-        result = subprocess.run(cmd, timeout=300)
+        result = safe_run(cmd, timeout=300)
         sys.exit(result.returncode)
 
     if args.core_scan:
@@ -839,13 +948,13 @@ Voorbeelden:
             ("LICENSE CHECK", "license_checker.py"),
         ]
         for tool_name, tool_script in core_tools:
-            print(f"\n{'='*60}\n 🛠  {tool_name} — {target}\n{'='*60}")
+            print(f"\n{'=' * 60}\n 🛠  {tool_name} — {target}\n{'=' * 60}")
             _run_script(tool_script, target)
         sys.exit(_last_exit_code)
 
     # ── Analyse modus ─────────────────────────────────────
     print(t("code_improvement_tool", lang=lang, VERSION="5.4.1"))
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     if args.code:
         report = process_snippet(args.code)
@@ -884,9 +993,9 @@ Voorbeelden:
             if not report["syntax_ok"]:
                 all_ok = False
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(t("summary_title", lang=lang))
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         lang_syntax = t("syntax_all_ok", lang=lang) if all_ok else t("syntax_some_fail", lang=lang)
         print(f" {t('files_scanned', lang=lang, n=len(files))} — {lang_syntax}")
         print(f" ⚠  {t('issues_found', lang=lang, n=total_issues)}")

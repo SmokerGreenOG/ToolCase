@@ -16,6 +16,7 @@ Gebruik:
     python rollback.py restore --all <path>              # Herstel alle backups
     python rollback.py show <file.bak>                   # Toon backup inhoud
 """
+
 __maker__ = "SmokerGreenOG"
 
 import _protect
@@ -165,9 +166,9 @@ def print_bak_list(backups: list[dict]) -> None:
         print("\n Geen .bak backups gevonden")
         return
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f" 🔄 BACKUP OVERZICHT — {len(backups)} backup(s)")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # Group by directory
     by_dir = {}
@@ -186,8 +187,7 @@ def print_bak_list(backups: list[dict]) -> None:
 
 
 def main() -> None:
-    """main.
-        """
+    """main."""
     parser = argparse.ArgumentParser(
         description="rollback.py — Rollback files using .bak backups",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -200,20 +200,28 @@ Examples:
   python rollback.py show script.py.bak               # Toon backup inhoud
         """,
     )
-    parser.add_argument("action", choices=["list", "restore", "show"],
-                        help="list: toon backups, restore: herstel, show: toon inhoud")
+    parser.add_argument(
+        "action",
+        choices=["list", "restore", "show"],
+        help="list: toon backups, restore: herstel, show: toon inhoud",
+    )
     parser.add_argument("target", nargs="?", help="Bestand, .bak bestand of directory")
-    parser.add_argument("--all", "-a", action="store_true",
-                        help="Herstel alle backups in een directory")
-    parser.add_argument("--from", "-f", metavar="DIR", dest="from_dir",
-                        help="Directory met de backups")
-    parser.add_argument("--preview", "-p", action="store_true",
-                        help="Preview alleen (niet herstellen)")
+    parser.add_argument(
+        "--all", "-a", action="store_true", help="Herstel alle backups in een directory"
+    )
+    parser.add_argument(
+        "--from", "-f", metavar="DIR", dest="from_dir", help="Directory met de backups"
+    )
+    parser.add_argument(
+        "--preview", "-p", action="store_true", help="Preview alleen (niet herstellen)"
+    )
     parser.add_argument("--json", "-j", action="store_true", help="Output als JSON")
-    parser.add_argument("--limit", "-l", type=int, default=20,
-                        help="Max regels voor show (default: 20)")
-    parser.add_argument("--confirm", "-c", action="store_true",
-                        help="Automatisch bevestigen (geen prompt)")
+    parser.add_argument(
+        "--limit", "-l", type=int, default=20, help="Max regels voor show (default: 20)"
+    )
+    parser.add_argument(
+        "--confirm", "-c", action="store_true", help="Automatisch bevestigen (geen prompt)"
+    )
     parser.add_argument("--version", action="version", version="rollback.py v1.0.0")
 
     args = parser.parse_args()
@@ -259,9 +267,9 @@ Examples:
             else:
                 success = sum(1 for r in results if r["success"])
                 failed = sum(1 for r in results if not r["success"])
-                print(f"\n{'='*60}")
+                print(f"\n{'=' * 60}")
                 print(f" 🔄 ROLLBACK — ALLE BACKUPS")
-                print(f"{'='*60}")
+                print(f"{'=' * 60}")
                 print(f"   ✅ Hersteld: {success}")
                 print(f"   ❌ Mislukt:  {failed}")
                 for r in results:
@@ -329,11 +337,11 @@ Examples:
             print(json.dumps(result, indent=2, ensure_ascii=False))
         else:
             if result["success"]:
-                print(f"\n{'='*60}")
+                print(f"\n{'=' * 60}")
                 print(f" 📄 BACKUP INHOUD — {result['file']}")
                 print(f"   Origineel: {result['orig_name']}")
                 print(f"   Totaal: {result['total_lines']} regels")
-                print(f"{'='*60}")
+                print(f"{'=' * 60}")
                 print(result["content"])
                 if result["truncated"]:
                     print(f"\n   ... ({result['total_lines'] - args.limit} regels verborgen)")

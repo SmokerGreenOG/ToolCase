@@ -107,7 +107,6 @@ TRANS = {
         "nl": "Kon tools_config.json niet laden.",
         "de": "Konnte tools_config.json nicht laden.",
     },
-
     # ── improve.py output ──
     "code_improvement_tool": {
         "en": "🔍 Code Improvement Tool v{VERSION}",
@@ -120,12 +119,18 @@ TRANS = {
         "de": "💡 HERMES: Verwende mich, um Code zu verbessern!",
     },
     "workflow_title": {
-        "en": ("This is the Code Improvement Tool (v{VERSION}). Hermes can use this script\nto"
-               "automatically analyze and improve code."),
-        "nl": ("Dit is de Code Improvement Tool (v{VERSION}). Hermes kan dit script gebruiken\nom code"
-               "automatisch te analyseren en te verbeteren."),
-        "de": ("Dies ist das Code Improvement Tool (v{VERSION}). Hermes kann dieses Skript\nverwenden, um"
-               "Code automatisch zu analysieren und zu verbessern."),
+        "en": (
+            "This is the Code Improvement Tool (v{VERSION}). Hermes can use this script\nto"
+            "automatically analyze and improve code."
+        ),
+        "nl": (
+            "Dit is de Code Improvement Tool (v{VERSION}). Hermes kan dit script gebruiken\nom code"
+            "automatisch te analyseren en te verbeteren."
+        ),
+        "de": (
+            "Dies ist das Code Improvement Tool (v{VERSION}). Hermes kann dieses Skript\nverwenden, um"
+            "Code automatisch zu analysieren und zu verbessern."
+        ),
     },
     "workflow_step1": {
         "en": "  1. Analyze:  python improve.py <file>        (shows issues)",
@@ -135,8 +140,10 @@ TRANS = {
     "workflow_step2": {
         "en": "  2. Auto-fix: python improve.py <file> -f     (auto fix)",
         "nl": "  2. Fix syntax: python improve.py <bestand> -f     (automatisch fixen)",
-        "de": ("  2. Automatisch korrigieren: python improve.py <datei> -f     (automatisch"
-               "korrigieren)"),
+        "de": (
+            "  2. Automatisch korrigieren: python improve.py <datei> -f     (automatisch"
+            "korrigieren)"
+        ),
     },
     "workflow_step3": {
         "en": "  3. List tools: python improve.py --list-tools  (show all 62 tools)",
@@ -144,22 +151,33 @@ TRANS = {
         "de": "  3. python improve.py --list-tools              (alle 60 Werkzeuge anzeigen)",
     },
     "workflow_loop_hint": {
-        "en": ("The 'toolcase-self-improve' skill contains the full"
-               " workflow\nfor Hermes to independently improve code."),
-        "nl": ("De 'toolcase-self-improve' skill bevat de volledige"
-               " workflow\nvoor Hermes om zelfstandig code te verbeteren."),
-        "de": ("Die 'toolcase-self-improve' Skill enthält den vollständigen"
-               " Workflow\nfür Hermes, um Code eigenständig zu verbessern."),
+        "en": (
+            "The 'toolcase-self-improve' skill contains the full"
+            " workflow\nfor Hermes to independently improve code."
+        ),
+        "nl": (
+            "De 'toolcase-self-improve' skill bevat de volledige"
+            " workflow\nvoor Hermes om zelfstandig code te verbeteren."
+        ),
+        "de": (
+            "Die 'toolcase-self-improve' Skill enthält den vollständigen"
+            " Workflow\nfür Hermes, um Code eigenständig zu verbessern."
+        ),
     },
     "workflow_self_hint": {
-        "en": ("Tip: Hermes can improve THIS file by loading it\nwith read_file, analyzing with"
-               "improve.py, and fixing with patch."),
-        "nl": ("Tip: Hermes kan DIT BESTAND zelf verbeteren door het te laden\nmet read_file, te"
-               "analyseren met improve.py, en te fixen met patch."),
-        "de": ("Tipp: Hermes kann DIESE DATEI selbst verbessern, indem er sie\nmit read_file lädt, mit"
-               "improve.py analysiert und mit patch korrigiert."),
+        "en": (
+            "Tip: Hermes can improve THIS file by loading it\nwith read_file, analyzing with"
+            "improve.py, and fixing with patch."
+        ),
+        "nl": (
+            "Tip: Hermes kan DIT BESTAND zelf verbeteren door het te laden\nmet read_file, te"
+            "analyseren met improve.py, en te fixen met patch."
+        ),
+        "de": (
+            "Tipp: Hermes kann DIESE DATEI selbst verbessern, indem er sie\nmit read_file lädt, mit"
+            "improve.py analysiert und mit patch korrigiert."
+        ),
     },
-
     # ── File analysis ──
     "file_report": {
         "en": "📄 {file}",
@@ -251,7 +269,6 @@ TRANS = {
         "nl": "⚠  Backup mislukt: {e}",
         "de": "⚠  Backup fehlgeschlagen: {e}",
     },
-
     # ── Tool runner ──
     "running_tool": {
         "en": "🛠  {name} — {target}",
@@ -264,14 +281,19 @@ TRANS = {
         "de": "⚠  Exit-Code: {code}",
     },
     "auto_fix_mode": {
-        "en": ("🔧 Auto-fix mode — attempting syntax repair...\n   (Hermes can do this via the"
-               "toolcase-self-improve skill)"),
-        "nl": ("🔧 Auto-fix modus — probeer syntax te repareren...\n   (Hermes kan dit via de"
-               "toolcase-self-improve skill)"),
-        "de": ("🔧 Auto-Fix-Modus — versuche Syntax-Reparatur...\n   (Hermes kann dies mit der"
-               "toolcase-self-improve Skill tun)"),
+        "en": (
+            "🔧 Auto-fix mode — attempting syntax repair...\n   (Hermes can do this via the"
+            "toolcase-self-improve skill)"
+        ),
+        "nl": (
+            "🔧 Auto-fix modus — probeer syntax te repareren...\n   (Hermes kan dit via de"
+            "toolcase-self-improve skill)"
+        ),
+        "de": (
+            "🔧 Auto-Fix-Modus — versuche Syntax-Reparatur...\n   (Hermes kann dies mit der"
+            "toolcase-self-improve Skill tun)"
+        ),
     },
-
     # ── Language names ──
     "lang_en": {"en": "English", "nl": "Engels", "de": "Englisch"},
     "lang_nl": {"en": "Dutch", "nl": "Nederlands", "de": "Niederländisch"},
@@ -286,7 +308,6 @@ TRANS = {
         "nl": "🇳🇱",
         "de": "🇩🇪",
     },
-
     # ── Dashboard ──
     "dashboard_title": {
         "en": "ToolCase Dashboard",
@@ -400,8 +421,10 @@ def get_lang() -> str:
 def add_lang_arg(parser: argparse.ArgumentParser) -> None:
     """Add a --lang argument to an argparse parser."""
     parser.add_argument(
-        "--lang", choices=["en", "nl", "de"], default=_DEFAULT_LANG,
-        help="Output language: en (English), nl (Nederlands), de (Deutsch)"
+        "--lang",
+        choices=["en", "nl", "de"],
+        default=_DEFAULT_LANG,
+        help="Output language: en (English), nl (Nederlands), de (Deutsch)",
     )
 
 
