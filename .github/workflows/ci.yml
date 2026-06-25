@@ -136,17 +136,18 @@ jobs:
         run: test_venv/bin/pip check
 
       # ── Wheel import test: run from venv OUTSIDE repo checkout ──
-      - name: Wheel import test (safe_delete, backup_manager, release_packager)
+      - name: Wheel import test (installed wheel only)
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
-            VENV_PYTHON="test_venv/Scripts/python"
+            VENV_PYTHON="$GITHUB_WORKSPACE/test_venv/Scripts/python"
           else
-            VENV_PYTHON="test_venv/bin/python"
+            VENV_PYTHON="$GITHUB_WORKSPACE/test_venv/bin/python"
           fi
-          $VENV_PYTHON -c "
+          cd "$RUNNER_TEMP"
+          "$VENV_PYTHON" -c "
           import safe_delete, backup_manager, release_packager, toolcase_core
-          print('Wheel imports OK: safe_delete, backup_manager, release_packager, toolcase_core')
+          print('Wheel imports OK (from installed wheel, outside repo): safe_delete, backup_manager, release_packager, toolcase_core')
           "
       - name: Verify wheel has data files
         run: |
