@@ -97,25 +97,57 @@ jobs:
       - name: Check distribution with twine
         run: python -m twine check dist/*
 
-      # ── Install wheel in clean venv and verify (cross-platform) ──
-      - name: Install wheel in clean venv
+      # ── Install wheel in clean venv and verify ──
+      - name: Create venv and install wheel (all platforms)
+        shell: bash
         run: |
           python -m venv test_venv
-          .	est_venv\Scripts\Activate.ps1
-          pip install dist/toolcase-*.whl
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            test_venv/Scripts/python -m pip install dist/toolcase-*.whl
+          else
+            test_venv/bin/python -m pip install dist/toolcase-*.whl
+          fi
+
+      - name: Verify CLI --version (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
-      - name: Verify CLI (--version)
         run: .	est_venv\Scripts	oolcase.exe --version
+
+      - name: Verify CLI --version (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: test_venv/bin/toolcase --version
+
+      - name: Verify CLI --verify-install (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
-      - name: Verify CLI (--list-tools)
-        run: .	est_venv\Scripts	oolcase.exe --list-tools
-        shell: pwsh
-      - name: Verify CLI (--verify-install)
         run: .	est_venv\Scripts	oolcase.exe --verify-install
+
+      - name: Verify CLI --verify-install (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: test_venv/bin/toolcase --verify-install
+
+      - name: Verify pip check (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
-      - name: Verify pip check
         run: .	est_venv\Scripts\pip.exe check
-        shell: pwsh
+
+      - name: Verify pip check (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: test_venv/bin/pip check
+
+      # ── Wheel import test: run from venv OUTSIDE repo checkout ──
+      - name: Wheel import test (safe_delete, backup_manager, release_packager)
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            VENV_PYTHON="test_venv/Scripts/python"
+          else
+            VENV_PYTHON="test_venv/bin/python"
+          fi
+          $VENV_PYTHON -c "
+          import safe_delete, backup_manager, release_packager, toolcase_core
+          print('Wheel imports OK: safe_delete, backup_manager, release_packager, toolcase_core')
+          "
       - name: Verify wheel has data files
         run: |
           python -c "
@@ -130,14 +162,6 @@ jobs:
               print(f'MISSING from wheel: {missing}')
               sys.exit(1)
           print('All required data files in wheel')
-          "
-
-      # ── Wheel import test: verify all modules importable ──
-      - name: Wheel import test (safe_delete, backup_manager, release_packager)
-        run: |
-          python -c "
-          import safe_delete, backup_manager, release_packager
-          print('Wheel imports OK: safe_delete, backup_manager, release_packager')
           "
 
       # ── Ruff lint check (line-length=100) ──

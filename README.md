@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-ToolCase%201.0-7C3AED?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
-[![Tests](https://img.shields.io/badge/tests-113-blue?style=flat-square)]()
+[![Tests](https://img.shields.io/badge/tests-125-blue?style=flat-square)]()
 [![Reliability](https://img.shields.io/badge/scanner--reliability-0.99-blue?style=flat-square)]()
 [![Audit](https://img.shields.io/badge/self--audit-beta-blue?style=flat-square)]()
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
@@ -293,7 +293,7 @@ python recursive_self_improve.py . --cycles 5
 python recursive_self_improve.py . --focus code-quality
 ```
 
-**Current test status:** 113 tests (self-reported). Tests validate core functionality; full cross-platform CI pending.
+**Current test status:** 125 tests (self-reported). Tests validate core functionality; full cross-platform CI pending.
 
 ---
 
@@ -312,12 +312,14 @@ ToolCase v5.4/
 ├── _protect.py                # Maker signature protection
 ├── install_toolcase.bat       # Windows installer
 ├── LICENSE                    # ToolCase License 1.0
-├── *.py                       # 62 registered tool scripts
+├── *.py                       # 62 registered tool scripts + check_syntax.py
+├── safe_delete.py              # Central safe deletion helper
+├── safe_run.py                 # Central safe subprocess executor
+├── toolcase_core/              # Shared internal helpers (utils, safety)
 ├── scripts/
-│   ├── check_syntax.py          # AST syntax checker
-│   └── check_version_consistency.py  # CI version validator
+│   └── check_version_consistency.py  # CI version + toolcount validator
 ├── tests/
-│   ├── test_*.py              # 113 tests (self-reported via pytest)
+│   ├── test_*.py              # 125 tests (self-reported via pytest)
 │   └── __init__.py
 └── README.md
 ```
@@ -330,7 +332,7 @@ ToolCase v5.4/
 |--------|-------|
 | Tools | 62 |
 | Categories | 10 |
-| Unit tests | 113 (self-reported) |
+| Unit tests | 125 (self-reported) |
 | Self-audit | Passing (compile + syntax) |
 | Syntax errors | 0 |
 | Security HIGH/MEDIUM | 0 |
@@ -342,6 +344,7 @@ ToolCase v5.4/
 | E501 long lines | ~130 (under active reduction) |
 | Scanner reliability | 1.0 |
 | Doc coverage | 94.9% (761/803) |
+| Core helpers | 3 (safe_run, safe_delete, toolcase_core) |
 
 ---
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-safe_delete.py — Central safe file/directory deletion for ToolCase v5.4.3.
+safe_delete.py — Central safe file/directory deletion for ToolCase v5.4.2.
 
 Enforces:
   1. Resolved-path containment — target must be within workspace
