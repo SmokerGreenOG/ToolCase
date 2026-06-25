@@ -33,7 +33,7 @@ is self-reported — geen externe audit.
 | RSI quality score | **Self-audited** |
 
 **Active security-measures:**
-- **Safe run executor** (`safe_run.py`): Optional safe subprocess executor with workspace containment, shell-interpreter detection, encoded command blocking, and risk-based approval. Currently used in security-sensitive paths; full migration of all subprocess calls is in progress.
+- **Safe run executor** (`safe_run.py`): Central safe subprocess executor with workspace containment, shell-interpreter detection, encoded command blocking, and risk-based approval. All 62 tools migrated; CI gate blocks new direct `subprocess.run()` calls.
 - **Command guard** (`command_guard.py`): Heuristic scanner that detects dangerous command patterns
 - **File guard** (`file_guard.py`): Protects config files from overwrites
 - **Backup manager workspace containment** (`backup_manager.py`): Workspace boundary — blocks writes outside workspace
@@ -330,16 +330,16 @@ ToolCase v5.4/
 |--------|-------|
 | Tools | 62 |
 | Categories | 10 |
-| Unit tests | 109 (self-reported) |
+| Unit tests | 113 (self-reported) |
 | Self-audit | Passing (compile + syntax) |
 | Syntax errors | 0 |
 | Security HIGH/MEDIUM | 0 |
 | Config/docs/security findings | Self-reported |
 | License compliance | Passing |
-| Python files | 78 |
-| Lines of code | 34,700+ |
+| Python files | 85 |
+| Lines of code | 40,800+ |
 | RSI Quality | Self-audited |
-| E501 long lines | 0 |
+| E501 long lines | ~130 (under active reduction) |
 | Scanner reliability | 1.0 |
 | Doc coverage | 94.9% (761/803) |
 

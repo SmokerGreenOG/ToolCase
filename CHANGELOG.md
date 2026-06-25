@@ -25,7 +25,7 @@ All notable changes to ToolCase are documented in this file.
 - README: 62 tools, security claims technically accurate
 
 ### Known limitations (documented honestly)
-- `safe_run` migration in progress — ~18 modules still use direct `subprocess.run()`
+- `safe_run` migration complete — 0 modules use direct `subprocess.run()`, CI gate enforces
 - Windows encoding: some tools may need `PYTHONIOENCODING=utf-8` on cp1252 consoles
 - Package layout: flat top-level modules, `src/toolcase/` migration pending
 - Install verify requires wheel build — fails in source-only checkout

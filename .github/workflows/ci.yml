@@ -132,12 +132,22 @@ jobs:
           print('All required data files in wheel')
           "
 
+      # ── Wheel import test: verify all modules importable ──
+      - name: Wheel import test (safe_delete, backup_manager, release_packager)
+        run: |
+          python -c "
+          import safe_delete, backup_manager, release_packager
+          print('Wheel imports OK: safe_delete, backup_manager, release_packager')
+          "
+
       # ── Ruff lint check (line-length=100) ──
       - name: Install ruff
         run: pip install ruff
-      - name: Ruff lint check
-        run: python -m ruff check --select E501,W291,W292 --line-length 100 .
-        continue-on-error: true  # Warning only — E501 is informational
+      - name: Ruff lint — hard fail on trailing WS, missing newlines
+        run: python -m ruff check --select W291,W292 --line-length 100 .
+      - name: Ruff lint — warning on long lines
+        run: python -m ruff check --select E501 --line-length 100 .
+        continue-on-error: true  # E501 is informational — long lines under active reduction
 
       # ── Safe-run gate: no direct subprocess.run in production code ──
       - name: Safe-run gate (no direct subprocess.run)
@@ -157,3 +167,23 @@ jobs:
             exit 1
           fi
           echo "OK: All subprocess calls go through safe_run"
+
+      # ── Safe-delete gate: no direct shutil.rmtree in production code ──
+      - name: Safe-delete gate (no direct shutil.rmtree)
+        shell: bash
+        run: |
+          violations=$(grep -rn 'shutil\.rmtree\|os\.remove\|os\.unlink\|Path.*\.unlink()' --include='*.py' . \
+            | grep -v safe_delete.py \
+            | grep -v __pycache__ \
+            | grep -v '.backups/' \
+            | grep -v '.rsi_' \
+            | grep -v 'tests/' \
+            | grep -v 'scripts/' \
+            | grep -v '# nosec' \
+            | grep -v 'import shutil' || true)
+          if [ -n "$violations" ]; then
+            echo "FAIL: Direct deletion calls found outside safe_delete.py:"
+            echo "$violations"
+            exit 1
+          fi
+          echo "OK: All deletions go through safe_delete"

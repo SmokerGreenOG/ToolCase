@@ -2,7 +2,7 @@
   "name": "toolcase-self-improve",
   "version": "5.4.2",
   "author": "SmokerGreenOG",
-  "description": "ToolCase v5.4.1 — 62 tools, RSI v2.0, safe_run executor, 10 safety rules, EN/NL/DE i18n",
+  "description": "ToolCase v5.4.2 — 62 tools, RSI v2.0, safe_run executor, safe_delete, 10 safety rules",
   "hermes": {
     "skill_type": "workflow",
     "tags": [

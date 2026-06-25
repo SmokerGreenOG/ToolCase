@@ -28,6 +28,17 @@ toolcase-rsi = "recursive_self_improve:main"
 toolcase-doctor = "project_doctor:main"
 toolcase-release = "release_readiness:main"
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pyyaml",
+]
+build = [
+    "build",
+    "twine",
+]
+
 [tool.setuptools]
 include-package-data = true
 # All top-level .py modules (flat structure — no src/ layout yet)
@@ -86,6 +97,7 @@ py-modules = [
     "rsi_llm_bridge",
     "rsi_report_html",
     "safe_run",
+    "safe_delete",
     "sarif_exporter",
     "scan_reliability",
     "security_scan",
