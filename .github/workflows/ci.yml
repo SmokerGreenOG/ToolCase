@@ -107,7 +107,7 @@ jobs:
         run: |
           python -m venv test_venv
           if [ "$RUNNER_OS" = "Windows" ]; then
-            test_venv/Scripts/python -m pip install dist/toolcase-*.whl
+            test_venv/Scripts/python.exe -m pip install dist/toolcase-*.whl
           else
             test_venv/bin/python -m pip install dist/toolcase-*.whl
           fi
@@ -144,7 +144,7 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
-            VENV_PYTHON="$GITHUB_WORKSPACE/test_venv/Scripts/python"
+            VENV_PYTHON="$GITHUB_WORKSPACE/test_venv/Scripts/python.exe"
           else
             VENV_PYTHON="$GITHUB_WORKSPACE/test_venv/bin/python"
           fi
