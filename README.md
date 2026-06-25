@@ -338,7 +338,7 @@ ToolCase v5.4/
 | Security HIGH/MEDIUM | 0 |
 | Config/docs/security findings | Self-reported |
 | License compliance | Passing |
-| Python files | 85 |
+| Python files | 87 |
 | Lines of code | 40,800+ |
 | RSI Quality | Self-audited |
 | E501 long lines | ~130 (under active reduction) |

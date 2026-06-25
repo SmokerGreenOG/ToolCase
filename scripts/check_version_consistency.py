@@ -242,3 +242,52 @@ if errors:
     sys.exit(1)
 
 print(f"✅ Version {canonical} consistent across all sources, {_tc_count} tools in sync")
+
+# ── README metrics validation (warning-only) ──────────
+readme = require_file("README.md", "README.md (metrics)")
+if readme:
+    # Count actual Python files
+    py_files = len(
+        [
+            p
+            for p in ROOT.rglob("*.py")
+            if ".backups" not in str(p)
+            and ".rsi_" not in str(p)
+            and "__pycache__" not in str(p)
+            and "build" not in p.parts
+            and "dist" not in p.parts
+            and ".egg-info" not in str(p)
+        ]
+    )
+    # Check README claims
+    for m in re.finditer(r"Python files\s*\|\s*(\d+)", readme):
+        claimed = int(m.group(1))
+        if claimed != py_files:
+            print(
+                f"  ⚠ README.md says {claimed} Python files, actual: {py_files}",
+                file=sys.stderr,
+            )
+
+    # Count tests via pytest collection
+    try:
+        import subprocess
+
+        r = subprocess.run(
+            [sys.executable, "-m", "pytest", str(ROOT / "tests"), "-q", "--co"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        test_count = len(
+            [l for l in r.stdout.splitlines() if "::" in l and "PASSED" not in l]
+        )
+        if test_count > 0:
+            for m in re.finditer(r"Unit tests\s*\|\s*(\d+)", readme):
+                claimed = int(m.group(1))
+                if claimed != test_count:
+                    print(
+                        f"  ⚠ README.md says {claimed} tests, actual: {test_count}",
+                        file=sys.stderr,
+                    )
+    except Exception:
+        pass  # pytest not available — skip

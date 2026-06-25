@@ -56,6 +56,10 @@ jobs:
       - name: Version consistency check
         run: python scripts/check_version_consistency.py
 
+      # ── Packaging integrity ──
+      - name: Packaging check (py-modules on disk)
+        run: python scripts/check_packaging.py
+
       # ── Dry-run self-improve smoke test ──
       - name: Dry-run self-improve
         shell: pwsh
