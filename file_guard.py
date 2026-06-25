@@ -28,6 +28,7 @@ from __future__ import annotations
 __maker__ = "SmokerGreenOG"
 
 import _protect
+from safe_delete import safe_unlink
 
 import argparse
 import difflib
@@ -282,7 +283,7 @@ def _cleanup_old_backups(file_path: Path) -> None:
     for bak in backup_dir.glob(f"{file_path.name}.*.bak"):
         try:
             if now - bak.stat().st_mtime > BACKUP_RETENTION_SECONDS:
-                bak.unlink(missing_ok=True)
+                safe_unlink(bak, workspace=backup_dir, force=True)
         except (OSError, IOError):
             pass
 
@@ -712,7 +713,7 @@ def action_delete(path: str, force: bool = False, json_mode: bool = False) -> in
 
     # Perform deletion
     try:
-        p.unlink()
+        safe_unlink(p, force=True)
         _track_change(p, "delete", approved=True)
         result["status"] = "deleted"
         if json_mode:

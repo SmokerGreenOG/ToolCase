@@ -701,7 +701,7 @@ def clean_temp_files(root: Path) -> int:
         for p in root.rglob(pattern):
             if p.is_file():
                 try:
-                    p.unlink()
+                    safe_unlink(p, workspace=root, force=True)
                     cleaned += 1
                 except Exception:
                     pass

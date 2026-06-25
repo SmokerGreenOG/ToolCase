@@ -43,6 +43,7 @@ __maker__ = "SmokerGreenOG"
 __version__ = "2.0.0"
 
 import _protect
+from safe_delete import safe_unlink
 import argparse
 import hashlib
 import json
@@ -316,7 +317,7 @@ class LLMBridge:
         """Markeer een request als afgewerkt (wordt aangeroepen door Hermes)."""
         req_file = self._safe_path(self.pending_dir, request_id)
         if req_file.exists():
-            req_file.unlink()
+            safe_unlink(req_file, force=True)
 
         target_dir = self.done_dir if result.success else self.failed_dir
         out_file = target_dir / f"{request_id}.json"
@@ -413,7 +414,7 @@ class LLMBridge:
         counts = [0, 0, 0]
         for i, d in enumerate([self.pending_dir, self.done_dir, self.failed_dir]):
             for f in d.glob("*.json"):
-                f.unlink()
+                safe_unlink(f, workspace=d, force=True)
                 counts[i] += 1
         self._update_state()
         return tuple(counts)

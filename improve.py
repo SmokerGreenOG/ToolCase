@@ -60,6 +60,7 @@ __maker__ = "SmokerGreenOG"
 
 import _protect
 from safe_run import safe_run
+from safe_delete import safe_unlink
 import argparse
 import ast
 import json
@@ -447,7 +448,7 @@ def process_snippet(snippet: str) -> dict:
 
     report = analyze_file(tmp_path)
     report["file"] = "<snippet>"  # Toon als snippet
-    os.unlink(tmp_path)
+    safe_unlink(tmp_path, force=True)
     return report
 
 

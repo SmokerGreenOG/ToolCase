@@ -29,6 +29,7 @@ __maker__ = "SmokerGreenOG"
 
 import _protect
 from safe_run import safe_run
+from safe_delete import safe_unlink
 import argparse
 import json
 import os
@@ -207,7 +208,7 @@ def analyze_executable(apk_path: Path) -> list[dict[str, Any]]:
                         tmp.write(dex_bytes)
                         tmp_path = tmp.name
                     stdout, _, _ = _run([str(dexdump), "-f", tmp_path], timeout=30)
-                    os.unlink(tmp_path)
+                    safe_unlink(tmp_path, force=True)
 
                     entry.update(
                         {
