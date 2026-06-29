@@ -1,9 +1,9 @@
 {
   "__meta": {
-    "version": "5.4.2",
+    "version": "5.5.0",
     "maker": "SmokerGreenOG",
-    "description": "ToolCase — Code Improvement Toolkit configuratie",
-    "last_updated": "2026-06-24"
+    "description": "ToolCase v5.5.0 — Code Improvement Toolkit configuratie",
+    "last_updated": "2026-06-29"
   },
   "categories": [
     {
@@ -25,7 +25,7 @@
         "php_depgraph.py",
         "php_dead_code.py",
         "php_version_audit.py",
-        "apk_reverse.py"
+        "apk_reverse_suite/analyze.py"
       ]
     },
     {
@@ -971,17 +971,17 @@
     },
     {
       "id": 54,
-      "name": "apk_reverse.py",
+      "name": "apk_reverse_suite/analyze.py",
       "type": "Reverse Engineering",
       "risk": "Low",
       "tags": [
         "Reverse",
         "Android",
         "APK",
-        "Decompile",
+        "Security",
         "Read-only"
       ],
-      "description": "Android APK reverse engineering: manifest parsing, DEX→Java decompilation (jadx), component analysis, permissions audit",
+      "description": "APK reverse engineering suite: safe extraction, manifest parsing, DEX indicators, URL/secret scanning, framework detection, risk scoring, HTML+JSON reports. JADX/apktool optional.",
       "command": "python improve.py --apk-reverse <file.apk>",
       "read_only": true,
       "needs_approval": false

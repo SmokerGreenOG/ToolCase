@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "toolcase"
-version = "5.4.2"
-description = "AI Agent Code Toolkit — 62 tools for code analysis, security, APK reverse engineering, and recursive self-improvement"
+version = "5.5.0"
+description = "AI Agent Code Toolkit — 62 tools for code analysis, security, APK reverse engineering suite, and recursive self-improvement"
 readme = "README.md"
 license = "LicenseRef-ToolCase-1.0"
 requires-python = ">=3.11"
@@ -113,7 +113,7 @@ py-modules = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["demo", "demo.*", "docs", "docs.*", "scripts", "scripts.*", "toolcase_core", "toolcase_core.*"]
+include = ["apk_reverse_suite", "apk_reverse_suite.*", "demo", "demo.*", "docs", "docs.*", "scripts", "scripts.*", "toolcase_core", "toolcase_core.*"]
 
 [tool.setuptools.data-files]
 "share/toolcase" = [

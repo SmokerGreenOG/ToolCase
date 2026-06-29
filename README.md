@@ -1,6 +1,6 @@
-# ⚡ ToolCase v5.4 — AI Agent Code Toolkit
+# ⚡ ToolCase v5.5 — AI Agent Code Toolkit
 
-[![Version](https://img.shields.io/badge/version-5.4.2-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.4.2)
+[![Version](https://img.shields.io/badge/version-5.5.0-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase/releases/tag/v5.5.0)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-ToolCase%201.0-7C3AED?style=flat-square)](LICENSE)
 [![Hermes](https://img.shields.io/badge/hermes--agent-ready-06b6d4?style=flat-square)]()
@@ -10,7 +10,7 @@
 [![CI](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml/badge.svg)](https://github.com/SmokerGreenOG/ToolCase/actions/workflows/ci.yml)
 [![GitHub](https://img.shields.io/badge/github-SmokerGreenOG%2FToolCase-181717?style=flat-square&logo=github)]()
 
-> **62 tools · 10 categories · RSI v2.0 · Beta-stage toolkit**
+> **62 tools · 10 categories · RSI v2.0 · APK Reverse Suite · Beta-stage toolkit**
 > Built with ❤️ by [SmokerGreenOG](https://github.com/SmokerGreenOG)
 > [![Repo](https://img.shields.io/badge/Repo-SmokerGreenOG%2FToolCase-7C3AED?style=flat-square)](https://github.com/SmokerGreenOG/ToolCase)
 
@@ -195,7 +195,23 @@ registry is maintained in `manifest.json` and `tools_config.json`.
 ### 🔍 APK Reverse Engineering
 | Tool | Description |
 |------|-------------|
-| `apk_reverse.py` | Full APK decompilation (jadx → Java), manifest parsing, security scan, resource decoding, size optimization, signing verification, URL/string scan, APK comparison |
+| `apk_reverse_suite/analyze.py` | Full APK analysis suite: safe extraction (zip bomb protection, path traversal blocking), manifest parsing, URL/secret scanning (SHA256-fingerprinted), framework detection (Flutter/Unity/React Native/Cordova/Xamarin/Kotlin), risk scoring (0-100), HTML+JSON reports. Optional JADX + apktool integration. |
+
+**Quick commands:**
+```bash
+# Full analysis (via dispatcher)
+python improve.py --apk-reverse app.apk
+
+# Direct CLI
+python -m apk_reverse_suite.analyze --apk app.apk --out reports/app_audit
+
+# With JADX + apktool (if installed)
+python -m apk_reverse_suite.analyze --apk app.apk --out reports/app_audit --jadx --apktool
+
+# Python API
+from apk_reverse_suite.toolcase_integration import run_toolcase_apk_reverse
+result = run_toolcase_apk_reverse(apk_path="app.apk", output_dir="reports/app")
+```
 
 ### 🩺 Project Health
 | Tool | Description |
@@ -300,10 +316,14 @@ python recursive_self_improve.py . --focus code-quality
 ## 📁 Project Structure
 
 ```
-ToolCase v5.4/
+ToolCase v5.5/
 ├── improve.py                 # Main dispatcher
 ├── recursive_self_improve.py  # RSI — learns & improves itself
 ├── self_improve_loop.py       # 13-step improvement loop
+├── apk_reverse_suite/         # APK reverse engineering suite
+│   ├── analyze.py             #   CLI entry point
+│   ├── toolcase_integration.py #   Python API wrapper
+│   └── core/                  #   engine, scanner, report, patterns, compare
 ├── tools_config.json          # Central JSON config
 ├── manifest.json              # Hermes skill manifest
 ├── SKILL.md                   # Hermes agent skill definition
@@ -312,7 +332,7 @@ ToolCase v5.4/
 ├── _protect.py                # Maker signature protection
 ├── install_toolcase.bat       # Windows installer
 ├── LICENSE                    # ToolCase License 1.0
-├── *.py                       # 62 registered tool scripts + check_syntax.py
+├── *.py                       # 63 registered tool scripts + check_syntax.py
 ├── safe_delete.py              # Central safe deletion helper
 ├── safe_run.py                 # Central safe subprocess executor
 ├── toolcase_core/              # Shared internal helpers (utils, safety)
@@ -332,14 +352,14 @@ ToolCase v5.4/
 |--------|-------|
 | Tools | 62 |
 | Categories | 10 |
-| Unit tests | 132 |
+| Unit tests | 142 |
 | Self-audit | Passing (compile + syntax) |
 | Syntax errors | 0 |
 | Security HIGH/MEDIUM | 0 |
 | Config/docs/security findings | Self-reported |
 | License compliance | Passing |
-| Python files | 89 |
-| Lines of code | 41,331+ |
+| Python files | 104 |
+| Lines of code | 42,481+ |
 | RSI Quality | Self-audited |
 | E501 long lines | ~130 (under active reduction) |
 | Scanner reliability | 1.0 |
@@ -360,7 +380,7 @@ ToolCase v5.4/
 ToolCase License 1.0 — see [LICENSE](LICENSE).
 
 **Maker:** [SmokerGreenOG](https://github.com/SmokerGreenOG)
-**Version:** 5.4.2
+**Version:** 5.5.0
 **Built for:** Hermes Agent · Claude Code · Codex · Every AI Agent
 
 ---

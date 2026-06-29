@@ -478,7 +478,7 @@ Voorbeelden:
     parser.add_argument("--code", "-c", help="Code snippet direct analyseren")
     parser.add_argument("--recursive", "-r", action="store_true", help="Recursief door directories")
     parser.add_argument("--verbose", "-v", action="store_true", help="Uitgebreide uitvoer")
-    parser.add_argument("--version", action="version", version="improve.py v5.4.2")
+    parser.add_argument("--version", action="version", version="improve.py v5.5.0")
     parser.add_argument(
         "--list-tools", action="store_true", help="Toon alle beschikbare tools in de ToolCase"
     )
@@ -640,7 +640,7 @@ Voorbeelden:
     parser.add_argument(
         "--apk-reverse",
         metavar="APK",
-        help="Reverse: Android APK reverse engineering & decompilation",
+        help="Reverse: Android APK reverse engineering suite — safe extraction, secrets, risk scoring, HTML+JSON reports",
     )
 
     # Self-improvement workflow
@@ -861,7 +861,7 @@ Voorbeelden:
         ("php_version_audit", "php_version_audit.py", False),
         ("php_test_runner", "php_test_runner.py", False),
         ("php_dep_audit", "php_dep_audit.py", False),
-        ("apk_reverse", "apk_reverse.py", False),
+        ("apk_reverse", "apk_reverse_suite/analyze.py", False),
     ]
     for arg_name, script_name, is_flag in new_tools:
         val = getattr(args, arg_name, None)
@@ -900,6 +900,11 @@ Voorbeelden:
                 _run_script(script_name, val[0], val[1])
             elif arg_name == "safe_run":
                 _run_script(script_name, *val)
+            elif arg_name == "apk_reverse":
+                apk_path = Path(str(val)).resolve()
+                apk_name = apk_path.stem
+                out_dir = apk_path.parent / f"reports_apk_{apk_name}"
+                _run_script(script_name, "--apk", str(apk_path), "--out", str(out_dir))
             elif is_flag:
                 _run_script(script_name)
             else:

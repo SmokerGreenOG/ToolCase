@@ -1,1 +1,1 @@
-"""Test suite for ToolCase v5.4.2 — core module tests."""
+"""Test suite for ToolCase v5.5.0 — core module tests."""

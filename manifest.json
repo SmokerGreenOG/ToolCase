@@ -1,8 +1,8 @@
 {
   "name": "toolcase-self-improve",
-  "version": "5.4.2",
+  "version": "5.5.0",
   "author": "SmokerGreenOG",
-  "description": "ToolCase v5.4.2 — 62 tools, RSI v2.0, safe_run executor, safe_delete, 10 safety rules",
+  "description": "ToolCase v5.5.0 — 62 tools, APK Reverse Suite, RSI v2.0, safe_run executor, safe_delete, 10 safety rules",
   "hermes": {
     "skill_type": "workflow",
     "tags": [
@@ -471,11 +471,11 @@
     },
     {
       "id": 54,
-      "name": "apk_reverse",
-      "script": "apk_reverse.py",
+      "name": "apk_reverse_suite",
+      "script": "apk_reverse_suite/analyze.py",
       "type": "Reverse Engineering",
       "risk": "Low",
-      "desc": "Android APK reverse engineering: manifest parsing, DEX→Java decompilation (jadx), component analysis, permissions audit"
+      "desc": "APK reverse suite: safe extraction, manifest parsing, DEX indicators, URL/secret scanning, framework detection (Flutter/Unity/RN), risk scoring, HTML+JSON reports"
     },
     {
       "id": 55,

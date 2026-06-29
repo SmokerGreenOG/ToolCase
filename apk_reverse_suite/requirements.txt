@@ -1,0 +1,4 @@
+# Core module uses Python standard library only.
+# Optional external command line tools:
+# - jadx
+# - apktool

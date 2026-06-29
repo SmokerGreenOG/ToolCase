@@ -1,4 +1,4 @@
-# ToolCase v5.4.2 — Release Procedure
+# ToolCase v5.5.0 — Release Procedure
 
 ## Prerequisites
 
@@ -47,9 +47,9 @@ pip check
 ### 4. Tag and push
 
 ```bash
-git tag -a v5.4.2 -m "ToolCase v5.4.2"
+git tag -a v5.5.0 -m "ToolCase v5.5.0"
 git push origin master
-git push origin v5.4.2
+git push origin v5.5.0
 ```
 
 ### 5. Post-tag verification
@@ -63,11 +63,11 @@ python release_readiness.py
 ### 6. Create GitHub Release
 
 - Go to https://github.com/SmokerGreenOG/ToolCase/releases
-- Create release from tag `v5.4.2`
-- Attach `dist/toolcase-5.4.2.tar.gz` and `dist/toolcase-5.4.2-py3-none-any.whl`
+- Create release from tag `v5.5.0`
+- Attach `dist/toolcase-5.5.0.tar.gz` and `dist/toolcase-5.5.0-py3-none-any.whl`
 - Generate SHA-256 checksums:
   ```bash
-  sha256sum dist/toolcase-5.4.2.tar.gz dist/toolcase-5.4.2-py3-none-any.whl
+  sha256sum dist/toolcase-5.5.0.tar.gz dist/toolcase-5.5.0-py3-none-any.whl
   ```
 
 ## Version Bump Checklist

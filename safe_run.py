@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-safe_run.py — Central safe subprocess executor for ToolCase v5.4.2.
+safe_run.py — Central safe subprocess executor for ToolCase v5.5.0.
 
 Drop-in replacement for subprocess.run() that enforces:
   1. Workspace containment — commands must target files within workspace

@@ -2,7 +2,7 @@
 
 All notable changes to ToolCase are documented in this file.
 
-## [5.4.2] - 2026-06-24
+## [5.5.0] - 2026-06-24
 
 ### Security — Critical fixes
 - **Exit code contract**: `improve.py` returns 0 (clean), 1 (findings), 2 (error). Was implicit 0 for all error paths.
